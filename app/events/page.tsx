@@ -15,10 +15,7 @@ export default function EventsPage() {
         <section className="py-20">
           <Container className="grid gap-5 md:grid-cols-3">
             {siteContent.events.map((event) => (
-              <article
-                key={event.title}
-                className="rounded-lg border border-border bg-white p-6 shadow-sm"
-              >
+              <article key={event.title} className="float-card p-6">
                 <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand">
                   {event.date}
                 </p>

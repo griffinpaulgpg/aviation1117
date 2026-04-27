@@ -40,18 +40,21 @@ export default function HomePage() {
   return (
     <SiteFrame>
       <main>
-        <section className="relative overflow-hidden bg-brand-dark text-white">
+        <section className="relative -mt-28 overflow-hidden px-3 pb-10 pt-28 text-white">
           <Image
             src="https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=2200&q=85"
             alt="Aircraft wing above clouds"
             fill
             priority
-            className="opacity-32 object-cover"
+            className="object-cover"
             sizes="100vw"
           />
-          <div className="via-brand-dark/86 to-brand-dark/48 absolute inset-0 bg-gradient-to-r from-brand-dark" />
-          <Container className="relative grid min-h-[calc(100vh-5rem)] items-center gap-10 py-20 lg:grid-cols-[1.05fr_0.95fr]">
-            <div>
+          <div className="via-brand-dark/78 to-brand-dark/22 absolute inset-0 bg-gradient-to-r from-brand-dark" />
+          <div className="runway-line hidden md:block" />
+          <Container className="hero-shell relative grid min-h-[calc(100vh-5rem)] items-center gap-10 overflow-hidden px-6 py-20 sm:px-10 lg:grid-cols-[1.05fr_0.95fr]">
+            <div className="sky-orbit right-10 top-10 hidden lg:block" />
+            <div className="sky-orbit small right-52 top-36 hidden lg:block" />
+            <div className="relative">
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">
                 Aviation training academy
               </p>
@@ -76,7 +79,7 @@ export default function HomePage() {
                 </Link>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="relative grid grid-cols-2 gap-4">
               {siteContent.stats.map((stat) => (
                 <StatCard key={stat.label} value={stat.value} label={stat.label} />
               ))}
@@ -89,15 +92,11 @@ export default function HomePage() {
             <SectionHeading
               eyebrow="Website"
               title="Use the top dashboard to move through each section."
-              description="Each page now keeps its own content so information stays clean, organized, and easy to update."
+              description="Each page keeps its own content while the floating dashboard gives the whole website a premium aviation-academy flow."
             />
             <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
               {pageLinks.map((page) => (
-                <Link
-                  key={page.href}
-                  href={page.href}
-                  className="rounded-lg border border-border bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-brand hover:shadow-lg"
-                >
+                <Link key={page.href} href={page.href} className="float-card p-5">
                   <h2 className="font-semibold text-foreground">{page.title}</h2>
                   <p className="mt-3 text-sm leading-6 text-muted">{page.description}</p>
                 </Link>
@@ -106,12 +105,12 @@ export default function HomePage() {
           </Container>
         </section>
 
-        <section className="border-y border-border bg-white py-20 sm:py-24">
+        <section className="py-20 sm:py-24">
           <Container>
             <SectionHeading
               eyebrow="3D Flow"
               title="A smoother page-to-page journey."
-              description="The site now works as a multipage experience without repeating detailed data across sections."
+              description="Layered floating panels give the website depth while keeping every content area organized."
             />
             <div className="mt-10">
               <ThreeDFlow
@@ -125,9 +124,9 @@ export default function HomePage() {
           </Container>
         </section>
 
-        <section className="border-y border-border bg-white py-20 sm:py-24">
+        <section className="py-20 sm:py-24">
           <Container className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
-            <div className="relative min-h-96 overflow-hidden rounded-lg">
+            <div className="float-card relative min-h-96 overflow-hidden">
               <Image
                 src="https://images.unsplash.com/photo-1540962351504-03099e0a754b?auto=format&fit=crop&w=1600&q=85"
                 alt="Airport terminal interior"
@@ -145,10 +144,7 @@ export default function HomePage() {
               </div>
               <div className="mt-10 grid gap-4 sm:grid-cols-2">
                 {siteContent.highlights.map((item) => (
-                  <article
-                    key={item.title}
-                    className="rounded-lg border border-border bg-background p-5"
-                  >
+                  <article key={item.title} className="float-card p-5">
                     <h3 className="font-semibold text-foreground">{item.title}</h3>
                     <p className="mt-3 text-sm leading-6 text-muted">{item.description}</p>
                   </article>
@@ -167,7 +163,7 @@ export default function HomePage() {
             />
             <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {siteContent.services.map((service, index) => (
-                <div key={service} className="rounded-lg border border-border bg-white p-5">
+                <div key={service} className="float-card p-5">
                   <p className="text-sm font-semibold text-brand">
                     {String(index + 1).padStart(2, "0")}
                   </p>
@@ -178,19 +174,19 @@ export default function HomePage() {
           </Container>
         </section>
 
-        <section className="border-y border-border bg-white py-16">
-          <Container className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
+        <section className="px-3 py-16">
+          <Container className="hero-shell flex flex-col justify-between gap-5 p-6 text-white sm:flex-row sm:items-center sm:p-8">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand">
+              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">
                 Need admissions help?
               </p>
-              <h2 className="mt-2 text-3xl font-semibold tracking-normal text-foreground">
+              <h2 className="mt-2 text-3xl font-semibold tracking-normal text-white">
                 Go to the contact page for enquiry and chat.
               </h2>
             </div>
             <Link
               href="/contact"
-              className="rounded-full bg-brand px-6 py-3 text-center text-sm font-semibold text-white transition hover:bg-brand-dark"
+              className="rounded-full bg-accent px-6 py-3 text-center text-sm font-semibold text-brand-dark transition hover:bg-white"
             >
               Open Contact Page
             </Link>
