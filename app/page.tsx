@@ -1,15 +1,40 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { ChatBox } from "@/components/chat-box";
-import { ContactPanel } from "@/components/contact-panel";
 import { Container } from "@/components/container";
-import { CourseCard } from "@/components/course-card";
 import { SectionHeading } from "@/components/section-heading";
 import { SiteFrame } from "@/components/site-frame";
 import { StatCard } from "@/components/stat-card";
 import { ThreeDFlow } from "@/components/three-d-flow";
 import { siteContent } from "@/lib/site-content";
+
+const pageLinks = [
+  {
+    title: "Courses",
+    href: "/courses",
+    description: "View all career training programs.",
+  },
+  {
+    title: "Events",
+    href: "/events",
+    description: "See visits, lectures, and student activities.",
+  },
+  {
+    title: "Gallery",
+    href: "/gallery",
+    description: "Browse academy and aviation exposure photos.",
+  },
+  {
+    title: "Testimonials",
+    href: "/testimonials",
+    description: "Read student placement stories.",
+  },
+  {
+    title: "Contact",
+    href: "/contact",
+    description: "Send an enquiry or find contact details.",
+  },
+];
 
 export default function HomePage() {
   return (
@@ -59,16 +84,23 @@ export default function HomePage() {
           </Container>
         </section>
 
-        <section id="courses" className="py-20 sm:py-24">
+        <section className="py-20 sm:py-24">
           <Container>
             <SectionHeading
-              eyebrow="Courses"
-              title="Great courses and practical aviation training."
-              description="Focused programs for students preparing for airline, airport, hospitality, cargo, and logistics roles."
+              eyebrow="Website"
+              title="Use the top dashboard to move through each section."
+              description="Each page now keeps its own content so information stays clean, organized, and easy to update."
             />
-            <div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-              {siteContent.courses.map((course) => (
-                <CourseCard key={course.title} course={course} />
+            <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+              {pageLinks.map((page) => (
+                <Link
+                  key={page.href}
+                  href={page.href}
+                  className="rounded-lg border border-border bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-brand hover:shadow-lg"
+                >
+                  <h2 className="font-semibold text-foreground">{page.title}</h2>
+                  <p className="mt-3 text-sm leading-6 text-muted">{page.description}</p>
+                </Link>
               ))}
             </div>
           </Container>
@@ -78,22 +110,22 @@ export default function HomePage() {
           <Container>
             <SectionHeading
               eyebrow="3D Flow"
-              title="A smoother path from enquiry to placement preparation."
-              description="The site now uses page-to-page navigation with layered 3D panels to make the experience feel connected and modern."
+              title="A smoother page-to-page journey."
+              description="The site now works as a multipage experience without repeating detailed data across sections."
             />
             <div className="mt-10">
               <ThreeDFlow
                 items={[
-                  "Choose the aviation, airport, hospitality, cargo, or logistics track.",
-                  "Train with practical exposure, grooming, mock interviews, and industry sessions.",
-                  "Move into placement preparation with a professional student profile.",
+                  "Start on the home page and choose the section you need.",
+                  "Open a dedicated page for courses, events, gallery, testimonials, or contact.",
+                  "Use the admin dashboard to manage each content area separately.",
                 ]}
               />
             </div>
           </Container>
         </section>
 
-        <section id="about" className="border-y border-border bg-white py-20 sm:py-24">
+        <section className="border-y border-border bg-white py-20 sm:py-24">
           <Container className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
             <div className="relative min-h-96 overflow-hidden rounded-lg">
               <Image
@@ -126,12 +158,12 @@ export default function HomePage() {
           </Container>
         </section>
 
-        <section id="services" className="py-20 sm:py-24">
+        <section className="py-20 sm:py-24">
           <Container>
             <SectionHeading
               eyebrow="Services"
               title="Training support beyond the classroom."
-              description="The academy supports aviation students through industry exposure, employability preparation, and real-world training activities."
+              description="This service overview stays on the home page because it does not have a separate public page yet."
             />
             <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {siteContent.services.map((service, index) => (
@@ -146,35 +178,22 @@ export default function HomePage() {
           </Container>
         </section>
 
-        <section className="border-y border-border bg-white py-20 sm:py-24">
-          <Container>
-            <SectionHeading
-              eyebrow="Testimonials"
-              title="Student stories from aviation placements."
-            />
-            <div className="mt-10 grid gap-5 md:grid-cols-2">
-              {siteContent.testimonials.map((testimonial) => (
-                <figure
-                  key={testimonial.name}
-                  className="rounded-lg border border-border bg-background p-6"
-                >
-                  <blockquote className="text-base leading-8 text-muted">
-                    “{testimonial.quote}”
-                  </blockquote>
-                  <figcaption className="mt-5">
-                    <p className="font-semibold text-foreground">{testimonial.name}</p>
-                    <p className="mt-1 text-sm text-muted">{testimonial.role}</p>
-                  </figcaption>
-                </figure>
-              ))}
+        <section className="border-y border-border bg-white py-16">
+          <Container className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand">
+                Need admissions help?
+              </p>
+              <h2 className="mt-2 text-3xl font-semibold tracking-normal text-foreground">
+                Go to the contact page for enquiry and chat.
+              </h2>
             </div>
-          </Container>
-        </section>
-
-        <section id="contact" className="py-20 sm:py-24">
-          <Container className="grid gap-6">
-            <ChatBox />
-            <ContactPanel />
+            <Link
+              href="/contact"
+              className="rounded-full bg-brand px-6 py-3 text-center text-sm font-semibold text-white transition hover:bg-brand-dark"
+            >
+              Open Contact Page
+            </Link>
           </Container>
         </section>
       </main>
