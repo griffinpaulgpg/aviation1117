@@ -11,7 +11,6 @@ export type SiteContent = {
     batchTimings: string[];
   };
   home: {
-    announcement: string;
     headline: string;
     intro: string;
     primaryCta: string;
@@ -40,5 +39,15 @@ export type SiteContent = {
     quote: string;
     name: string;
     role: string;
+  }>;
+  gallery: Array<{
+    title: string;
+    image: string;
+    alt: string;
+  }>;
+  events: Array<{
+    title: string;
+    date: string;
+    description: string;
   }>;
 };

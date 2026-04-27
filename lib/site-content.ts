@@ -15,13 +15,11 @@ export const siteContent = {
     batchTimings: ["10:00 am to 01:00 pm", "03:00 pm to 06:00 pm"],
   },
   home: {
-    announcement:
-      "10% discount on all courses and 100% job placement support in 6 months for the first 20 applications.",
     headline: "Unlock your wings at a leading aviation academy in Bangalore.",
     intro:
       "Arunand's Aviation Academy trains students for cabin crew, ground handling, airport operations, airline operations, hospitality, air cargo, and logistics careers with practical guidance from former airline professionals.",
-    primaryCta: "Reach Us Now",
-    secondaryCta: "View Courses",
+    primaryCta: "Chat With Admissions",
+    secondaryCta: "Explore Courses",
   },
   stats: [
     { value: "300+", label: "Students trained" },
@@ -130,6 +128,46 @@ export const siteContent = {
         "The training helped me prepare for a customer-facing aviation career with confidence.",
       name: "Sonia",
       role: "Customer Service Executive, Elite - Bangalore International Airport T2",
+    },
+  ],
+  gallery: [
+    {
+      title: "Airport Exposure",
+      image:
+        "https://images.unsplash.com/photo-1540962351504-03099e0a754b?auto=format&fit=crop&w=1400&q=85",
+      alt: "Airport terminal interior",
+    },
+    {
+      title: "Flight Training Mindset",
+      image:
+        "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=1400&q=85",
+      alt: "Aircraft wing above clouds",
+    },
+    {
+      title: "Professional Grooming",
+      image:
+        "https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=1400&q=85",
+      alt: "Professional training discussion",
+    },
+  ],
+  events: [
+    {
+      title: "Airport Visit Program",
+      date: "Upcoming",
+      description:
+        "Guided airport exposure for aviation students preparing for airport and airline operations roles.",
+    },
+    {
+      title: "Mock Interview Week",
+      date: "Monthly",
+      description:
+        "Practical interview sessions focused on grooming, communication, confidence, and aviation role readiness.",
+    },
+    {
+      title: "Industry Guest Lecture",
+      date: "Quarterly",
+      description:
+        "Sessions led by aviation professionals covering current airline, airport, cargo, and customer service expectations.",
     },
   ],
 } satisfies SiteContent;

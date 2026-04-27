@@ -1,19 +1,19 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { ChatBox } from "@/components/chat-box";
 import { ContactPanel } from "@/components/contact-panel";
 import { Container } from "@/components/container";
 import { CourseCard } from "@/components/course-card";
-import { Footer } from "@/components/footer";
-import { Header } from "@/components/header";
 import { SectionHeading } from "@/components/section-heading";
+import { SiteFrame } from "@/components/site-frame";
 import { StatCard } from "@/components/stat-card";
+import { ThreeDFlow } from "@/components/three-d-flow";
 import { siteContent } from "@/lib/site-content";
 
 export default function HomePage() {
   return (
-    <>
-      <Header />
+    <SiteFrame>
       <main>
         <section className="relative overflow-hidden bg-brand-dark text-white">
           <Image
@@ -25,7 +25,7 @@ export default function HomePage() {
             sizes="100vw"
           />
           <div className="via-brand-dark/86 to-brand-dark/48 absolute inset-0 bg-gradient-to-r from-brand-dark" />
-          <Container className="relative grid min-h-[calc(100vh-9rem)] items-center gap-10 py-20 lg:grid-cols-[1.05fr_0.95fr]">
+          <Container className="relative grid min-h-[calc(100vh-5rem)] items-center gap-10 py-20 lg:grid-cols-[1.05fr_0.95fr]">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">
                 Aviation training academy
@@ -38,13 +38,13 @@ export default function HomePage() {
               </p>
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
                 <Link
-                  href={`tel:${siteContent.contact.phone.replaceAll(" ", "")}`}
+                  href="/contact"
                   className="rounded-full bg-accent px-6 py-3 text-center text-sm font-semibold text-brand-dark transition hover:bg-white"
                 >
                   {siteContent.home.primaryCta}
                 </Link>
                 <Link
-                  href="#courses"
+                  href="/courses"
                   className="border-white/24 rounded-full border px-6 py-3 text-center text-sm font-semibold text-white transition hover:border-white hover:bg-white/10"
                 >
                   {siteContent.home.secondaryCta}
@@ -70,6 +70,25 @@ export default function HomePage() {
               {siteContent.courses.map((course) => (
                 <CourseCard key={course.title} course={course} />
               ))}
+            </div>
+          </Container>
+        </section>
+
+        <section className="border-y border-border bg-white py-20 sm:py-24">
+          <Container>
+            <SectionHeading
+              eyebrow="3D Flow"
+              title="A smoother path from enquiry to placement preparation."
+              description="The site now uses page-to-page navigation with layered 3D panels to make the experience feel connected and modern."
+            />
+            <div className="mt-10">
+              <ThreeDFlow
+                items={[
+                  "Choose the aviation, airport, hospitality, cargo, or logistics track.",
+                  "Train with practical exposure, grooming, mock interviews, and industry sessions.",
+                  "Move into placement preparation with a professional student profile.",
+                ]}
+              />
             </div>
           </Container>
         </section>
@@ -153,12 +172,12 @@ export default function HomePage() {
         </section>
 
         <section id="contact" className="py-20 sm:py-24">
-          <Container>
+          <Container className="grid gap-6">
+            <ChatBox />
             <ContactPanel />
           </Container>
         </section>
       </main>
-      <Footer />
-    </>
+    </SiteFrame>
   );
 }
