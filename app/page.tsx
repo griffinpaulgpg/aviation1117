@@ -7,6 +7,15 @@ import { SiteFrame } from "@/components/site-frame";
 import { StatCard } from "@/components/stat-card";
 import { siteContent } from "@/lib/site-content";
 
+const offeredCourses = [
+  "Cabin Crew",
+  "Ground Handling",
+  "Hospitality",
+  "Airline Operations",
+  "Airport Operations",
+  "Air Cargo & Logistics",
+];
+
 export default function HomePage() {
   return (
     <SiteFrame>
@@ -88,6 +97,91 @@ export default function HomePage() {
           </Container>
         </section>
 
+        <section className="border-y border-border bg-[#f0f2f4] py-20 sm:py-24">
+          <Container className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
+            <div>
+              <p className="text-lg font-semibold text-brand">Courses we offer</p>
+              <h2 className="mt-5 max-w-xl text-4xl font-semibold tracking-normal text-foreground sm:text-5xl">
+                We Are The Best Aviation In Town
+              </h2>
+              <Link
+                href="/courses"
+                className="mt-8 inline-flex rounded-lg bg-brand px-7 py-4 text-sm font-semibold tracking-[0.2em] text-white transition hover:bg-brand-dark"
+              >
+                About Us
+              </Link>
+            </div>
+            <div className="grid gap-5 sm:grid-cols-2">
+              {offeredCourses.map((course) => (
+                <div key={course} className="flex items-center gap-4 text-lg font-semibold">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-black text-[10px] text-white">
+                    ▶
+                  </span>
+                  <span>{course}</span>
+                </div>
+              ))}
+            </div>
+          </Container>
+        </section>
+
+        <section className="py-20 sm:py-24">
+          <Container className="grid gap-12">
+            <div className="rounded-none bg-brand-dark p-5 sm:p-8">
+              <div className="grid gap-4 bg-white p-8 text-center sm:grid-cols-3 sm:items-center">
+                <div>
+                  <p className="text-3xl font-semibold text-brand">NSDC</p>
+                  <p className="mt-2 text-sm font-medium text-muted">
+                    National Skill Development Corporation
+                  </p>
+                </div>
+                <div>
+                  <p className="text-3xl font-semibold text-brand">AASSC</p>
+                  <p className="mt-2 text-sm font-medium text-muted">
+                    Aerospace & Aviation Sector Skill Council
+                  </p>
+                </div>
+                <div>
+                  <p className="text-3xl font-semibold text-brand-dark">Skill India</p>
+                  <p className="mt-2 text-sm font-medium text-muted">Government skill initiative</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr_0.85fr] lg:items-center">
+              <div className="relative min-h-72 overflow-hidden rounded-lg">
+                <Image
+                  src="https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=1000&q=85"
+                  alt="Aviation students in professional training"
+                  fill
+                  className="object-cover"
+                  sizes="(min-width: 1024px) 25vw, 100vw"
+                />
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-semibold uppercase leading-10 text-foreground">
+                  Top University BBA Aviation Curriculum Writer Built Our Curriculum
+                </p>
+                <p className="mt-8 text-3xl leading-tight text-foreground">
+                  An Aviation Academy With Focus On
+                </p>
+                <p className="mt-8 text-3xl font-semibold leading-tight text-foreground">
+                  Cabin Crew | Ground Handling | Airport Operations | Airline Operations |
+                  Hospitality
+                </p>
+              </div>
+              <div className="relative min-h-72 overflow-hidden rounded-lg">
+                <Image
+                  src="https://images.unsplash.com/photo-1580894894513-541e068a3e2b?auto=format&fit=crop&w=1000&q=85"
+                  alt="Cabin crew training group"
+                  fill
+                  className="object-cover"
+                  sizes="(min-width: 1024px) 25vw, 100vw"
+                />
+              </div>
+            </div>
+          </Container>
+        </section>
+
         <section className="py-20 sm:py-24">
           <Container>
             <SectionHeading
@@ -105,25 +199,6 @@ export default function HomePage() {
                 </div>
               ))}
             </div>
-          </Container>
-        </section>
-
-        <section className="border-y border-border bg-white py-16">
-          <Container className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand">
-                Need admissions help?
-              </p>
-              <h2 className="mt-2 text-3xl font-semibold tracking-normal text-foreground">
-                Go to the contact page for enquiry and chat.
-              </h2>
-            </div>
-            <Link
-              href="/contact"
-              className="rounded-full bg-brand px-6 py-3 text-center text-sm font-semibold text-white transition hover:bg-brand-dark"
-            >
-              Open Contact Page
-            </Link>
           </Container>
         </section>
       </main>
