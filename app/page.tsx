@@ -66,12 +66,13 @@ export default function HomePage() {
 
         <section className="py-20 sm:py-24">
           <Container className="home-panel grid gap-10 p-6 sm:p-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
-            <div className="home-photo-lift relative aspect-[4/3] w-full overflow-hidden rounded-xl">
+            <div className="home-photo-contain home-photo-lift relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-xl p-3">
               <Image
                 src="/aassc-affiliation.png"
                 alt="Arunand's Aviation Academy affiliated training partner with AASSC"
-                fill
-                className="object-cover"
+                width={1324}
+                height={990}
+                className="h-full w-full rounded-lg object-contain"
                 sizes="(min-width: 1024px) 42vw, 100vw"
               />
             </div>
@@ -89,6 +90,7 @@ export default function HomePage() {
         <section className="py-20 sm:py-24">
           <Container className="home-panel grid gap-12 bg-[#f0f2f4]/80 p-6 sm:p-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
             <div>
+              <div className="home-color-strip mb-7 h-2 w-28 rounded-full" />
               <p className="text-lg font-semibold text-brand">Courses we offer</p>
               <h2 className="mt-5 max-w-xl text-4xl font-semibold tracking-normal text-foreground sm:text-5xl">
                 We Are The Best Aviation In Town
@@ -182,7 +184,7 @@ export default function HomePage() {
               description="This service overview stays on the home page because it does not have a separate public page yet."
             />
             <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {siteContent.services.map((service, index) => (
+              {siteContent.services.slice(0, 6).map((service, index) => (
                 <div key={service} className="home-course-card p-5">
                   <p className="text-sm font-semibold text-brand">
                     {String(index + 1).padStart(2, "0")}

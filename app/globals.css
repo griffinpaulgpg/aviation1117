@@ -36,9 +36,10 @@ a {
   position: relative;
   overflow: hidden;
   background:
-    radial-gradient(circle at 15% 4%, rgb(255 255 255 / 92%), transparent 26rem),
-    radial-gradient(circle at 88% 18%, rgb(245 179 55 / 20%), transparent 28rem),
-    linear-gradient(180deg, #f7fbff 0%, hsl(var(--background)) 38%, #eef6fb 100%);
+    radial-gradient(circle at 12% 6%, rgb(37 145 186 / 18%), transparent 24rem),
+    radial-gradient(circle at 82% 12%, rgb(245 179 55 / 26%), transparent 28rem),
+    radial-gradient(circle at 55% 48%, rgb(95 198 220 / 14%), transparent 30rem),
+    linear-gradient(180deg, #f7fbff 0%, hsl(var(--background)) 34%, #eaf6fb 100%);
 }
 
 .home-canvas::before {
@@ -99,7 +100,9 @@ a {
   position: relative;
   border: 1px solid rgb(255 255 255 / 72%);
   border-radius: 1.25rem;
-  background: rgb(255 255 255 / 82%);
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 90%), rgb(244 251 255 / 78%)),
+    radial-gradient(circle at 90% 0%, rgb(245 179 55 / 12%), transparent 18rem);
   box-shadow: 0 26px 80px rgb(21 37 67 / 12%);
   backdrop-filter: blur(18px);
 }
@@ -118,10 +121,18 @@ a {
   box-shadow: 0 34px 90px rgb(21 37 67 / 20%);
 }
 
+.home-photo-contain {
+  background:
+    linear-gradient(135deg, rgb(29 43 67 / 96%), rgb(23 53 84 / 92%)),
+    radial-gradient(circle at 20% 20%, rgb(245 179 55 / 18%), transparent 18rem);
+}
+
 .home-course-card {
   border: 1px solid rgb(255 255 255 / 72%);
   border-radius: 1rem;
-  background: rgb(255 255 255 / 84%);
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 92%), rgb(244 251 255 / 84%)),
+    radial-gradient(circle at 100% 0%, rgb(245 179 55 / 12%), transparent 10rem);
   box-shadow: 0 20px 65px rgb(21 37 67 / 10%);
   transform: translateZ(0);
   transition:
@@ -139,9 +150,14 @@ a {
 .home-logo-band {
   border: 1px solid rgb(255 255 255 / 12%);
   background:
-    linear-gradient(135deg, rgb(29 43 67 / 96%), rgb(23 53 84 / 96%)),
-    radial-gradient(circle at 80% 10%, rgb(245 179 55 / 22%), transparent 20rem);
+    radial-gradient(circle at 12% 10%, rgb(245 179 55 / 28%), transparent 20rem),
+    radial-gradient(circle at 88% 18%, rgb(37 145 186 / 34%), transparent 22rem),
+    linear-gradient(135deg, rgb(29 43 67 / 98%), rgb(16 42 72 / 96%));
   box-shadow: 0 28px 80px rgb(21 37 67 / 16%);
+}
+
+.home-color-strip {
+  background: linear-gradient(90deg, hsl(var(--brand)), hsl(var(--accent)), #5fc6dc);
 }
 
 .flow-stage {
