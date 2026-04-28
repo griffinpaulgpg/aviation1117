@@ -32,6 +32,118 @@ a {
   text-decoration: none;
 }
 
+.home-canvas {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 15% 4%, rgb(255 255 255 / 92%), transparent 26rem),
+    radial-gradient(circle at 88% 18%, rgb(245 179 55 / 20%), transparent 28rem),
+    linear-gradient(180deg, #f7fbff 0%, hsl(var(--background)) 38%, #eef6fb 100%);
+}
+
+.home-canvas::before {
+  position: absolute;
+  inset: 42rem -12rem auto auto;
+  width: 30rem;
+  height: 30rem;
+  content: "";
+  border: 1px solid rgb(30 123 157 / 10%);
+  border-radius: 999px;
+  background: radial-gradient(circle, rgb(30 123 157 / 10%), transparent 62%);
+  pointer-events: none;
+}
+
+.home-hero {
+  isolation: isolate;
+}
+
+.home-hero::after {
+  position: absolute;
+  right: 7%;
+  bottom: 10%;
+  width: min(34rem, 42vw);
+  height: 1px;
+  content: "";
+  transform: rotate(-16deg);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 82%), transparent);
+}
+
+.home-glass {
+  border: 1px solid rgb(255 255 255 / 28%);
+  border-radius: 1.25rem;
+  background: rgb(255 255 255 / 10%);
+  box-shadow: 0 28px 90px rgb(8 21 43 / 20%);
+  backdrop-filter: blur(18px);
+}
+
+.home-stat-grid {
+  perspective: 1200px;
+}
+
+.home-stat-grid > * {
+  transform: rotateX(7deg) rotateY(-6deg);
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.home-stat-grid > *:nth-child(even) {
+  transform: rotateX(7deg) rotateY(6deg);
+}
+
+.home-stat-grid > *:hover {
+  transform: translateY(-8px) rotateX(0deg) rotateY(0deg);
+}
+
+.home-panel {
+  position: relative;
+  border: 1px solid rgb(255 255 255 / 72%);
+  border-radius: 1.25rem;
+  background: rgb(255 255 255 / 82%);
+  box-shadow: 0 26px 80px rgb(21 37 67 / 12%);
+  backdrop-filter: blur(18px);
+}
+
+.home-panel::before {
+  position: absolute;
+  inset: 0;
+  content: "";
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgb(255 255 255 / 42%), transparent 40%);
+  pointer-events: none;
+}
+
+.home-photo-lift {
+  transform: perspective(1100px) rotateY(4deg) rotateX(2deg);
+  box-shadow: 0 34px 90px rgb(21 37 67 / 20%);
+}
+
+.home-course-card {
+  border: 1px solid rgb(255 255 255 / 72%);
+  border-radius: 1rem;
+  background: rgb(255 255 255 / 84%);
+  box-shadow: 0 20px 65px rgb(21 37 67 / 10%);
+  transform: translateZ(0);
+  transition:
+    transform 200ms ease,
+    box-shadow 200ms ease,
+    border-color 200ms ease;
+}
+
+.home-course-card:hover {
+  transform: translateY(-6px) scale(1.015);
+  border-color: rgb(30 123 157 / 30%);
+  box-shadow: 0 30px 90px rgb(21 37 67 / 16%);
+}
+
+.home-logo-band {
+  border: 1px solid rgb(255 255 255 / 12%);
+  background:
+    linear-gradient(135deg, rgb(29 43 67 / 96%), rgb(23 53 84 / 96%)),
+    radial-gradient(circle at 80% 10%, rgb(245 179 55 / 22%), transparent 20rem);
+  box-shadow: 0 28px 80px rgb(21 37 67 / 16%);
+}
+
 .flow-stage {
   perspective: 1200px;
 }

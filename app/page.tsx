@@ -19,19 +19,19 @@ const offeredCourses = [
 export default function HomePage() {
   return (
     <SiteFrame>
-      <main>
-        <section className="relative overflow-hidden bg-brand-dark text-white">
+      <main className="home-canvas">
+        <section className="home-hero relative overflow-hidden bg-brand-dark text-white">
           <Image
             src="https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=2200&q=85"
             alt="Aircraft wing above clouds"
             fill
             priority
-            className="opacity-32 object-cover"
+            className="object-cover opacity-40"
             sizes="100vw"
           />
-          <div className="via-brand-dark/86 to-brand-dark/48 absolute inset-0 bg-gradient-to-r from-brand-dark" />
+          <div className="via-brand-dark/82 to-brand-dark/36 absolute inset-0 bg-gradient-to-r from-brand-dark" />
           <Container className="relative grid min-h-[calc(100vh-5rem)] items-center gap-10 py-20 lg:grid-cols-[1.05fr_0.95fr]">
-            <div>
+            <div className="home-glass p-6 sm:p-8">
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">
                 Aviation training academy
               </p>
@@ -56,7 +56,7 @@ export default function HomePage() {
                 </Link>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="home-stat-grid grid grid-cols-2 gap-4">
               {siteContent.stats.map((stat) => (
                 <StatCard key={stat.label} value={stat.value} label={stat.label} />
               ))}
@@ -64,9 +64,9 @@ export default function HomePage() {
           </Container>
         </section>
 
-        <section className="border-y border-border bg-white py-20 sm:py-24">
-          <Container className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
-            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg shadow-lg">
+        <section className="py-20 sm:py-24">
+          <Container className="home-panel grid gap-10 p-6 sm:p-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
+            <div className="home-photo-lift relative aspect-[4/3] w-full overflow-hidden rounded-xl">
               <Image
                 src="/aassc-affiliation.png"
                 alt="Arunand's Aviation Academy affiliated training partner with AASSC"
@@ -86,8 +86,8 @@ export default function HomePage() {
           </Container>
         </section>
 
-        <section className="border-y border-border bg-[#f0f2f4] py-20 sm:py-24">
-          <Container className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
+        <section className="py-20 sm:py-24">
+          <Container className="home-panel grid gap-12 bg-[#f0f2f4]/80 p-6 sm:p-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
             <div>
               <p className="text-lg font-semibold text-brand">Courses we offer</p>
               <h2 className="mt-5 max-w-xl text-4xl font-semibold tracking-normal text-foreground sm:text-5xl">
@@ -102,8 +102,11 @@ export default function HomePage() {
             </div>
             <div className="grid gap-5 sm:grid-cols-2">
               {offeredCourses.map((course) => (
-                <div key={course} className="flex items-center gap-4 text-lg font-semibold">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-black text-[10px] text-white">
+                <div
+                  key={course}
+                  className="home-course-card flex items-center gap-4 p-4 text-lg font-semibold"
+                >
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-dark text-[10px] text-white shadow-lg">
                     ▶
                   </span>
                   <span>{course}</span>
@@ -115,8 +118,8 @@ export default function HomePage() {
 
         <section className="py-20 sm:py-24">
           <Container className="grid gap-12">
-            <div className="rounded-none bg-brand-dark p-5 sm:p-8">
-              <div className="grid gap-4 bg-white p-8 text-center sm:grid-cols-3 sm:items-center">
+            <div className="home-logo-band rounded-2xl p-5 sm:p-8">
+              <div className="grid gap-4 rounded-xl bg-white p-8 text-center sm:grid-cols-3 sm:items-center">
                 <div>
                   <p className="text-3xl font-semibold text-brand">NSDC</p>
                   <p className="mt-2 text-sm font-medium text-muted">
@@ -137,7 +140,7 @@ export default function HomePage() {
             </div>
 
             <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr_0.85fr] lg:items-center">
-              <div className="relative min-h-72 overflow-hidden rounded-lg">
+              <div className="home-photo-lift relative min-h-72 overflow-hidden rounded-xl">
                 <Image
                   src="https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=1000&q=85"
                   alt="Aviation students in professional training"
@@ -146,7 +149,7 @@ export default function HomePage() {
                   sizes="(min-width: 1024px) 25vw, 100vw"
                 />
               </div>
-              <div className="text-center">
+              <div className="home-panel p-6 text-center">
                 <p className="text-2xl font-semibold uppercase leading-10 text-foreground">
                   Top University BBA Aviation Curriculum Writer Built Our Curriculum
                 </p>
@@ -158,7 +161,7 @@ export default function HomePage() {
                   Hospitality
                 </p>
               </div>
-              <div className="relative min-h-72 overflow-hidden rounded-lg">
+              <div className="home-photo-lift relative min-h-72 overflow-hidden rounded-xl">
                 <Image
                   src="https://images.unsplash.com/photo-1580894894513-541e068a3e2b?auto=format&fit=crop&w=1000&q=85"
                   alt="Cabin crew training group"
@@ -180,7 +183,7 @@ export default function HomePage() {
             />
             <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {siteContent.services.map((service, index) => (
-                <div key={service} className="rounded-lg border border-border bg-white p-5">
+                <div key={service} className="home-course-card p-5">
                   <p className="text-sm font-semibold text-brand">
                     {String(index + 1).padStart(2, "0")}
                   </p>
