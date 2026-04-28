@@ -65,8 +65,8 @@ export default function HomePage() {
         </section>
 
         <section className="border-y border-border bg-white py-20 sm:py-24">
-          <Container className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
-            <div className="relative min-h-96 overflow-hidden rounded-lg">
+          <Container className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
+            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg shadow-lg">
               <Image
                 src="/aassc-affiliation.png"
                 alt="Arunand's Aviation Academy affiliated training partner with AASSC"
@@ -75,9 +75,9 @@ export default function HomePage() {
                 sizes="(min-width: 1024px) 42vw, 100vw"
               />
             </div>
-            <div>
+            <div className="mx-auto max-w-2xl lg:mx-0">
               <SectionHeading eyebrow={siteContent.about.eyebrow} title={siteContent.about.title} />
-              <div className="mt-6 space-y-5 text-base leading-8 text-muted">
+              <div className="mt-6 space-y-4 text-base leading-7 text-muted">
                 {siteContent.about.body.map((paragraph) => (
                   <p key={paragraph}>{paragraph}</p>
                 ))}
