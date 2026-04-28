@@ -5,36 +5,7 @@ import { Container } from "@/components/container";
 import { SectionHeading } from "@/components/section-heading";
 import { SiteFrame } from "@/components/site-frame";
 import { StatCard } from "@/components/stat-card";
-import { ThreeDFlow } from "@/components/three-d-flow";
 import { siteContent } from "@/lib/site-content";
-
-const pageLinks = [
-  {
-    title: "Courses",
-    href: "/courses",
-    description: "View all career training programs.",
-  },
-  {
-    title: "Events",
-    href: "/events",
-    description: "See visits, lectures, and student activities.",
-  },
-  {
-    title: "Gallery",
-    href: "/gallery",
-    description: "Browse academy and aviation exposure photos.",
-  },
-  {
-    title: "Testimonials",
-    href: "/testimonials",
-    description: "Read student placement stories.",
-  },
-  {
-    title: "Contact",
-    href: "/contact",
-    description: "Send an enquiry or find contact details.",
-  },
-];
 
 export default function HomePage() {
   return (
@@ -80,47 +51,6 @@ export default function HomePage() {
               {siteContent.stats.map((stat) => (
                 <StatCard key={stat.label} value={stat.value} label={stat.label} />
               ))}
-            </div>
-          </Container>
-        </section>
-
-        <section className="py-20 sm:py-24">
-          <Container>
-            <SectionHeading
-              eyebrow="Website"
-              title="Use the top dashboard to move through each section."
-              description="Each page now keeps its own content so information stays clean, organized, and easy to update."
-            />
-            <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-              {pageLinks.map((page) => (
-                <Link
-                  key={page.href}
-                  href={page.href}
-                  className="rounded-lg border border-border bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-brand hover:shadow-lg"
-                >
-                  <h2 className="font-semibold text-foreground">{page.title}</h2>
-                  <p className="mt-3 text-sm leading-6 text-muted">{page.description}</p>
-                </Link>
-              ))}
-            </div>
-          </Container>
-        </section>
-
-        <section className="border-y border-border bg-white py-20 sm:py-24">
-          <Container>
-            <SectionHeading
-              eyebrow="3D Flow"
-              title="A smoother page-to-page journey."
-              description="The site now works as a multipage experience without repeating detailed data across sections."
-            />
-            <div className="mt-10">
-              <ThreeDFlow
-                items={[
-                  "Start on the home page and choose the section you need.",
-                  "Open a dedicated page for courses, events, gallery, testimonials, or contact.",
-                  "Use the admin dashboard to manage each content area separately.",
-                ]}
-              />
             </div>
           </Container>
         </section>
