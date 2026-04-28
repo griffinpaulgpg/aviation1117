@@ -68,8 +68,8 @@ export default function HomePage() {
           <Container className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
             <div className="relative min-h-96 overflow-hidden rounded-lg">
               <Image
-                src="https://images.unsplash.com/photo-1540962351504-03099e0a754b?auto=format&fit=crop&w=1600&q=85"
-                alt="Airport terminal interior"
+                src="/aassc-affiliation.png"
+                alt="Arunand's Aviation Academy affiliated training partner with AASSC"
                 fill
                 className="object-cover"
                 sizes="(min-width: 1024px) 42vw, 100vw"
@@ -80,17 +80,6 @@ export default function HomePage() {
               <div className="mt-6 space-y-5 text-base leading-8 text-muted">
                 {siteContent.about.body.map((paragraph) => (
                   <p key={paragraph}>{paragraph}</p>
-                ))}
-              </div>
-              <div className="mt-10 grid gap-4 sm:grid-cols-2">
-                {siteContent.highlights.map((item) => (
-                  <article
-                    key={item.title}
-                    className="rounded-lg border border-border bg-background p-5"
-                  >
-                    <h3 className="font-semibold text-foreground">{item.title}</h3>
-                    <p className="mt-3 text-sm leading-6 text-muted">{item.description}</p>
-                  </article>
                 ))}
               </div>
             </div>
