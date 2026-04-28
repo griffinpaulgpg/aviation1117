@@ -14,8 +14,8 @@ const navItems = [
 
 export function Header() {
   return (
-    <header className="sticky top-0 z-50 px-3 py-3 text-white">
-      <Container className="floating-nav flex min-h-20 items-center justify-between gap-3 px-4 py-3 sm:gap-4 sm:px-6">
+    <header className="sticky top-0 z-50 border-b border-white/15 bg-brand-dark/95 text-white backdrop-blur">
+      <Container className="flex min-h-20 items-center justify-between gap-3 py-4 sm:gap-4">
         <Link
           href="/"
           className="max-w-40 text-base font-semibold leading-tight sm:max-w-56 sm:text-lg"
@@ -43,8 +43,8 @@ export function Header() {
           Admin Login
         </Link>
       </Container>
-      <div className="mt-2 md:hidden">
-        <Container className="floating-nav px-3">
+      <div className="bg-white/8 border-t border-white/10 md:hidden">
+        <Container>
           <nav
             aria-label="Primary mobile"
             className="text-white/82 flex gap-2 overflow-x-auto py-3 text-sm font-semibold"

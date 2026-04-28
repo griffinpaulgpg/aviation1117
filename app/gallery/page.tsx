@@ -17,7 +17,10 @@ export default function GalleryPage() {
         <section className="py-20">
           <Container className="grid gap-5 md:grid-cols-3">
             {siteContent.gallery.map((item) => (
-              <figure key={item.title} className="float-card overflow-hidden">
+              <figure
+                key={item.title}
+                className="overflow-hidden rounded-lg border border-border bg-white"
+              >
                 <div className="relative aspect-[4/3]">
                   <Image
                     src={item.image}

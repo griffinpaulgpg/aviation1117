@@ -15,7 +15,10 @@ export default function TestimonialsPage() {
         <section className="py-20">
           <Container className="grid gap-5 md:grid-cols-2">
             {siteContent.testimonials.map((testimonial) => (
-              <figure key={testimonial.name} className="float-card p-6">
+              <figure
+                key={testimonial.name}
+                className="rounded-lg border border-border bg-white p-6 shadow-sm"
+              >
                 <blockquote className="text-base leading-8 text-muted">
                   “{testimonial.quote}”
                 </blockquote>

@@ -4,7 +4,7 @@ import { siteContent } from "@/lib/site-content";
 
 export function ChatBox() {
   return (
-    <section className="float-card p-6 sm:p-8">
+    <section className="rounded-lg border border-border bg-white p-6 shadow-sm sm:p-8">
       <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand">
@@ -20,17 +20,17 @@ export function ChatBox() {
         </div>
         <form className="grid gap-4">
           <input
-            className="rounded-lg border border-border bg-white/75 px-4 py-3 text-sm outline-none focus:border-brand"
+            className="rounded-lg border border-border px-4 py-3 text-sm outline-none focus:border-brand"
             placeholder="Your name"
             type="text"
           />
           <input
-            className="rounded-lg border border-border bg-white/75 px-4 py-3 text-sm outline-none focus:border-brand"
+            className="rounded-lg border border-border px-4 py-3 text-sm outline-none focus:border-brand"
             placeholder="Phone or email"
             type="text"
           />
           <textarea
-            className="min-h-28 rounded-lg border border-border bg-white/75 px-4 py-3 text-sm outline-none focus:border-brand"
+            className="min-h-28 rounded-lg border border-border px-4 py-3 text-sm outline-none focus:border-brand"
             placeholder="Course, batch, or admission question"
           />
           <Link

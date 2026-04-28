@@ -4,7 +4,7 @@ type Course = SiteContent["courses"][number];
 
 export function CourseCard({ course }: { course: Course }) {
   return (
-    <article className="float-card flex h-full flex-col p-6">
+    <article className="flex h-full flex-col rounded-lg border border-border bg-white p-6 shadow-sm">
       <div className="flex items-start justify-between gap-4">
         <h3 className="text-xl font-semibold text-foreground">{course.title}</h3>
         {course.duration ? (

@@ -4,7 +4,7 @@ import { siteContent } from "@/lib/site-content";
 
 export function ContactPanel() {
   return (
-    <div className="hero-shell p-6 text-white sm:p-8">
+    <div className="rounded-lg bg-brand-dark p-6 text-white sm:p-8">
       <p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">Reach Us</p>
       <h2 className="mt-3 text-3xl font-semibold tracking-normal">Start the conversation today.</h2>
       <div className="text-white/76 mt-6 grid gap-5 text-sm leading-6 sm:grid-cols-2">
