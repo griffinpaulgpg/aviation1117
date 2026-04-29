@@ -18,7 +18,7 @@ export const siteContent = {
     headline: "Unlock your wings at a leading aviation academy in Bangalore.",
     intro:
       "Arunand's Aviation Academy trains students for cabin crew, ground handling, airport operations, airline operations, hospitality, air cargo, and logistics careers with practical guidance from former airline professionals.",
-    primaryCta: "Chat With Admissions",
+    primaryCta: "Submit Enquiry",
     secondaryCta: "Explore Courses",
   },
   stats: [

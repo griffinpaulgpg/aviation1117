@@ -8,6 +8,7 @@ const footerLinks = [
   { label: "Events", href: "/events" },
   { label: "Gallery", href: "/gallery" },
   { label: "Testimonials", href: "/testimonials" },
+  { label: "Enquiry", href: "/enquiry" },
   { label: "Contact", href: "/contact" },
 ];
 

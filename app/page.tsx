@@ -43,7 +43,7 @@ export default function HomePage() {
               </p>
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
                 <Link
-                  href="/contact"
+                  href="/enquiry"
                   className="rounded-full bg-accent px-6 py-3 text-center text-sm font-semibold text-brand-dark transition hover:bg-white"
                 >
                   {siteContent.home.primaryCta}
