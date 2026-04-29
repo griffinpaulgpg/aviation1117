@@ -30,15 +30,15 @@ export default function HomePage() {
             sizes="100vw"
           />
           <div className="via-brand-dark/82 to-brand-dark/36 absolute inset-0 bg-gradient-to-r from-brand-dark" />
-          <Container className="relative grid min-h-[calc(100vh-5rem)] items-center gap-10 py-20 lg:grid-cols-[1.05fr_0.95fr]">
-            <div className="home-glass p-6 sm:p-8">
+          <Container className="relative flex min-h-[calc(100vh-5rem)] flex-col justify-center gap-8 py-20">
+            <div className="home-glass p-6 sm:p-8 lg:p-10">
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">
                 Aviation training academy
               </p>
-              <h1 className="mt-5 max-w-4xl text-4xl font-semibold tracking-normal sm:text-6xl">
+              <h1 className="mt-5 max-w-5xl text-4xl font-semibold tracking-normal sm:text-6xl lg:text-7xl">
                 {siteContent.home.headline}
               </h1>
-              <p className="text-white/78 mt-6 max-w-2xl text-lg leading-8">
+              <p className="text-white/78 mt-6 max-w-3xl text-lg leading-8">
                 {siteContent.home.intro}
               </p>
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
@@ -56,7 +56,7 @@ export default function HomePage() {
                 </Link>
               </div>
             </div>
-            <div className="home-stat-grid grid grid-cols-2 gap-4">
+            <div className="home-stat-grid grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {siteContent.stats.map((stat) => (
                 <StatCard key={stat.label} value={stat.value} label={stat.label} />
               ))}
