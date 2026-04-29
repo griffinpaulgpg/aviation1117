@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+
 const enquirySources = [
   "Newspaper Ads",
   "Hoardings",
@@ -80,6 +84,8 @@ function FormSection({
 }
 
 export function EnquiryForm() {
+  const [showOtherSource, setShowOtherSource] = useState(false);
+
   return (
     <form className="grid gap-6" method="post">
       <FormSection title="Student Details">
@@ -140,11 +146,31 @@ export function EnquiryForm() {
                 name="enquirySource"
                 type="checkbox"
                 value={source}
+                onChange={
+                  source === "Other"
+                    ? (event) => setShowOtherSource(event.currentTarget.checked)
+                    : undefined
+                }
               />
               {source}
             </label>
           ))}
         </div>
+        {showOtherSource ? (
+          <div className="mt-5 grid gap-2">
+            <label className="text-sm font-semibold text-foreground" htmlFor="otherEnquirySource">
+              Other Source Details
+            </label>
+            <input
+              id="otherEnquirySource"
+              name="otherEnquirySource"
+              required
+              className="rounded-lg border border-border bg-white px-4 py-3 text-sm text-foreground outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/10"
+              placeholder="Please mention the source"
+              type="text"
+            />
+          </div>
+        ) : null}
       </fieldset>
 
       <FormSection title="Reference Details">
