@@ -12,22 +12,26 @@ const aboutParagraphs = [
   "We mold candidates through professional training that develops their skills, capabilities, communication, grooming, personality development, mock interviews, determination, teamwork, reliability, and politeness.",
 ];
 
-const reasons = [
+const chooseItems = [
   {
-    title: "Industry Experience",
-    description: "Led by aviation professionals with 15+ years of airline and airport expertise.",
+    title: "Our Vision",
+    description:
+      "To provide the best skills to young hearts from our training programs where we can see them standing as leaders in and around the world. Our mission is also to send our talented trainees/students across the world to work with top leading Airlines, Airports, and Ground Handling.",
   },
   {
-    title: "100% Placement Support",
-    description: "We help students build careers in aviation through placement assistance.",
+    title: "Training",
+    description:
+      "We provide our students with flight experience, airline and airport internships, and airport visits.",
   },
   {
-    title: "Professional Grooming",
-    description: "Communication skills, personality development, and interview preparation.",
+    title: "Our Mission",
+    description:
+      "Our mission is to provide 100% placement to our candidates in the aviation industry with high exposure and professional qualities in the aviation industry. Also we are proud that our biggest achievement is that we have placed all our students into the best in the Airline industry.",
   },
   {
-    title: "Practical Exposure",
-    description: "Airport visits, internships, aviation briefings, and real-world learning.",
+    title: "Placements",
+    description:
+      "Our biggest achievement is that we have placed all our students into the best in the Airline industry.",
   },
 ];
 
@@ -99,34 +103,30 @@ export default function AboutPage() {
 
         <section className="border-t border-border bg-white py-20">
           <Container>
-            <div className="text-center">
-              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand">
-                Why Choose Us
-              </p>
-              <h2 className="mt-3 text-3xl font-semibold tracking-normal text-foreground">
-                Training built around aviation careers.
-              </h2>
-            </div>
-            <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              {reasons.map((reason) => (
-                <article
-                  key={reason.title}
-                  className="rounded-lg border border-border bg-background p-6 shadow-sm"
-                >
-                  <h3 className="text-xl font-semibold text-foreground">{reason.title}</h3>
-                  <p className="mt-4 text-sm leading-7 text-muted">{reason.description}</p>
-                </article>
-              ))}
-            </div>
-            <div className="mt-10 rounded-lg border border-border bg-background p-4 shadow-sm">
-              <div className="relative aspect-[16/10] overflow-hidden rounded-lg bg-white">
-                <Image
-                  src="/aassc-certificate.png"
-                  alt="AASSC affiliation certificate"
-                  fill
-                  className="object-contain"
-                  sizes="100vw"
-                />
+            <h2 className="text-center text-3xl font-semibold tracking-normal text-foreground sm:text-5xl">
+              Why Choose Us
+            </h2>
+            <div className="mt-12 grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
+              <div className="grid gap-x-10 gap-y-14 sm:grid-cols-2">
+                {chooseItems.map((item) => (
+                  <article key={item.title}>
+                    <h3 className="text-3xl font-semibold tracking-normal text-foreground sm:text-4xl">
+                      {item.title}
+                    </h3>
+                    <p className="mt-6 text-base leading-7 text-foreground">{item.description}</p>
+                  </article>
+                ))}
+              </div>
+              <div className="rounded-lg border border-border bg-background p-4 shadow-sm">
+                <div className="relative aspect-[16/10] overflow-hidden rounded-lg bg-white">
+                  <Image
+                    src="/aassc-certificate.png"
+                    alt="AASSC affiliation certificate"
+                    fill
+                    className="object-contain"
+                    sizes="(min-width: 1024px) 52vw, 100vw"
+                  />
+                </div>
               </div>
             </div>
           </Container>
