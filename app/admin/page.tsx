@@ -6,7 +6,7 @@ import { SiteFrame } from "@/components/site-frame";
 export default function AdminLoginPage() {
   return (
     <SiteFrame>
-      <main className="py-20">
+      <main className="bg-white py-20">
         <Container className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand">
@@ -20,22 +20,22 @@ export default function AdminLoginPage() {
               from a polished admin experience.
             </p>
           </div>
-          <form className="surface-card p-6 sm:p-8">
+          <form className="rounded-lg border border-border bg-background p-6 shadow-sm sm:p-8">
             <h2 className="text-2xl font-semibold text-foreground">Admin Login</h2>
             <div className="mt-6 grid gap-4">
               <input
-                className="soft-input px-4 py-3 text-sm outline-none"
+                className="rounded-lg border border-border px-4 py-3 text-sm outline-none focus:border-brand"
                 placeholder="Admin email"
                 type="email"
               />
               <input
-                className="soft-input px-4 py-3 text-sm outline-none"
+                className="rounded-lg border border-border px-4 py-3 text-sm outline-none focus:border-brand"
                 placeholder="Password"
                 type="password"
               />
               <Link
                 href="/admin/dashboard"
-                className="rounded-full bg-brand-dark px-6 py-3 text-center text-sm font-semibold text-white transition hover:bg-brand"
+                className="rounded-full bg-brand px-6 py-3 text-center text-sm font-semibold text-white transition hover:bg-brand-dark"
               >
                 Open Dashboard
               </Link>

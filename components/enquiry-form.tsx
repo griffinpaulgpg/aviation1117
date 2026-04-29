@@ -36,7 +36,7 @@ function Field({
         type={type}
         required={required}
         autoComplete={autoComplete}
-        className="soft-input px-4 py-3 text-sm text-foreground outline-none"
+        className="rounded-lg border border-border bg-white px-4 py-3 text-sm text-foreground outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/10"
       />
     </div>
   );
@@ -62,7 +62,7 @@ function TextArea({
         name={id}
         required={required}
         rows={4}
-        className="soft-input resize-y px-4 py-3 text-sm text-foreground outline-none"
+        className="resize-y rounded-lg border border-border bg-white px-4 py-3 text-sm text-foreground outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/10"
       />
     </div>
   );
@@ -76,8 +76,8 @@ function FormSection({
   children: React.ReactNode;
 }>) {
   return (
-    <fieldset className="enquiry-section p-5 sm:p-6">
-      <legend className="px-4 py-1.5 text-sm font-semibold">{title}</legend>
+    <fieldset className="rounded-lg border border-border bg-white p-5 shadow-sm sm:p-6">
+      <legend className="px-2 text-lg font-semibold text-foreground">{title}</legend>
       <div className="mt-5 grid gap-5 md:grid-cols-2">{children}</div>
     </fieldset>
   );
@@ -87,7 +87,7 @@ export function EnquiryForm() {
   const [showOtherSource, setShowOtherSource] = useState(false);
 
   return (
-    <form className="enquiry-shell grid gap-6 p-4 sm:p-6 lg:p-8" method="post">
+    <form className="grid gap-6" method="post">
       <FormSection title="Student Details">
         <Field id="fullName" label="Full Name" required autoComplete="name" />
         <Field id="qualification" label="Qualification" required />
@@ -111,7 +111,7 @@ export function EnquiryForm() {
           <span className="text-sm font-semibold text-foreground">
             Gender <span className="text-brand">*</span>
           </span>
-          <div className="soft-input flex flex-wrap gap-3 px-4 py-3">
+          <div className="flex flex-wrap gap-3 rounded-lg border border-border bg-white px-4 py-3">
             {["Female", "Male", "Other"].map((gender) => (
               <label key={gender} className="flex items-center gap-2 text-sm text-muted">
                 <input
@@ -133,13 +133,13 @@ export function EnquiryForm() {
         <Field id="guardianOccupation" label="Occupation" />
       </FormSection>
 
-      <fieldset className="enquiry-section p-5 sm:p-6">
-        <legend className="px-4 py-1.5 text-sm font-semibold">Enquiry Source</legend>
+      <fieldset className="rounded-lg border border-border bg-white p-5 shadow-sm sm:p-6">
+        <legend className="px-2 text-lg font-semibold text-foreground">Enquiry Source</legend>
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {enquirySources.map((source) => (
             <label
               key={source}
-              className="soft-choice flex items-center gap-3 px-4 py-3 text-sm font-medium text-foreground"
+              className="flex items-center gap-3 rounded-lg border border-border bg-background px-4 py-3 text-sm font-medium text-foreground"
             >
               <input
                 className="h-4 w-4 rounded accent-brand"
@@ -165,7 +165,7 @@ export function EnquiryForm() {
               id="otherEnquirySource"
               name="otherEnquirySource"
               required
-              className="soft-input px-4 py-3 text-sm text-foreground outline-none"
+              className="rounded-lg border border-border bg-white px-4 py-3 text-sm text-foreground outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/10"
               placeholder="Please mention the source"
               type="text"
             />
@@ -181,14 +181,14 @@ export function EnquiryForm() {
         </div>
       </FormSection>
 
-      <div className="enquiry-submit-panel flex flex-col justify-between gap-4 rounded-2xl p-5 text-white sm:flex-row sm:items-center">
+      <div className="flex flex-col justify-between gap-4 rounded-lg bg-brand-dark p-5 text-white sm:flex-row sm:items-center">
         <p className="text-white/72 text-sm leading-6">
           Fields marked with <span className="text-accent">*</span> are ready for required-field
           validation.
         </p>
         <button
           type="submit"
-          className="rounded-full bg-white px-7 py-3 text-sm font-semibold text-brand-dark transition hover:bg-accent"
+          className="rounded-full bg-accent px-7 py-3 text-sm font-semibold text-brand-dark transition hover:bg-white"
         >
           Submit Enquiry
         </button>

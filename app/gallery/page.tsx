@@ -19,7 +19,7 @@ export default function GalleryPage() {
             {siteContent.gallery.map((item) => (
               <figure
                 key={item.title}
-                className="surface-card overflow-hidden transition hover:-translate-y-1 hover:shadow-xl"
+                className="overflow-hidden rounded-lg border border-border bg-white"
               >
                 <div className="relative aspect-[4/3]">
                   <Image

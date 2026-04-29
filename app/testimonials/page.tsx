@@ -17,7 +17,7 @@ export default function TestimonialsPage() {
             {siteContent.testimonials.map((testimonial) => (
               <figure
                 key={testimonial.name}
-                className="surface-card p-6 transition hover:-translate-y-1 hover:shadow-xl"
+                className="rounded-lg border border-border bg-white p-6 shadow-sm"
               >
                 <blockquote className="text-base leading-8 text-muted">
                   “{testimonial.quote}”

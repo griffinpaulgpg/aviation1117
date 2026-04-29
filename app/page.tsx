@@ -10,9 +10,9 @@ import { siteContent } from "@/lib/site-content";
 const offeredCourses = [
   "Cabin Crew",
   "Ground Handling",
-  "Airport Operations",
-  "Airline Operations",
   "Hospitality",
+  "Airline Operations",
+  "Airport Operations",
   "Air Cargo & Logistics",
 ];
 
@@ -44,7 +44,7 @@ export default function HomePage() {
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
                 <Link
                   href="/enquiry"
-                  className="rounded-full bg-white px-6 py-3 text-center text-sm font-semibold text-brand-dark transition hover:bg-accent"
+                  className="rounded-full bg-accent px-6 py-3 text-center text-sm font-semibold text-brand-dark transition hover:bg-white"
                 >
                   {siteContent.home.primaryCta}
                 </Link>
@@ -90,7 +90,7 @@ export default function HomePage() {
         </section>
 
         <section className="home-courses-section py-20 sm:py-24">
-          <Container className="home-panel grid gap-12 bg-white/80 p-6 sm:p-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
+          <Container className="home-panel grid gap-12 bg-[#f0f2f4]/80 p-6 sm:p-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
             <div>
               <div className="home-color-strip mb-7 h-2 w-28 rounded-full" />
               <p className="text-lg font-semibold text-brand">Courses we offer</p>
@@ -99,7 +99,7 @@ export default function HomePage() {
               </h2>
               <Link
                 href="/courses"
-                className="mt-8 inline-flex rounded-full bg-brand-dark px-7 py-4 text-sm font-semibold tracking-[0.2em] text-white transition hover:bg-brand"
+                className="mt-8 inline-flex rounded-lg bg-brand px-7 py-4 text-sm font-semibold tracking-[0.2em] text-white transition hover:bg-brand-dark"
               >
                 About Us
               </Link>
@@ -160,22 +160,10 @@ export default function HomePage() {
                 <p className="mt-8 text-3xl leading-tight text-foreground">
                   An Aviation Academy With Focus On
                 </p>
-                <div className="mx-auto mt-8 grid max-w-sm gap-3 text-left">
-                  {[
-                    "Cabin Crew",
-                    "Ground Handling",
-                    "Airport Operations",
-                    "Airline Operations",
-                    "Hospitality",
-                  ].map((focus) => (
-                    <p
-                      key={focus}
-                      className="rounded-full bg-white/80 px-5 py-3 text-lg font-semibold text-brand-dark shadow-sm"
-                    >
-                      {focus}
-                    </p>
-                  ))}
-                </div>
+                <p className="mt-8 text-3xl font-semibold leading-tight text-foreground">
+                  Cabin Crew | Ground Handling | Airport Operations | Airline Operations |
+                  Hospitality
+                </p>
               </div>
               <div className="home-photo-lift relative min-h-72 overflow-hidden rounded-xl">
                 <Image

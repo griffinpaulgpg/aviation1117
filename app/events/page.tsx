@@ -17,7 +17,7 @@ export default function EventsPage() {
             {siteContent.events.map((event) => (
               <article
                 key={event.title}
-                className="surface-card p-6 transition hover:-translate-y-1 hover:shadow-xl"
+                className="rounded-lg border border-border bg-white p-6 shadow-sm"
               >
                 <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand">
                   {event.date}
