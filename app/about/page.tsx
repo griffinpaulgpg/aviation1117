@@ -1,5 +1,4 @@
 import Image from "next/image";
-import Link from "next/link";
 
 import { Container } from "@/components/container";
 import { SiteFrame } from "@/components/site-frame";
@@ -35,7 +34,7 @@ const reasons = [
 
 const leaders = [
   {
-    initials: "NV",
+    image: "/nandakumar-v.png",
     name: "Nandakumar V",
     role: "Founder & Aviation Industry Expert",
     paragraphs: [
@@ -44,7 +43,7 @@ const leaders = [
     ],
   },
   {
-    initials: "A",
+    image: "/aruna.png",
     name: "Aruna",
     role: "Managing Director Academic",
     paragraphs: [
@@ -119,6 +118,17 @@ export default function AboutPage() {
                 </article>
               ))}
             </div>
+            <div className="mt-10 rounded-lg border border-border bg-background p-4 shadow-sm">
+              <div className="relative aspect-[16/10] overflow-hidden rounded-lg bg-white">
+                <Image
+                  src="/aassc-certificate.png"
+                  alt="AASSC affiliation certificate"
+                  fill
+                  className="object-contain"
+                  sizes="100vw"
+                />
+              </div>
+            </div>
           </Container>
         </section>
 
@@ -139,8 +149,14 @@ export default function AboutPage() {
                   className="rounded-lg border border-border bg-white p-6 shadow-sm sm:p-8"
                 >
                   <div className="grid gap-6 sm:grid-cols-[10rem_1fr] sm:items-start">
-                    <div className="flex aspect-[4/3] items-center justify-center rounded-lg border border-border bg-background text-3xl font-semibold text-brand-dark">
-                      {leader.initials}
+                    <div className="relative aspect-[4/3] overflow-hidden rounded-lg border border-border bg-background">
+                      <Image
+                        src={leader.image}
+                        alt={`${leader.name} owner photo`}
+                        fill
+                        className="object-cover"
+                        sizes="10rem"
+                      />
                     </div>
                     <div>
                       <h3 className="text-2xl font-semibold text-foreground">{leader.name}</h3>
@@ -156,22 +172,6 @@ export default function AboutPage() {
                   </div>
                 </article>
               ))}
-            </div>
-          </Container>
-        </section>
-
-        <section className="pb-20">
-          <Container>
-            <div className="rounded-lg bg-brand-dark p-6 text-center text-white shadow-sm sm:p-8">
-              <h2 className="text-3xl font-semibold tracking-normal">
-                Start Your Aviation Career Journey Today
-              </h2>
-              <Link
-                href="/contact"
-                className="mt-6 inline-flex rounded-full bg-accent px-7 py-3 text-sm font-semibold text-brand-dark transition hover:bg-white"
-              >
-                Contact Us
-              </Link>
             </div>
           </Container>
         </section>
