@@ -77,10 +77,8 @@ export const siteContent = {
     eyebrow: "Affiliated training partner with AASSC",
     title: "Arunand's Aviation Academy",
     body: [
-      "We would like to take this opportunity to introduce Arunand's Aviation Academy. We are situated in the Silicon Valley of India, Bangalore. Arunand's Aviation Academy offers Aviation and Air Cargo Certificate courses.",
-      "We are former airline employees with 15+ years of extensive experience in the field of the airline, cargo, catering, safety and security, intelligence vigilance, and airport operations. With our extensive knowledge of airline and airport operations, we have placed all our students to succeed.",
-      "Arunand's Aviation Academy is an experienced, ambitious, and rapidly expanding aviation training academy that focuses on providing the best aviation courses to trainees. After successfully completing training, Arunand's Aviation Academy also specializes in providing 100% jobs with a variety of career options.",
-      "We mold our candidates with the necessary training and develop their skills and capabilities, which helps the candidates achieve their future goals and get placed in the best in the industry. We provide candidates with reliability, grooming, communication skills, personality development, mock interviews, determination, team player skills, and politeness.",
+      "Arunand's Aviation Academy is based in Bangalore, the Silicon Valley of India, and offers Aviation and Air Cargo Certificate courses. The academy is led by former airline employees with 15+ years of experience across airline operations, cargo, catering, safety and security, intelligence vigilance, and airport operations.",
+      "As an experienced and rapidly expanding aviation training academy, we focus on practical aviation courses, career guidance, and placement support. We train candidates in reliability, grooming, communication skills, personality development, mock interviews, determination, teamwork, and professional conduct so they can reach their future goals.",
     ],
   },
   highlights: [
