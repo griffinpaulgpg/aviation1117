@@ -3,7 +3,16 @@ import { EnquiryForm } from "@/components/enquiry-form";
 import { PageHero } from "@/components/page-hero";
 import { SiteFrame } from "@/components/site-frame";
 
-export default function EnquiryPage() {
+type EnquiryPageProps = {
+  searchParams?: Promise<{
+    course?: string | string[];
+  }>;
+};
+
+export default async function EnquiryPage({ searchParams }: EnquiryPageProps) {
+  const params = await searchParams;
+  const selectedCourse = Array.isArray(params?.course) ? params.course[0] : params?.course;
+
   return (
     <SiteFrame>
       <main>
@@ -14,7 +23,7 @@ export default function EnquiryPage() {
         />
         <section className="py-20">
           <Container>
-            <EnquiryForm />
+            <EnquiryForm initialCourse={selectedCourse} />
           </Container>
         </section>
       </main>

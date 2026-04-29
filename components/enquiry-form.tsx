@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { siteContent } from "@/lib/site-content";
 
@@ -87,15 +87,15 @@ function FormSection({
   );
 }
 
-export function EnquiryForm() {
+type EnquiryFormProps = {
+  initialCourse?: string;
+};
+
+export function EnquiryForm({ initialCourse }: EnquiryFormProps) {
   const [showOtherSource, setShowOtherSource] = useState(false);
-  const [selectedCourse, setSelectedCourse] = useState("None");
-
-  useEffect(() => {
-    const course = new URLSearchParams(window.location.search).get("course") || "None";
-
-    setSelectedCourse(courseOptions.includes(course) ? course : "None");
-  }, []);
+  const [selectedCourse, setSelectedCourse] = useState(
+    initialCourse && courseOptions.includes(initialCourse) ? initialCourse : "None",
+  );
 
   return (
     <form className="grid gap-6" method="post">
