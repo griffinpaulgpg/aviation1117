@@ -160,6 +160,61 @@ a {
   background: linear-gradient(90deg, hsl(var(--brand)), hsl(var(--accent)), #5fc6dc);
 }
 
+.home-about-section {
+  background:
+    radial-gradient(circle at 0% 10%, rgb(30 123 157 / 18%), transparent 24rem),
+    linear-gradient(180deg, rgb(255 255 255 / 72%), rgb(238 246 251 / 78%));
+}
+
+.home-about-section .home-panel {
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 94%), rgb(235 247 252 / 86%)),
+    radial-gradient(circle at 96% 12%, rgb(245 179 55 / 16%), transparent 18rem);
+}
+
+.home-courses-section {
+  background:
+    linear-gradient(135deg, rgb(245 179 55 / 20%), transparent 36%),
+    linear-gradient(180deg, #f8fbff 0%, #eef4f7 100%);
+}
+
+.home-courses-section .home-panel {
+  background:
+    radial-gradient(circle at 14% 20%, rgb(245 179 55 / 22%), transparent 16rem),
+    linear-gradient(135deg, rgb(255 255 255 / 92%), rgb(235 243 249 / 86%));
+}
+
+.home-affiliation-section {
+  background:
+    radial-gradient(circle at 88% 18%, rgb(30 123 157 / 18%), transparent 26rem),
+    linear-gradient(180deg, #f9fbfd 0%, #edf7f9 100%);
+}
+
+.home-services-section {
+  background:
+    radial-gradient(circle at 8% 0%, rgb(245 179 55 / 20%), transparent 18rem),
+    radial-gradient(circle at 92% 20%, rgb(37 145 186 / 20%), transparent 20rem),
+    linear-gradient(180deg, #f7fbff 0%, #eef6fb 100%);
+}
+
+.home-services-section .home-course-card:nth-child(3n + 1) {
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 94%), rgb(239 249 252 / 86%)),
+    radial-gradient(circle at 100% 0%, rgb(37 145 186 / 18%), transparent 10rem);
+}
+
+.home-services-section .home-course-card:nth-child(3n + 2) {
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 94%), rgb(255 249 237 / 88%)),
+    radial-gradient(circle at 100% 0%, rgb(245 179 55 / 18%), transparent 10rem);
+}
+
+.home-services-section .home-course-card:nth-child(3n + 3) {
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 94%), rgb(241 246 255 / 88%)),
+    radial-gradient(circle at 100% 0%, rgb(72 101 174 / 14%), transparent 10rem);
+}
+
 .flow-stage {
   perspective: 1200px;
 }

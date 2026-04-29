@@ -64,7 +64,7 @@ export default function HomePage() {
           </Container>
         </section>
 
-        <section className="py-20 sm:py-24">
+        <section className="home-about-section py-20 sm:py-24">
           <Container className="home-panel grid gap-10 p-6 sm:p-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
             <div className="home-photo-contain home-photo-lift relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-xl p-3">
               <Image
@@ -77,7 +77,9 @@ export default function HomePage() {
               />
             </div>
             <div className="mx-auto max-w-2xl lg:mx-0">
-              <SectionHeading eyebrow={siteContent.about.eyebrow} title={siteContent.about.title} />
+              <h2 className="text-3xl font-semibold tracking-normal text-foreground sm:text-4xl">
+                {siteContent.about.title}
+              </h2>
               <div className="mt-6 space-y-4 text-base leading-7 text-muted">
                 {siteContent.about.body.map((paragraph) => (
                   <p key={paragraph}>{paragraph}</p>
@@ -87,7 +89,7 @@ export default function HomePage() {
           </Container>
         </section>
 
-        <section className="py-20 sm:py-24">
+        <section className="home-courses-section py-20 sm:py-24">
           <Container className="home-panel grid gap-12 bg-[#f0f2f4]/80 p-6 sm:p-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
             <div>
               <div className="home-color-strip mb-7 h-2 w-28 rounded-full" />
@@ -118,7 +120,7 @@ export default function HomePage() {
           </Container>
         </section>
 
-        <section className="py-20 sm:py-24">
+        <section className="home-affiliation-section py-20 sm:py-24">
           <Container className="grid gap-12">
             <div className="home-logo-band rounded-2xl p-5 sm:p-8">
               <div className="grid gap-4 rounded-xl bg-white p-8 text-center sm:grid-cols-3 sm:items-center">
@@ -176,7 +178,7 @@ export default function HomePage() {
           </Container>
         </section>
 
-        <section className="py-20 sm:py-24">
+        <section className="home-services-section py-20 sm:py-24">
           <Container>
             <SectionHeading
               eyebrow="Services"
