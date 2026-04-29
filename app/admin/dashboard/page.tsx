@@ -6,7 +6,7 @@ import { Container } from "@/components/container";
 export default function AdminDashboardPage() {
   return (
     <main className="min-h-screen bg-brand-dark">
-      <header className="border-b border-white/10 text-white">
+      <header className="border-b border-white/10 bg-white/5 text-white backdrop-blur">
         <Container className="flex min-h-20 items-center justify-between gap-6 py-4">
           <div>
             <p className="text-sm text-white/60">Arunand&apos;s Aviation Academy</p>
@@ -22,7 +22,7 @@ export default function AdminDashboardPage() {
       </header>
       <section className="py-10">
         <Container>
-          <div className="border-white/14 mb-8 rounded-lg border bg-white/10 p-6 text-white shadow-2xl shadow-black/10">
+          <div className="border-white/14 mb-8 rounded-2xl border bg-white/10 p-6 text-white shadow-2xl shadow-black/10 backdrop-blur">
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">
               Website Control Center
             </p>

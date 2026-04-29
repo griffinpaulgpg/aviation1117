@@ -94,7 +94,7 @@ export function AdminConsole() {
         ].map(([label, value]) => (
           <div
             key={label}
-            className="border-white/14 rounded-lg border bg-white/10 p-5 text-white shadow-2xl shadow-black/10"
+            className="border-white/14 rounded-2xl border bg-white/10 p-5 text-white shadow-2xl shadow-black/10 backdrop-blur"
           >
             <p className="text-3xl font-semibold">{value}</p>
             <p className="mt-2 text-sm text-white/70">{label}</p>
@@ -102,7 +102,7 @@ export function AdminConsole() {
         ))}
       </section>
 
-      <section className="rounded-lg border border-border bg-white p-6 shadow-sm">
+      <section className="surface-card p-6">
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand">
@@ -110,16 +110,13 @@ export function AdminConsole() {
             </p>
             <h2 className="mt-2 text-2xl font-semibold text-foreground">Student inbox</h2>
           </div>
-          <button className="rounded-full bg-brand px-5 py-3 text-sm font-semibold text-white">
+          <button className="rounded-full bg-brand-dark px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand">
             Export Leads
           </button>
         </div>
         <div className="mt-6 grid gap-3">
           {enquiries.map((enquiry) => (
-            <div
-              key={enquiry.name}
-              className="grid gap-2 rounded-lg border border-border bg-background p-4 md:grid-cols-3"
-            >
+            <div key={enquiry.name} className="surface-card-alt grid gap-2 p-4 md:grid-cols-3">
               <p className="font-semibold text-foreground">{enquiry.name}</p>
               <p className="text-sm text-muted">{enquiry.interest}</p>
               <p className="text-sm font-semibold text-brand">{enquiry.status}</p>
@@ -133,12 +130,12 @@ export function AdminConsole() {
           const collection = collections[name];
 
           return (
-            <article key={name} className="rounded-lg border border-border bg-white p-6 shadow-sm">
+            <article key={name} className="surface-card p-6">
               <h2 className="text-2xl font-semibold text-foreground">{collection.title}</h2>
               <p className="mt-2 text-sm leading-6 text-muted">{collection.description}</p>
               <div className="mt-5 flex gap-3">
                 <input
-                  className="min-w-0 flex-1 rounded-lg border border-border px-4 py-3 text-sm outline-none focus:border-brand"
+                  className="soft-input min-w-0 flex-1 px-4 py-3 text-sm outline-none"
                   value={drafts[name]}
                   onChange={(event) =>
                     setDrafts((current) => ({ ...current, [name]: event.target.value }))
@@ -146,7 +143,7 @@ export function AdminConsole() {
                   placeholder={`Add ${collection.title.toLowerCase()}`}
                 />
                 <button
-                  className="rounded-full bg-brand px-5 py-3 text-sm font-semibold text-white"
+                  className="rounded-full bg-brand-dark px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand"
                   onClick={() => addItem(name)}
                   type="button"
                 >
@@ -157,7 +154,7 @@ export function AdminConsole() {
                 {collection.items.map((item) => (
                   <div
                     key={item}
-                    className="flex items-center justify-between gap-4 rounded-lg border border-border bg-background p-4"
+                    className="surface-card-alt flex items-center justify-between gap-4 p-4"
                   >
                     <p className="text-sm font-medium text-foreground">{item}</p>
                     <button

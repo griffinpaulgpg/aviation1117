@@ -16,7 +16,7 @@ export default function ContactPage() {
         />
         <section className="py-20">
           <Container className="grid gap-6">
-            <div className="rounded-lg border border-border bg-white p-6 shadow-sm sm:p-8">
+            <div className="surface-card p-6 sm:p-8">
               <div className="grid gap-5 md:grid-cols-[1fr_auto] md:items-center">
                 <div>
                   <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand">
@@ -32,7 +32,7 @@ export default function ContactPage() {
                 </div>
                 <Link
                   href="/enquiry"
-                  className="rounded-full bg-brand px-6 py-3 text-center text-sm font-semibold text-white transition hover:bg-brand-dark"
+                  className="rounded-full bg-brand-dark px-6 py-3 text-center text-sm font-semibold text-white transition hover:bg-brand"
                 >
                   Open Enquiry Form
                 </Link>

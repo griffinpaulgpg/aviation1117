@@ -14,8 +14,8 @@ const footerLinks = [
 
 export function Footer() {
   return (
-    <footer className="bg-brand-dark py-12 text-white">
-      <Container className="grid gap-8 md:grid-cols-[1.3fr_1fr]">
+    <footer className="site-footer py-12 text-white">
+      <Container className="relative grid gap-8 md:grid-cols-[1.3fr_1fr]">
         <div>
           <p className="text-xl font-semibold">{siteContent.meta.name}</p>
           <p className="text-white/72 mt-4 max-w-xl text-sm leading-6">
@@ -34,7 +34,7 @@ export function Footer() {
           </div>
         </div>
       </Container>
-      <Container className="mt-10 border-t border-white/10 pt-6 text-sm text-white/60">
+      <Container className="relative mt-10 border-t border-white/10 pt-6 text-sm text-white/60">
         © Arunand&apos;s Aviation Academy. All rights reserved.
       </Container>
     </footer>

@@ -23,7 +23,7 @@ export default function CoursesPage() {
             </div>
           </Container>
         </section>
-        <section className="border-t border-border bg-white py-20">
+        <section className="border-t border-border/70 bg-white/70 py-20">
           <Container>
             <ThreeDFlow
               items={[

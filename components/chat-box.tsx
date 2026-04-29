@@ -4,7 +4,7 @@ import { siteContent } from "@/lib/site-content";
 
 export function ChatBox() {
   return (
-    <section className="rounded-lg border border-border bg-white p-6 shadow-sm sm:p-8">
+    <section className="surface-card p-6 sm:p-8">
       <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand">
@@ -20,22 +20,22 @@ export function ChatBox() {
         </div>
         <form className="grid gap-4">
           <input
-            className="rounded-lg border border-border px-4 py-3 text-sm outline-none focus:border-brand"
+            className="soft-input px-4 py-3 text-sm outline-none"
             placeholder="Your name"
             type="text"
           />
           <input
-            className="rounded-lg border border-border px-4 py-3 text-sm outline-none focus:border-brand"
+            className="soft-input px-4 py-3 text-sm outline-none"
             placeholder="Phone or email"
             type="text"
           />
           <textarea
-            className="min-h-28 rounded-lg border border-border px-4 py-3 text-sm outline-none focus:border-brand"
+            className="soft-input min-h-28 px-4 py-3 text-sm outline-none"
             placeholder="Course, batch, or admission question"
           />
           <Link
             href={`mailto:${siteContent.contact.email}`}
-            className="rounded-full bg-brand px-6 py-3 text-center text-sm font-semibold text-white transition hover:bg-brand-dark"
+            className="rounded-full bg-brand-dark px-6 py-3 text-center text-sm font-semibold text-white transition hover:bg-brand"
           >
             Send Enquiry
           </Link>
