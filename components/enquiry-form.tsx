@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+import { siteContent } from "@/lib/site-content";
 
 const enquirySources = [
   "Newspaper Ads",
@@ -10,6 +12,8 @@ const enquirySources = [
   "Seminar",
   "Other",
 ];
+
+const courseOptions = ["None", ...siteContent.courses.map((course) => course.title)];
 
 function Field({
   id,
@@ -85,6 +89,13 @@ function FormSection({
 
 export function EnquiryForm() {
   const [showOtherSource, setShowOtherSource] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState("None");
+
+  useEffect(() => {
+    const course = new URLSearchParams(window.location.search).get("course") || "None";
+
+    setSelectedCourse(courseOptions.includes(course) ? course : "None");
+  }, []);
 
   return (
     <form className="grid gap-6" method="post">
@@ -92,6 +103,28 @@ export function EnquiryForm() {
         <Field id="fullName" label="Full Name" required autoComplete="name" />
         <Field id="qualification" label="Qualification" required />
         <Field id="schoolCollege" label="School/College" required />
+      </FormSection>
+
+      <FormSection title="Course Details">
+        <div className="grid gap-2 md:col-span-2">
+          <label className="text-sm font-semibold text-foreground" htmlFor="selectedCourse">
+            Course <span className="text-brand">*</span>
+          </label>
+          <select
+            id="selectedCourse"
+            name="selectedCourse"
+            required
+            value={selectedCourse}
+            onChange={(event) => setSelectedCourse(event.currentTarget.value)}
+            className="rounded-lg border border-border bg-white px-4 py-3 text-sm text-foreground outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/10"
+          >
+            {courseOptions.map((course) => (
+              <option key={course} value={course}>
+                {course}
+              </option>
+            ))}
+          </select>
+        </div>
       </FormSection>
 
       <FormSection title="Address Details">
