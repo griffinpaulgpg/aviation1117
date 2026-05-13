@@ -1,4 +1,5 @@
 import { Footer } from "@/components/footer";
+import { FloatingChatbot } from "@/components/floating-chatbot";
 import { FloatingWhatsAppButton } from "@/components/floating-whatsapp-button";
 import { Header } from "@/components/header";
 
@@ -12,6 +13,7 @@ export function SiteFrame({ children }: SiteFrameProps) {
       <Header />
       {children}
       <Footer />
+      <FloatingChatbot />
       <FloatingWhatsAppButton />
     </>
   );

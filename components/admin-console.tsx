@@ -44,6 +44,7 @@ const tabs: Array<{ key: TabName; label: string }> = [
   { key: "gallery", label: "Gallery" },
   { key: "testimonials", label: "Testimonials" },
   { key: "enquiries", label: "Enquiries" },
+  { key: "chatbot", label: "Chatbot" },
   { key: "whatsapp", label: "WhatsApp" },
   { key: "faculty", label: "Faculty Accounts" },
   { key: "admins", label: "Admin Accounts" },
