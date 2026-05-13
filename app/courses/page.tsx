@@ -3,27 +3,31 @@ import { CourseCard } from "@/components/course-card";
 import { PageHero } from "@/components/page-hero";
 import { SiteFrame } from "@/components/site-frame";
 import { ThreeDFlow } from "@/components/three-d-flow";
-import { siteContent } from "@/lib/site-content";
+import { getPublicCourses } from "@/lib/content-data";
 
-export default function CoursesPage() {
+export const dynamic = "force-dynamic";
+
+export default async function CoursesPage() {
+  const courses = await getPublicCourses();
+
   return (
     <SiteFrame>
-      <main>
+      <main className="site-sky">
         <PageHero
           eyebrow="Courses"
           title="Career-focused aviation courses."
           description="Explore training programs for cabin crew, ground handling, hospitality, airline operations, airport operations, and logistics management."
         />
-        <section className="py-20">
+        <section className="aviation-section py-20">
           <Container>
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-              {siteContent.courses.map((course) => (
+              {courses.map((course) => (
                 <CourseCard key={course.title} course={course} />
               ))}
             </div>
           </Container>
         </section>
-        <section className="border-t border-border bg-white py-20">
+        <section className="aviation-section bg-white/62 border-t border-white/70 py-20">
           <Container>
             <ThreeDFlow
               items={[

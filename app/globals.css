@@ -3,13 +3,19 @@
 @tailwind utilities;
 
 :root {
-  --background: 42 38% 97%;
-  --foreground: 218 30% 13%;
-  --muted: 216 12% 43%;
-  --border: 214 18% 86%;
-  --brand: 199 88% 33%;
-  --brand-dark: 219 44% 18%;
-  --accent: 37 92% 52%;
+  --background: 204 100% 96%;
+  --foreground: 220 49% 8%;
+  --muted: 220 9% 43%;
+  --border: 209 32% 87%;
+  --brand: 202 73% 58%;
+  --brand-dark: 220 49% 8%;
+  --accent: 200 87% 64%;
+  --cloud: 210 27% 97%;
+  --sky-glow: 202 89% 78%;
+  --silver: 214 18% 91%;
+  --font-body: Inter, "Helvetica Neue", Arial, sans-serif;
+  --font-heading: "Aptos Display", "Segoe UI", Arial, sans-serif;
+  --font-ui: "Segoe UI", Inter, Arial, sans-serif;
 }
 
 * {
@@ -17,14 +23,47 @@
 }
 
 html {
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
 }
 
 body {
   min-height: 100vh;
   margin: 0;
-  background: hsl(var(--background));
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at 9% 2%, hsl(var(--sky-glow) / 0.26), transparent 24rem),
+    radial-gradient(circle at 92% 10%, rgb(255 255 255 / 82%), transparent 20rem),
+    radial-gradient(circle at 78% 46%, hsl(var(--silver) / 0.58), transparent 30rem),
+    linear-gradient(180deg, #ffffff 0%, hsl(var(--background)) 42%, #f4f7fa 100%);
   color: hsl(var(--foreground));
+  font-family: var(--font-body);
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-heading);
+  letter-spacing: 0;
+}
+
+h4,
+h5,
+h6,
+nav,
+button,
+input,
+textarea,
+select,
+label,
+legend,
+.premium-button {
+  font-family: var(--font-ui);
+}
+
+img,
+video {
+  max-width: 100%;
 }
 
 a {
@@ -32,14 +71,346 @@ a {
   text-decoration: none;
 }
 
+::selection {
+  background: rgb(93 173 226 / 28%);
+  color: hsl(var(--brand-dark));
+}
+
+.site-sky {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 8% 4%, hsl(var(--sky-glow) / 0.24), transparent 21rem),
+    radial-gradient(circle at 88% 2%, rgb(255 255 255 / 86%), transparent 21rem),
+    radial-gradient(circle at 72% 36%, hsl(var(--silver) / 0.46), transparent 29rem),
+    linear-gradient(180deg, #ffffff 0%, #eaf6ff 46%, #f4f7fa 100%);
+}
+
+.site-sky::before,
+.site-sky::after {
+  position: absolute;
+  z-index: 0;
+  content: "";
+  pointer-events: none;
+}
+
+.site-sky::before {
+  inset: 0;
+  background:
+    linear-gradient(112deg, transparent 0 38%, rgb(93 173 226 / 9%) 38% 38.35%, transparent 38.35%),
+    linear-gradient(68deg, transparent 0 67%, rgb(11 19 32 / 5%) 67% 67.2%, transparent 67.2%);
+  opacity: 0.55;
+}
+
+.site-sky::after {
+  top: 10rem;
+  right: -8rem;
+  width: min(44rem, 82vw);
+  aspect-ratio: 2.6;
+  border: 1px solid rgb(93 173 226 / 16%);
+  border-left-color: transparent;
+  border-radius: 999px;
+  opacity: 0.58;
+  transform: rotate(-14deg);
+}
+
+.site-sky > * {
+  position: relative;
+  z-index: 1;
+}
+
+.aviation-section {
+  position: relative;
+  isolation: isolate;
+}
+
+.aviation-section::before {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  content: "";
+  background:
+    linear-gradient(115deg, transparent 0 42%, rgb(93 173 226 / 7%) 42% 43%, transparent 43%),
+    radial-gradient(circle at 12% 16%, rgb(255 255 255 / 74%), transparent 16rem);
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+.aviation-section::after {
+  position: absolute;
+  inset: auto 6% -1px 6%;
+  z-index: 0;
+  height: 1px;
+  content: "";
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(93 173 226 / 20%),
+    rgb(255 255 255 / 72%),
+    transparent
+  );
+  pointer-events: none;
+}
+
+.aviation-section > * {
+  position: relative;
+  z-index: 1;
+}
+
+.premium-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgb(217 226 236 / 82%);
+  border-radius: 1.25rem;
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 96%), rgb(244 247 250 / 88%)),
+    radial-gradient(circle at 100% 0%, rgb(93 173 226 / 13%), transparent 14rem);
+  box-shadow:
+    0 14px 34px rgb(11 19 32 / 8%),
+    0 22px 56px rgb(93 173 226 / 6%),
+    inset 0 1px 0 rgb(255 255 255 / 82%);
+  transform: translateZ(0);
+  transition:
+    transform 170ms ease,
+    box-shadow 170ms ease,
+    border-color 170ms ease;
+}
+
+.premium-card::before {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background: linear-gradient(135deg, rgb(255 255 255 / 45%), transparent 42%);
+  pointer-events: none;
+}
+
+.premium-card:hover {
+  border-color: rgb(93 173 226 / 42%);
+  box-shadow:
+    0 20px 46px rgb(11 19 32 / 11%),
+    0 26px 70px rgb(93 173 226 / 10%),
+    inset 0 1px 0 rgb(255 255 255 / 88%);
+  transform: translateY(-4px);
+}
+
+.premium-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.premium-card img,
+.premium-card video {
+  transition: transform 260ms ease;
+}
+
+.premium-card:hover img,
+.premium-card:hover video {
+  transform: scale(1.025);
+}
+
+.footer-glass {
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 1.25rem;
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 13%), rgb(255 255 255 / 6%)),
+    radial-gradient(circle at 100% 0%, rgb(93 173 226 / 18%), transparent 14rem),
+    radial-gradient(circle at 0% 100%, rgb(255 255 255 / 8%), transparent 13rem);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 12%);
+  backdrop-filter: none;
+}
+
+.premium-button {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  box-shadow:
+    0 14px 32px rgb(11 19 32 / 14%),
+    0 0 0 1px rgb(255 255 255 / 12%) inset;
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease,
+    background-color 150ms ease,
+    border-color 150ms ease;
+}
+
+.premium-button::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  background: linear-gradient(
+    115deg,
+    transparent 0 35%,
+    rgb(255 255 255 / 34%) 48%,
+    transparent 62%
+  );
+  opacity: 0;
+  transform: translateX(-70%);
+  transition:
+    opacity 190ms ease,
+    transform 520ms ease;
+}
+
+.premium-button:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 20px 44px rgb(11 19 32 / 18%),
+    0 0 32px rgb(93 173 226 / 22%);
+}
+
+.premium-button:hover::before {
+  opacity: 1;
+  transform: translateX(70%);
+}
+
+.reveal-on-scroll {
+  opacity: 1;
+}
+
+.page-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 14% 16%, rgb(93 173 226 / 32%), transparent 18rem),
+    radial-gradient(circle at 84% 6%, rgb(255 255 255 / 22%), transparent 20rem),
+    radial-gradient(circle at 74% 70%, rgb(93 173 226 / 18%), transparent 20rem),
+    linear-gradient(135deg, #0b1320 0%, #1d344d 52%, #eaf6ff 168%);
+}
+
+.page-hero::before {
+  position: absolute;
+  inset: -20% -10%;
+  z-index: -2;
+  content: "";
+  background:
+    linear-gradient(110deg, transparent 0 44%, rgb(255 255 255 / 13%) 44% 45%, transparent 45%),
+    linear-gradient(70deg, transparent 0 62%, rgb(93 173 226 / 14%) 62% 63%, transparent 63%);
+}
+
+.page-hero::after {
+  position: absolute;
+  right: clamp(1.5rem, 8vw, 8rem);
+  bottom: clamp(2rem, 10vw, 7rem);
+  z-index: -1;
+  width: min(34rem, 56vw);
+  height: min(18rem, 30vw);
+  content: "";
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 28% 35%, rgb(255 255 255 / 34%), transparent 1.7rem),
+    radial-gradient(circle at 46% 30%, rgb(255 255 255 / 28%), transparent 2.4rem),
+    radial-gradient(circle at 62% 38%, rgb(255 255 255 / 22%), transparent 2rem);
+  opacity: 0.78;
+  transform: perspective(900px) rotateX(62deg) rotateZ(-10deg);
+}
+
+.hero-orbit {
+  position: absolute;
+  right: clamp(1rem, 8vw, 7rem);
+  top: clamp(2rem, 14vw, 7rem);
+  display: none;
+  width: min(21rem, 34vw);
+  aspect-ratio: 1.55;
+  border: 1px solid rgb(255 255 255 / 22%);
+  border-radius: 999px;
+  transform: rotate(-16deg);
+}
+
+.hero-orbit::before {
+  position: absolute;
+  top: 50%;
+  left: 12%;
+  width: 76%;
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 72%), transparent);
+}
+
+.hero-orbit::after {
+  position: absolute;
+  top: 44%;
+  left: 58%;
+  width: 5.2rem;
+  height: 0.8rem;
+  content: "";
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgb(255 255 255 / 88%), rgb(93 173 226 / 64%));
+  box-shadow: 0 0 26px rgb(93 173 226 / 34%);
+  transform: skewX(-22deg);
+}
+
+.hero-cloud {
+  position: absolute;
+  display: none;
+  width: 9rem;
+  height: 2.6rem;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 20%);
+}
+
+.hero-cloud::before,
+.hero-cloud::after {
+  position: absolute;
+  bottom: 0.4rem;
+  content: "";
+  border-radius: 999px;
+  background: inherit;
+}
+
+.hero-cloud::before {
+  left: 1.4rem;
+  width: 3.8rem;
+  height: 3.8rem;
+}
+
+.hero-cloud::after {
+  right: 1.2rem;
+  width: 4.8rem;
+  height: 4.8rem;
+}
+
+.hero-cloud-one {
+  right: 12%;
+  bottom: 22%;
+}
+
+.hero-cloud-two {
+  right: 34%;
+  top: 20%;
+  transform: scale(0.78);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .aviation-section:hover::before {
+    opacity: 0.96;
+  }
+
+  .premium-card:hover h2,
+  .premium-card:hover h3,
+  .home-panel:hover h2,
+  .home-panel:hover h3 {
+    color: hsl(var(--brand-dark));
+  }
+
+  .premium-card:hover .premium-button,
+  .home-panel:hover .premium-button,
+  .home-course-card:hover .premium-button {
+    box-shadow:
+      0 20px 44px rgb(11 19 32 / 18%),
+      0 0 30px rgb(93 173 226 / 20%);
+  }
+}
+
 .home-canvas {
   position: relative;
   overflow: hidden;
   background:
-    radial-gradient(circle at 12% 6%, rgb(37 145 186 / 18%), transparent 24rem),
-    radial-gradient(circle at 82% 12%, rgb(245 179 55 / 26%), transparent 28rem),
-    radial-gradient(circle at 55% 48%, rgb(95 198 220 / 14%), transparent 30rem),
-    linear-gradient(180deg, #f7fbff 0%, hsl(var(--background)) 34%, #eaf6fb 100%);
+    radial-gradient(circle at 12% 6%, rgb(93 173 226 / 18%), transparent 24rem),
+    radial-gradient(circle at 82% 12%, rgb(255 255 255 / 84%), transparent 23rem),
+    radial-gradient(circle at 55% 48%, rgb(107 114 128 / 9%), transparent 30rem),
+    linear-gradient(180deg, #ffffff 0%, hsl(var(--background)) 34%, #f4f7fa 100%);
 }
 
 .home-canvas::before {
@@ -48,14 +419,17 @@ a {
   width: 30rem;
   height: 30rem;
   content: "";
-  border: 1px solid rgb(30 123 157 / 10%);
+  border: 1px solid rgb(93 173 226 / 10%);
   border-radius: 999px;
-  background: radial-gradient(circle, rgb(30 123 157 / 10%), transparent 62%);
+  background: radial-gradient(circle, rgb(93 173 226 / 10%), transparent 62%);
   pointer-events: none;
 }
 
 .home-hero {
   isolation: isolate;
+  background:
+    radial-gradient(circle at 72% 34%, rgb(93 173 226 / 28%), transparent 20rem),
+    linear-gradient(135deg, #0b1320 0%, #1d344d 120%);
 }
 
 .home-hero::after {
@@ -70,11 +444,15 @@ a {
 }
 
 .home-glass {
-  border: 1px solid rgb(255 255 255 / 28%);
-  border-radius: 1.25rem;
-  background: rgb(255 255 255 / 10%);
-  box-shadow: 0 28px 90px rgb(8 21 43 / 20%);
-  backdrop-filter: blur(18px);
+  border: 1px solid rgb(255 255 255 / 38%);
+  border-radius: 1.5rem;
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 21%), rgb(255 255 255 / 8%)),
+    radial-gradient(circle at 100% 0%, rgb(93 173 226 / 19%), transparent 18rem);
+  box-shadow:
+    0 24px 70px rgb(11 19 32 / 22%),
+    inset 0 1px 0 rgb(255 255 255 / 26%);
+  backdrop-filter: none;
 }
 
 .home-stat-grid {
@@ -84,8 +462,8 @@ a {
 .home-stat-grid > * {
   transform: rotateX(7deg) rotateY(-6deg);
   transition:
-    transform 220ms ease,
-    box-shadow 220ms ease;
+    transform 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .home-stat-grid > *:nth-child(even) {
@@ -99,12 +477,18 @@ a {
 .home-panel {
   position: relative;
   border: 1px solid rgb(255 255 255 / 72%);
-  border-radius: 1.25rem;
+  border-radius: 1.5rem;
   background:
-    linear-gradient(145deg, rgb(255 255 255 / 90%), rgb(244 251 255 / 78%)),
-    radial-gradient(circle at 90% 0%, rgb(245 179 55 / 12%), transparent 18rem);
-  box-shadow: 0 26px 80px rgb(21 37 67 / 12%);
-  backdrop-filter: blur(18px);
+    linear-gradient(145deg, rgb(255 255 255 / 94%), rgb(244 247 250 / 84%)),
+    radial-gradient(circle at 90% 0%, rgb(93 173 226 / 12%), transparent 18rem);
+  box-shadow:
+    0 18px 44px rgb(11 19 32 / 8%),
+    0 24px 70px rgb(93 173 226 / 7%);
+  backdrop-filter: none;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease;
 }
 
 .home-panel::before {
@@ -116,103 +500,115 @@ a {
   pointer-events: none;
 }
 
+.home-panel:hover {
+  border-color: rgb(93 173 226 / 28%);
+  box-shadow:
+    0 22px 56px rgb(11 19 32 / 11%),
+    0 32px 86px rgb(93 173 226 / 10%);
+  transform: translateY(-3px);
+}
+
 .home-photo-lift {
-  transform: perspective(1100px) rotateY(4deg) rotateX(2deg);
-  box-shadow: 0 34px 90px rgb(21 37 67 / 20%);
+  transform: translateZ(0);
+  box-shadow: 0 24px 62px rgb(11 19 32 / 12%);
 }
 
 .home-photo-contain {
   background:
-    linear-gradient(135deg, rgb(29 43 67 / 96%), rgb(23 53 84 / 92%)),
-    radial-gradient(circle at 20% 20%, rgb(245 179 55 / 18%), transparent 18rem);
+    linear-gradient(135deg, rgb(11 19 32 / 96%), rgb(29 52 77 / 92%)),
+    radial-gradient(circle at 20% 20%, rgb(93 173 226 / 16%), transparent 18rem);
 }
 
 .home-course-card {
   border: 1px solid rgb(255 255 255 / 72%);
-  border-radius: 1rem;
+  border-radius: 1.15rem;
   background:
-    linear-gradient(145deg, rgb(255 255 255 / 92%), rgb(244 251 255 / 84%)),
-    radial-gradient(circle at 100% 0%, rgb(245 179 55 / 12%), transparent 10rem);
-  box-shadow: 0 20px 65px rgb(21 37 67 / 10%);
+    linear-gradient(145deg, rgb(255 255 255 / 94%), rgb(244 247 250 / 86%)),
+    radial-gradient(circle at 100% 0%, rgb(93 173 226 / 12%), transparent 10rem);
+  box-shadow:
+    0 14px 36px rgb(11 19 32 / 7%),
+    0 20px 56px rgb(93 173 226 / 7%);
   transform: translateZ(0);
   transition:
-    transform 200ms ease,
-    box-shadow 200ms ease,
-    border-color 200ms ease;
+    transform 150ms ease,
+    box-shadow 150ms ease,
+    border-color 150ms ease;
 }
 
 .home-course-card:hover {
-  transform: translateY(-6px) scale(1.015);
-  border-color: rgb(30 123 157 / 30%);
-  box-shadow: 0 30px 90px rgb(21 37 67 / 16%);
+  transform: translateY(-3px);
+  border-color: rgb(93 173 226 / 34%);
+  box-shadow:
+    0 18px 48px rgb(11 19 32 / 11%),
+    0 0 26px rgb(93 173 226 / 10%);
 }
 
 .home-logo-band {
   border: 1px solid rgb(255 255 255 / 12%);
   background:
-    radial-gradient(circle at 12% 10%, rgb(245 179 55 / 28%), transparent 20rem),
-    radial-gradient(circle at 88% 18%, rgb(37 145 186 / 34%), transparent 22rem),
-    linear-gradient(135deg, rgb(29 43 67 / 98%), rgb(16 42 72 / 96%));
-  box-shadow: 0 28px 80px rgb(21 37 67 / 16%);
+    radial-gradient(circle at 12% 10%, rgb(93 173 226 / 18%), transparent 20rem),
+    radial-gradient(circle at 88% 18%, rgb(217 226 236 / 16%), transparent 22rem),
+    linear-gradient(135deg, rgb(11 19 32 / 98%), rgb(29 52 77 / 96%));
+  box-shadow: 0 20px 56px rgb(11 19 32 / 12%);
 }
 
 .home-color-strip {
-  background: linear-gradient(90deg, hsl(var(--brand)), hsl(var(--accent)), #5fc6dc);
+  background: linear-gradient(90deg, #5dade2, #d9e2ec, #ffffff);
 }
 
 .home-about-section {
   background:
-    radial-gradient(circle at 0% 10%, rgb(30 123 157 / 18%), transparent 24rem),
-    linear-gradient(180deg, rgb(255 255 255 / 72%), rgb(238 246 251 / 78%));
+    radial-gradient(circle at 0% 10%, rgb(93 173 226 / 12%), transparent 24rem),
+    linear-gradient(180deg, rgb(255 255 255 / 76%), rgb(244 247 250 / 86%));
 }
 
 .home-about-section .home-panel {
   background:
-    linear-gradient(145deg, rgb(255 255 255 / 94%), rgb(235 247 252 / 86%)),
-    radial-gradient(circle at 96% 12%, rgb(245 179 55 / 16%), transparent 18rem);
+    linear-gradient(145deg, rgb(255 255 255 / 94%), rgb(244 247 250 / 88%)),
+    radial-gradient(circle at 96% 12%, rgb(93 173 226 / 12%), transparent 18rem);
 }
 
 .home-courses-section {
   background:
-    linear-gradient(135deg, rgb(245 179 55 / 20%), transparent 36%),
-    linear-gradient(180deg, #f8fbff 0%, #eef4f7 100%);
+    linear-gradient(135deg, rgb(93 173 226 / 12%), transparent 36%),
+    linear-gradient(180deg, #ffffff 0%, #f4f7fa 100%);
 }
 
 .home-courses-section .home-panel {
   background:
-    radial-gradient(circle at 14% 20%, rgb(245 179 55 / 22%), transparent 16rem),
-    linear-gradient(135deg, rgb(255 255 255 / 92%), rgb(235 243 249 / 86%));
+    radial-gradient(circle at 14% 20%, rgb(93 173 226 / 16%), transparent 16rem),
+    linear-gradient(135deg, rgb(255 255 255 / 94%), rgb(244 247 250 / 88%));
 }
 
 .home-affiliation-section {
   background:
-    radial-gradient(circle at 88% 18%, rgb(30 123 157 / 18%), transparent 26rem),
-    linear-gradient(180deg, #f9fbfd 0%, #edf7f9 100%);
+    radial-gradient(circle at 88% 18%, rgb(93 173 226 / 12%), transparent 26rem),
+    linear-gradient(180deg, #ffffff 0%, #f4f7fa 100%);
 }
 
 .home-services-section {
   background:
-    radial-gradient(circle at 8% 0%, rgb(245 179 55 / 20%), transparent 18rem),
-    radial-gradient(circle at 92% 20%, rgb(37 145 186 / 20%), transparent 20rem),
-    linear-gradient(180deg, #f7fbff 0%, #eef6fb 100%);
+    radial-gradient(circle at 8% 0%, rgb(217 226 236 / 54%), transparent 18rem),
+    radial-gradient(circle at 92% 20%, rgb(93 173 226 / 12%), transparent 20rem),
+    linear-gradient(180deg, #ffffff 0%, #f4f7fa 100%);
 }
 
 .home-services-section .home-course-card:nth-child(3n + 1) {
   background:
-    linear-gradient(145deg, rgb(255 255 255 / 94%), rgb(239 249 252 / 86%)),
-    radial-gradient(circle at 100% 0%, rgb(37 145 186 / 18%), transparent 10rem);
+    linear-gradient(145deg, rgb(255 255 255 / 94%), rgb(244 247 250 / 88%)),
+    radial-gradient(circle at 100% 0%, rgb(93 173 226 / 12%), transparent 10rem);
 }
 
 .home-services-section .home-course-card:nth-child(3n + 2) {
   background:
-    linear-gradient(145deg, rgb(255 255 255 / 94%), rgb(255 249 237 / 88%)),
-    radial-gradient(circle at 100% 0%, rgb(245 179 55 / 18%), transparent 10rem);
+    linear-gradient(145deg, rgb(255 255 255 / 94%), rgb(241 245 249 / 88%)),
+    radial-gradient(circle at 100% 0%, rgb(107 114 128 / 10%), transparent 10rem);
 }
 
 .home-services-section .home-course-card:nth-child(3n + 3) {
   background:
-    linear-gradient(145deg, rgb(255 255 255 / 94%), rgb(241 246 255 / 88%)),
-    radial-gradient(circle at 100% 0%, rgb(72 101 174 / 14%), transparent 10rem);
+    linear-gradient(145deg, rgb(255 255 255 / 94%), rgb(244 247 250 / 88%)),
+    radial-gradient(circle at 100% 0%, rgb(93 173 226 / 10%), transparent 10rem);
 }
 
 .flow-stage {
@@ -222,14 +618,14 @@ a {
 .flow-card {
   min-height: 160px;
   transform: rotateX(8deg) rotateY(calc((var(--flow-index) - 1) * -7deg)) translateZ(0);
-  border: 1px solid hsl(var(--border));
-  border-radius: 0.5rem;
-  background: linear-gradient(145deg, #ffffff, hsl(var(--background)));
-  box-shadow: 0 18px 50px rgb(21 37 67 / 12%);
+  border: 1px solid rgb(255 255 255 / 80%);
+  border-radius: 1.25rem;
+  background: linear-gradient(145deg, rgb(255 255 255 / 94%), rgb(240 249 255 / 82%));
+  box-shadow: 0 18px 50px rgb(11 19 32 / 10%);
   padding: 1.5rem;
   transition:
-    transform 220ms ease,
-    box-shadow 220ms ease;
+    transform 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .flow-card:hover {
@@ -248,4 +644,122 @@ a {
   color: hsl(var(--foreground));
   font-weight: 600;
   line-height: 1.5;
+}
+
+@media (max-width: 767px), (hover: none) {
+  .home-glass,
+  .home-panel,
+  .footer-glass {
+    backdrop-filter: none;
+  }
+
+  .home-photo-lift,
+  .home-stat-grid > *,
+  .home-stat-grid > *:nth-child(even),
+  .flow-card,
+  .flow-card:hover,
+  .premium-card,
+  .premium-card:hover {
+    transform: none;
+  }
+
+  .home-course-card:hover,
+  .home-stat-grid > *:hover {
+    transform: none;
+    box-shadow: 0 20px 65px rgb(21 37 67 / 10%);
+  }
+
+  .home-hero::after,
+  .home-canvas::before,
+  .page-hero::after,
+  .hero-orbit,
+  .hero-cloud {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* Performance layer: keeps the aviation look while removing effects that cause scroll jank. */
+.hero-orbit,
+.hero-cloud,
+.home-hero::after,
+.page-hero::after,
+.home-canvas::before,
+.site-sky::after {
+  display: none !important;
+}
+
+.page-hero::before,
+.reveal-on-scroll,
+.home-glass {
+  animation: none !important;
+}
+
+.home-glass,
+.home-panel,
+.footer-glass {
+  backdrop-filter: none !important;
+}
+
+.premium-card,
+.premium-card:hover,
+.home-panel,
+.home-panel:hover,
+.home-course-card,
+.home-course-card:hover,
+.home-stat-grid > *,
+.home-stat-grid > *:nth-child(even),
+.home-stat-grid > *:hover,
+.home-photo-lift,
+.flow-card,
+.flow-card:hover {
+  transform: none !important;
+}
+
+.premium-card img,
+.premium-card video,
+.premium-card:hover img,
+.premium-card:hover video {
+  transform: none !important;
+  transition: none !important;
+}
+
+.premium-card,
+.home-panel,
+.home-course-card,
+.flow-card {
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    background-color 120ms ease !important;
+  will-change: auto;
+}
+
+.premium-card:hover,
+.home-panel:hover,
+.home-course-card:hover {
+  box-shadow: 0 16px 36px rgb(11 19 32 / 10%) !important;
+}
+
+.premium-button::before {
+  display: none;
+}
+
+.premium-button,
+.premium-button:hover {
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease !important;
+  transform: none !important;
 }

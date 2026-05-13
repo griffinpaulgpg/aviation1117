@@ -18,7 +18,9 @@ const config: Config = {
         accent: "hsl(var(--accent))",
       },
       fontFamily: {
-        sans: ["Inter", "Arial", "sans-serif"],
+        sans: ["var(--font-body)"],
+        heading: ["var(--font-heading)"],
+        ui: ["var(--font-ui)"],
       },
     },
   },

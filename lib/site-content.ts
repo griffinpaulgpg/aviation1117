@@ -12,7 +12,21 @@ export const siteContent = {
     phone: "+91 9035043521",
     address:
       "13, 1st Main Road, Near Presidency College, Pampa Extension, Hebbal Kempapura, Bengaluru, Karnataka 560024",
+    mapLink:
+      "https://www.google.com/maps/place/Arunand's+Aviation+Institute+Pvt+Ltd/@13.12191,77.6232171,17z/data=!4m6!3m5!1s0x3bae1729ab3715cb:0xe80e37d55ac6687f!8m2!3d13.12191!4d77.6232171!16s%2Fg%2F11t7_6jqts",
+    mapEmbedUrl:
+      "https://www.google.com/maps?q=Arunand%27s%20Aviation%20Institute%20Pvt%20Ltd%2C%20Bengaluru&z=17&output=embed",
     batchTimings: ["10:00 am to 01:00 pm", "03:00 pm to 06:00 pm"],
+    socialLinks: [
+      {
+        label: "Instagram",
+        href: "https://www.instagram.com/arunands_aviation?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==",
+      },
+      {
+        label: "YouTube",
+        href: "https://youtube.com/@arunandsaviationacademy-vt8pp?si=Zv3GroY01l-MMRly",
+      },
+    ],
   },
   home: {
     headline: "Unlock your wings at a leading aviation academy in Bangalore.",
@@ -31,32 +45,38 @@ export const siteContent = {
     {
       title: "Cabin Crew",
       duration: "6 months",
+      image: "/course-cabin-crew.webp",
       description:
         "Training for passenger safety, comfort, boarding support, ticket checks, flight information, safety procedures, onboard service, and emergency response.",
     },
     {
       title: "Ground Handling",
+      image: "/course-ground-handling.webp",
       description:
         "Airport support services including passenger check-in, baggage and cargo handling, aircraft servicing, and coordinated ground movement.",
     },
     {
       title: "Hospitality",
+      image: "/course-hospitality.webp",
       description:
         "Customer service, hospitality management, food and beverage basics, tourism awareness, hospitality law, cultural awareness, and hands-on hotel exposure.",
     },
     {
       title: "Airline Operations",
+      image: "/course-airline-operations.webp",
       description:
         "Safe, secure, and on-time airline operations including reservations, ticketing, departures, check-in counters, baggage screening, and guest assistance.",
     },
     {
       title: "Airport Operations",
+      image: "/course-airport-operations.webp",
       description:
         "Airport management fundamentals, budgeting, marketing, air traffic control principles, pilot communication, routing, and passenger flow.",
     },
     {
       title: "Logistics and Management",
       duration: "3 months",
+      image: "/course-logistics-management.webp",
       description:
         "Cargo and logistics training covering shipment movement, tracking, inventory, carrier coordination, customs, and import or export regulations.",
     },
@@ -132,20 +152,17 @@ export const siteContent = {
   gallery: [
     {
       title: "Airport Exposure",
-      image:
-        "https://images.unsplash.com/photo-1540962351504-03099e0a754b?auto=format&fit=crop&w=1400&q=85",
+      image: "/home-students.webp",
       alt: "Airport terminal interior",
     },
     {
       title: "Flight Training Mindset",
-      image:
-        "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=1400&q=85",
+      image: "/course-ground-handling.webp",
       alt: "Aircraft wing above clouds",
     },
     {
       title: "Professional Grooming",
-      image:
-        "https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=1400&q=85",
+      image: "/home-cabin-training.webp",
       alt: "Professional training discussion",
     },
   ],

@@ -8,7 +8,13 @@ export type SiteContent = {
     email: string;
     phone: string;
     address: string;
+    mapLink: string;
+    mapEmbedUrl: string;
     batchTimings: string[];
+    socialLinks: Array<{
+      label: string;
+      href: string;
+    }>;
   };
   home: {
     headline: string;
@@ -24,6 +30,7 @@ export type SiteContent = {
     title: string;
     description: string;
     duration?: string;
+    image: string;
   }>;
   services: string[];
   about: {

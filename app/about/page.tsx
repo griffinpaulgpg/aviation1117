@@ -37,7 +37,7 @@ const chooseItems = [
 
 const leaders = [
   {
-    image: "/nandakumar-v.png",
+    image: "/nandakumar-v.webp",
     name: "Nandakumar V",
     role: "Founder & Aviation Industry Expert",
     paragraphs: [
@@ -46,7 +46,7 @@ const leaders = [
     ],
   },
   {
-    image: "/aruna.png",
+    image: "/aruna.webp",
     name: "Aruna",
     role: "Managing Director Academic",
     paragraphs: [
@@ -60,14 +60,16 @@ const leaders = [
 export default function AboutPage() {
   return (
     <SiteFrame>
-      <main>
-        <section className="bg-brand-dark py-20 text-center text-white">
+      <main className="site-sky">
+        <section className="page-hero py-20 text-center text-white">
+          <div className="hero-orbit md:block" aria-hidden="true" />
+          <div className="hero-cloud hero-cloud-one lg:block" aria-hidden="true" />
           <Container>
             <h1 className="text-4xl font-semibold tracking-normal sm:text-6xl">About Us</h1>
           </Container>
         </section>
 
-        <section className="bg-[#f0f2f4]/80 py-20">
+        <section className="aviation-section bg-white/50 py-20">
           <Container>
             <div className="text-center">
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand">
@@ -78,7 +80,7 @@ export default function AboutPage() {
               </h2>
             </div>
             <div className="mt-10 grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
-              <div className="rounded-lg border border-border bg-white p-6 shadow-sm sm:p-8">
+              <div className="premium-card p-6 sm:p-8">
                 <div className="mt-6 space-y-4 text-base leading-7 text-muted">
                   {aboutParagraphs.map((paragraph) => (
                     <p key={paragraph}>{paragraph}</p>
@@ -86,12 +88,14 @@ export default function AboutPage() {
                 </div>
               </div>
 
-              <div className="rounded-lg border border-border bg-white p-4 shadow-sm">
+              <div className="premium-card p-4">
                 <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-background">
                   <Image
-                    src="/aassc-affiliation.png"
+                    src="/aassc-affiliation.webp"
                     alt="Arunand's Aviation Academy AASSC affiliation certificate"
                     fill
+                    loading="lazy"
+                    quality={72}
                     className="object-contain"
                     sizes="(min-width: 1024px) 45vw, 100vw"
                   />
@@ -101,7 +105,7 @@ export default function AboutPage() {
           </Container>
         </section>
 
-        <section className="border-t border-border bg-white py-20">
+        <section className="aviation-section border-t border-white/70 bg-white/70 py-20">
           <Container>
             <h2 className="text-center text-3xl font-semibold tracking-normal text-foreground sm:text-5xl">
               Why Choose Us
@@ -117,12 +121,14 @@ export default function AboutPage() {
                   </article>
                 ))}
               </div>
-              <div className="rounded-lg border border-border bg-background p-4 shadow-sm">
+              <div className="premium-card p-4">
                 <div className="relative aspect-[16/10] overflow-hidden rounded-lg bg-white">
                   <Image
-                    src="/aassc-certificate.png"
+                    src="/aassc-certificate.webp"
                     alt="AASSC affiliation certificate"
                     fill
+                    loading="lazy"
+                    quality={72}
                     className="object-contain"
                     sizes="(min-width: 1024px) 52vw, 100vw"
                   />
@@ -132,7 +138,7 @@ export default function AboutPage() {
           </Container>
         </section>
 
-        <section className="py-20">
+        <section className="aviation-section py-20">
           <Container>
             <div className="text-center">
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand">
@@ -144,16 +150,15 @@ export default function AboutPage() {
             </div>
             <div className="mt-10 grid gap-6 lg:grid-cols-2">
               {leaders.map((leader) => (
-                <article
-                  key={leader.name}
-                  className="rounded-lg border border-border bg-white p-6 shadow-sm sm:p-8"
-                >
+                <article key={leader.name} className="premium-card p-6 sm:p-8">
                   <div className="grid gap-6 sm:grid-cols-[10rem_1fr] sm:items-start">
                     <div className="relative aspect-[4/3] overflow-hidden rounded-lg border border-border bg-background">
                       <Image
                         src={leader.image}
                         alt={`${leader.name} owner photo`}
                         fill
+                        loading="lazy"
+                        quality={72}
                         className="object-cover"
                         sizes="10rem"
                       />

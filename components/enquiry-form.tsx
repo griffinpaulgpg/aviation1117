@@ -1,8 +1,6 @@
 "use client";
 
-import { useState } from "react";
-
-import { siteContent } from "@/lib/site-content";
+import { FormEvent, useState } from "react";
 
 const enquirySources = [
   "Newspaper Ads",
@@ -12,8 +10,6 @@ const enquirySources = [
   "Seminar",
   "Other",
 ];
-
-const courseOptions = ["None", ...siteContent.courses.map((course) => course.title)];
 
 function Field({
   id,
@@ -40,7 +36,7 @@ function Field({
         type={type}
         required={required}
         autoComplete={autoComplete}
-        className="rounded-lg border border-border bg-white px-4 py-3 text-sm text-foreground outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/10"
+        className="bg-white/82 rounded-xl border border-sky-100 px-4 py-3 text-sm text-foreground shadow-inner shadow-sky-950/5 outline-none transition focus:border-brand focus:bg-white focus:ring-4 focus:ring-sky-200/60"
       />
     </div>
   );
@@ -66,7 +62,7 @@ function TextArea({
         name={id}
         required={required}
         rows={4}
-        className="resize-y rounded-lg border border-border bg-white px-4 py-3 text-sm text-foreground outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/10"
+        className="bg-white/82 resize-y rounded-xl border border-sky-100 px-4 py-3 text-sm text-foreground shadow-inner shadow-sky-950/5 outline-none transition focus:border-brand focus:bg-white focus:ring-4 focus:ring-sky-200/60"
       />
     </div>
   );
@@ -80,8 +76,10 @@ function FormSection({
   children: React.ReactNode;
 }>) {
   return (
-    <fieldset className="rounded-lg border border-border bg-white p-5 shadow-sm sm:p-6">
-      <legend className="px-2 text-lg font-semibold text-foreground">{title}</legend>
+    <fieldset className="premium-card p-5 sm:p-6">
+      <legend className="rounded-full border border-sky-100 bg-sky-50 px-4 py-2 text-sm font-semibold uppercase tracking-[0.12em] text-brand-dark">
+        {title}
+      </legend>
       <div className="mt-5 grid gap-5 md:grid-cols-2">{children}</div>
     </fieldset>
   );
@@ -89,16 +87,87 @@ function FormSection({
 
 type EnquiryFormProps = {
   initialCourse?: string;
+  courses: string[];
 };
 
-export function EnquiryForm({ initialCourse }: EnquiryFormProps) {
+export function EnquiryForm({ initialCourse, courses }: EnquiryFormProps) {
+  const courseOptions = ["None", ...courses];
   const [showOtherSource, setShowOtherSource] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(
     initialCourse && courseOptions.includes(initialCourse) ? initialCourse : "None",
   );
+  const [submitStatus, setSubmitStatus] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const getValue = (key: string) => String(formData.get(key) ?? "");
+
+    setIsSubmitting(true);
+    setSubmitStatus(null);
+
+    try {
+      const response = await fetch("/api/enquiry", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          fullName: getValue("fullName"),
+          qualification: getValue("qualification"),
+          schoolCollege: getValue("schoolCollege"),
+          selectedCourse: getValue("selectedCourse"),
+          presentAddress: getValue("presentAddress"),
+          permanentAddress: getValue("permanentAddress"),
+          email: getValue("email"),
+          mobile: getValue("mobile"),
+          landline: getValue("landline"),
+          dateOfBirth: getValue("dateOfBirth"),
+          gender: getValue("gender"),
+          guardianName: getValue("guardianName"),
+          guardianOccupation: getValue("guardianOccupation"),
+          enquirySources: formData.getAll("enquirySource").map(String),
+          otherEnquirySource: getValue("otherEnquirySource"),
+          referenceName: getValue("referenceName"),
+          remarks: getValue("remarks"),
+          counselorName: getValue("counselorName"),
+        }),
+      });
+
+      const result = (await response.json()) as {
+        message?: string;
+        success?: boolean;
+      };
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message ?? "Unable to submit enquiry right now.");
+      }
+
+      form.reset();
+      setSelectedCourse("None");
+      setShowOtherSource(false);
+      setSubmitStatus({
+        type: "success",
+        message: result.message ?? "Enquiry submitted successfully.",
+      });
+    } catch (error) {
+      setSubmitStatus({
+        type: "error",
+        message: error instanceof Error ? error.message : "Unable to submit enquiry right now.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
-    <form className="grid gap-6" method="post">
+    <form className="grid gap-6" onSubmit={handleSubmit}>
       <FormSection title="Student Details">
         <Field id="fullName" label="Full Name" required autoComplete="name" />
         <Field id="qualification" label="Qualification" required />
@@ -116,7 +185,7 @@ export function EnquiryForm({ initialCourse }: EnquiryFormProps) {
             required
             value={selectedCourse}
             onChange={(event) => setSelectedCourse(event.currentTarget.value)}
-            className="rounded-lg border border-border bg-white px-4 py-3 text-sm text-foreground outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/10"
+            className="bg-white/82 rounded-xl border border-sky-100 px-4 py-3 text-sm text-foreground shadow-inner shadow-sky-950/5 outline-none transition focus:border-brand focus:bg-white focus:ring-4 focus:ring-sky-200/60"
           >
             {courseOptions.map((course) => (
               <option key={course} value={course}>
@@ -144,7 +213,7 @@ export function EnquiryForm({ initialCourse }: EnquiryFormProps) {
           <span className="text-sm font-semibold text-foreground">
             Gender <span className="text-brand">*</span>
           </span>
-          <div className="flex flex-wrap gap-3 rounded-lg border border-border bg-white px-4 py-3">
+          <div className="bg-white/82 flex flex-wrap gap-3 rounded-xl border border-sky-100 px-4 py-3 shadow-inner shadow-sky-950/5">
             {["Female", "Male", "Other"].map((gender) => (
               <label key={gender} className="flex items-center gap-2 text-sm text-muted">
                 <input
@@ -166,13 +235,15 @@ export function EnquiryForm({ initialCourse }: EnquiryFormProps) {
         <Field id="guardianOccupation" label="Occupation" />
       </FormSection>
 
-      <fieldset className="rounded-lg border border-border bg-white p-5 shadow-sm sm:p-6">
-        <legend className="px-2 text-lg font-semibold text-foreground">Enquiry Source</legend>
+      <fieldset className="premium-card p-5 sm:p-6">
+        <legend className="rounded-full border border-sky-100 bg-sky-50 px-4 py-2 text-sm font-semibold uppercase tracking-[0.12em] text-brand-dark">
+          Enquiry Source
+        </legend>
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {enquirySources.map((source) => (
             <label
               key={source}
-              className="flex items-center gap-3 rounded-lg border border-border bg-background px-4 py-3 text-sm font-medium text-foreground"
+              className="bg-white/72 flex items-center gap-3 rounded-xl border border-sky-100 px-4 py-3 text-sm font-medium text-foreground shadow-sm transition hover:border-sky-200 hover:bg-sky-50/70"
             >
               <input
                 className="h-4 w-4 rounded accent-brand"
@@ -198,7 +269,7 @@ export function EnquiryForm({ initialCourse }: EnquiryFormProps) {
               id="otherEnquirySource"
               name="otherEnquirySource"
               required
-              className="rounded-lg border border-border bg-white px-4 py-3 text-sm text-foreground outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/10"
+              className="bg-white/82 rounded-xl border border-sky-100 px-4 py-3 text-sm text-foreground shadow-inner shadow-sky-950/5 outline-none transition focus:border-brand focus:bg-white focus:ring-4 focus:ring-sky-200/60"
               placeholder="Please mention the source"
               type="text"
             />
@@ -214,18 +285,30 @@ export function EnquiryForm({ initialCourse }: EnquiryFormProps) {
         </div>
       </FormSection>
 
-      <div className="flex flex-col justify-between gap-4 rounded-lg bg-brand-dark p-5 text-white sm:flex-row sm:items-center">
+      <div className="flex flex-col justify-between gap-4 rounded-3xl bg-brand-dark p-5 text-white shadow-[0_24px_70px_rgb(14_116_144_/_0.18)] sm:flex-row sm:items-center">
         <p className="text-white/72 text-sm leading-6">
           Fields marked with <span className="text-accent">*</span> are ready for required-field
           validation.
         </p>
         <button
           type="submit"
-          className="rounded-full bg-accent px-7 py-3 text-sm font-semibold text-brand-dark transition hover:bg-white"
+          disabled={isSubmitting}
+          className="premium-button rounded-full bg-sky-200 px-7 py-3 text-sm font-semibold text-brand-dark transition hover:bg-white"
         >
-          Submit Enquiry
+          {isSubmitting ? "Submitting..." : "Submit Enquiry"}
         </button>
       </div>
+      {submitStatus ? (
+        <p
+          className={`rounded-2xl border px-5 py-4 text-sm font-semibold ${
+            submitStatus.type === "success"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+              : "border-red-200 bg-red-50 text-red-800"
+          }`}
+        >
+          {submitStatus.message}
+        </p>
+      ) : null}
     </form>
   );
 }

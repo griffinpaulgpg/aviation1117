@@ -8,15 +8,20 @@ type PageHeroProps = {
 
 export function PageHero({ eyebrow, title, description }: PageHeroProps) {
   return (
-    <section className="overflow-hidden bg-brand-dark py-20 text-white">
+    <section className="page-hero py-20 text-white sm:py-24">
+      <div className="hero-orbit md:block" aria-hidden="true" />
+      <div className="hero-cloud hero-cloud-one lg:block" aria-hidden="true" />
+      <div className="hero-cloud hero-cloud-two lg:block" aria-hidden="true" />
       <Container className="relative">
-        <div className="bg-white/8 absolute right-8 top-0 hidden h-44 w-44 rotate-12 rounded-lg border border-white/15 shadow-2xl shadow-black/20 md:block" />
-        <div className="bg-accent/18 absolute right-28 top-20 hidden h-28 w-28 -rotate-12 rounded-lg border border-accent/40 md:block" />
-        <p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">{eyebrow}</p>
-        <h1 className="mt-4 max-w-4xl text-4xl font-semibold tracking-normal sm:text-6xl">
+        <p className="reveal-on-scroll text-sm font-semibold uppercase tracking-[0.16em] text-sky-200">
+          {eyebrow}
+        </p>
+        <h1 className="reveal-on-scroll mt-4 max-w-4xl text-4xl font-semibold tracking-normal sm:text-6xl">
           {title}
         </h1>
-        <p className="text-white/76 mt-6 max-w-2xl text-lg leading-8">{description}</p>
+        <p className="reveal-on-scroll text-white/78 mt-6 max-w-2xl text-lg leading-8">
+          {description}
+        </p>
       </Container>
     </section>
   );

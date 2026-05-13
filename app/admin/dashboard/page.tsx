@@ -1,42 +1,33 @@
-import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { AdminConsole } from "@/components/admin-console";
 import { Container } from "@/components/container";
+import { PageHero } from "@/components/page-hero";
+import { SiteFrame } from "@/components/site-frame";
+import { isAdminSignedIn } from "@/lib/admin-auth";
+import { getEmptyAdminDashboardData } from "@/lib/admin-dashboard-empty";
 
-export default function AdminDashboardPage() {
+export const dynamic = "force-dynamic";
+
+export default async function AdminDashboardPage() {
+  if (!(await isAdminSignedIn())) {
+    redirect("/admin");
+  }
+
   return (
-    <main className="min-h-screen bg-brand-dark">
-      <header className="border-b border-white/10 text-white">
-        <Container className="flex min-h-20 items-center justify-between gap-6 py-4">
-          <div>
-            <p className="text-sm text-white/60">Arunand&apos;s Aviation Academy</p>
-            <h1 className="text-2xl font-semibold">Creative Admin Dashboard</h1>
-          </div>
-          <Link
-            href="/"
-            className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-brand-dark transition hover:bg-accent"
-          >
-            View Website
-          </Link>
-        </Container>
-      </header>
-      <section className="py-10">
-        <Container>
-          <div className="border-white/14 mb-8 rounded-lg border bg-white/10 p-6 text-white shadow-2xl shadow-black/10">
-            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">
-              Website Control Center
-            </p>
-            <h2 className="mt-3 max-w-3xl text-4xl font-semibold tracking-normal">
-              Manage content with a layered dashboard built for fast updates.
-            </h2>
-            <p className="mt-4 max-w-2xl text-base leading-7 text-white/70">
-              This front-end dashboard shows the future admin workflow. The next step is connecting
-              it to authentication, storage, and a database.
-            </p>
-          </div>
-          <AdminConsole />
-        </Container>
-      </section>
-    </main>
+    <SiteFrame>
+      <main className="site-sky">
+        <PageHero
+          eyebrow="Admin Dashboard"
+          title="Website control center."
+          description="Manage courses, events, gallery folders, testimonials, enquiries, and faculty accounts in the same Arunand's Aviation Academy design system."
+        />
+        <section className="aviation-section py-14 sm:py-20">
+          <Container>
+            <AdminConsole initialData={getEmptyAdminDashboardData()} />
+          </Container>
+        </section>
+      </main>
+    </SiteFrame>
   );
 }

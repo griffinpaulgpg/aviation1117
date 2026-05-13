@@ -2,6 +2,7 @@ import { Container } from "@/components/container";
 import { EnquiryForm } from "@/components/enquiry-form";
 import { PageHero } from "@/components/page-hero";
 import { SiteFrame } from "@/components/site-frame";
+import { getPublicCourses } from "@/lib/content-data";
 
 type EnquiryPageProps = {
   searchParams?: Promise<{
@@ -12,18 +13,22 @@ type EnquiryPageProps = {
 export default async function EnquiryPage({ searchParams }: EnquiryPageProps) {
   const params = await searchParams;
   const selectedCourse = Array.isArray(params?.course) ? params.course[0] : params?.course;
+  const courses = await getPublicCourses();
 
   return (
     <SiteFrame>
-      <main>
+      <main className="site-sky">
         <PageHero
           eyebrow="Enquiry"
           title="Aviation institute enquiry form."
           description="Share student, contact, parent, source, and reference details so the admissions team can guide the right course path."
         />
-        <section className="py-20">
+        <section className="aviation-section py-20">
           <Container>
-            <EnquiryForm initialCourse={selectedCourse} />
+            <EnquiryForm
+              initialCourse={selectedCourse}
+              courses={courses.map((course) => course.title)}
+            />
           </Container>
         </section>
       </main>

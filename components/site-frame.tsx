@@ -1,4 +1,5 @@
 import { Footer } from "@/components/footer";
+import { FloatingWhatsAppButton } from "@/components/floating-whatsapp-button";
 import { Header } from "@/components/header";
 
 type SiteFrameProps = Readonly<{
@@ -11,6 +12,7 @@ export function SiteFrame({ children }: SiteFrameProps) {
       <Header />
       {children}
       <Footer />
+      <FloatingWhatsAppButton />
     </>
   );
 }

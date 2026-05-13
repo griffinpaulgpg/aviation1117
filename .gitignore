@@ -5,6 +5,13 @@ coverage
 .env
 .env*
 !.env.example
+.pglite-data
+public/uploads/*
+!public/uploads/.gitkeep
+!public/uploads/images/
+!public/uploads/images/.gitkeep
+!public/uploads/videos/
+!public/uploads/videos/.gitkeep
 *.log
 .DS_Store
 tsconfig.tsbuildinfo
