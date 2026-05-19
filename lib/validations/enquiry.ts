@@ -19,7 +19,9 @@ export const enquirySchema = z
     permanentAddress: requiredText("Permanent address").max(1000),
 
     email: requiredText("Email").email("Enter a valid email address").max(180),
-    mobile: requiredText("Mobile").max(30),
+    mobile: requiredText("Mobile")
+      .max(30)
+      .regex(/^[0-9+\-\s()]{7,30}$/, "Enter a valid mobile number"),
     landline: optionalText,
 
     dateOfBirth: requiredText("Date of birth").refine(

@@ -1,7 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { CSSProperties, MouseEvent, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { Container } from "@/components/container";
 import { cn } from "@/lib/cn";
@@ -20,76 +22,209 @@ const navItems = [
 
 export function Header() {
   const pathname = usePathname();
+  const router = useRouter();
+  const desktopNavRef = useRef<HTMLElement | null>(null);
+  const navLinkRefs = useRef(new Map<string, HTMLAnchorElement>());
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [planeX, setPlaneX] = useState<number | null>(null);
+  const [isPlaneFlying, setIsPlaneFlying] = useState(false);
+  const [planeDirection, setPlaneDirection] = useState<"left" | "right">("right");
+  const [isLogoVisible, setIsLogoVisible] = useState(true);
+
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 12);
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
+
+  const isActiveLink = (href: string) =>
+    href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
+
+  const activeHref = navItems.find((item) => isActiveLink(item.href))?.href ?? "/";
+
+  const getCloudCenterX = useCallback((href: string) => {
+    const nav = desktopNavRef.current;
+    const link = navLinkRefs.current.get(href);
+
+    if (!nav || !link) {
+      return null;
+    }
+
+    const navRect = nav.getBoundingClientRect();
+    const linkRect = link.getBoundingClientRect();
+
+    return linkRect.left - navRect.left + linkRect.width / 2;
+  }, []);
+
+  useLayoutEffect(() => {
+    const updatePlanePosition = () => {
+      const nextX = getCloudCenterX(activeHref);
+
+      if (nextX !== null) {
+        setPlaneX(nextX);
+      }
+    };
+
+    updatePlanePosition();
+    window.addEventListener("resize", updatePlanePosition);
+
+    return () => window.removeEventListener("resize", updatePlanePosition);
+  }, [activeHref, getCloudCenterX]);
+
+  function setNavLinkRef(href: string) {
+    return (node: HTMLAnchorElement | null) => {
+      if (node) {
+        navLinkRefs.current.set(href, node);
+      } else {
+        navLinkRefs.current.delete(href);
+      }
+    };
+  }
+
+  function handleAnimatedNavigation(event: MouseEvent<HTMLAnchorElement>, href: string) {
+    if (
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey ||
+      event.button !== 0 ||
+      href === pathname ||
+      (href !== "/" && pathname.startsWith(`${href}/`))
+    ) {
+      return;
+    }
+
+    const canAnimate = window.matchMedia("(min-width: 768px)").matches;
+
+    if (!canAnimate) {
+      return;
+    }
+
+    const nextX = getCloudCenterX(href);
+
+    if (nextX === null) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (planeX !== null) {
+      setPlaneDirection(nextX >= planeX ? "right" : "left");
+    }
+
+    setIsPlaneFlying(true);
+    setPlaneX(nextX);
+
+    window.setTimeout(() => {
+      router.push(href);
+    }, 600);
+
+    window.setTimeout(() => {
+      setIsPlaneFlying(false);
+    }, 680);
+  }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/35 bg-white/95 text-brand-dark shadow-[0_10px_28px_rgb(14_116_144_/_0.08)]">
-      <Container className="flex min-h-20 items-center justify-between gap-3 py-4 sm:gap-4">
+    <header className={cn("site-header", isScrolled && "site-header-scrolled")}>
+      <Container className="site-header-inner">
         <Link
           href="/"
-          prefetch={false}
-          className="max-w-40 text-base font-semibold leading-tight tracking-normal text-brand-dark sm:max-w-56 sm:text-lg"
+          prefetch={true}
+          className="site-logo-link"
+          aria-label={siteContent.meta.name}
         >
-          {siteContent.meta.name}
+          {isLogoVisible ? (
+            <Image
+              src="/images/company-logo.png"
+              alt={siteContent.meta.name}
+              width={180}
+              height={180}
+              priority
+              className="site-logo-image"
+              onError={() => setIsLogoVisible(false)}
+            />
+          ) : (
+            <span className="site-logo-fallback">Arunand&apos;s Aviation Academy</span>
+          )}
         </Link>
         <nav
           aria-label="Primary"
-          className="mx-auto hidden min-w-0 flex-1 gap-2 overflow-x-auto px-2 text-sm font-semibold text-muted md:flex"
+          className="site-desktop-nav"
+          ref={desktopNavRef}
         >
-          {navItems.map((item) => {
-            const active =
-              item.href === "/" ? pathname === item.href : pathname.startsWith(item.href);
+          {planeX !== null ? (
+            <span
+              aria-hidden="true"
+              className={cn(
+                "nav-plane-indicator",
+                isPlaneFlying && "nav-plane-indicator-flying",
+                planeDirection === "left" && "nav-plane-indicator-left",
+              )}
+              style={{ "--plane-x": `${planeX}px` } as CSSProperties}
+            >
+              <span className="nav-plane-trail" />
+              <span className="nav-plane-icon">✈</span>
+            </span>
+          ) : null}
+          {navItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              prefetch={true}
+              ref={setNavLinkRef(item.href)}
+              onClick={(event) => handleAnimatedNavigation(event, item.href)}
+              className={cn("site-nav-link", isActiveLink(item.href) && "site-nav-link-active")}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
 
-            return (
+        <div className="flex shrink-0 items-center gap-2">
+          <Link
+            href="/admin/dashboard"
+            prefetch={true}
+            className={cn(
+              "site-admin-link",
+              isActiveLink("/admin/dashboard") && "site-admin-link-active",
+            )}
+          >
+            Admin Login
+          </Link>
+          <button
+            type="button"
+            className="site-mobile-toggle"
+            aria-label={isMobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+            aria-expanded={isMobileMenuOpen}
+            onClick={() => setIsMobileMenuOpen((current) => !current)}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+        </div>
+      </Container>
+      <div className={cn("site-mobile-panel", isMobileMenuOpen && "site-mobile-panel-open")}>
+        <Container className="py-3">
+          <nav aria-label="Primary mobile" className="site-mobile-nav">
+            {navItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                prefetch={false}
-                className={cn(
-                  "shrink-0 rounded-full border px-4 py-2 transition duration-200 hover:border-sky-200 hover:bg-sky-50 hover:text-brand-dark",
-                  active
-                    ? "border-sky-200 bg-sky-100 text-brand-dark shadow-sm"
-                    : "bg-white/48 border-slate-200/80",
-                )}
+                prefetch={true}
+                className={cn("site-nav-link", isActiveLink(item.href) && "site-nav-link-active")}
               >
                 {item.label}
               </Link>
-            );
-          })}
-        </nav>
-        <Link
-          href="/admin"
-          prefetch={false}
-          className="premium-button shrink-0 rounded-full bg-brand-dark px-3 py-2.5 text-xs font-semibold text-white transition hover:bg-brand sm:px-5 sm:py-3 sm:text-sm"
-        >
-          Admin Login
-        </Link>
-      </Container>
-      <div className="bg-white/58 border-t border-sky-100/80 md:hidden">
-        <Container>
-          <nav
-            aria-label="Primary mobile"
-            className="flex gap-2 overflow-x-auto py-3 text-sm font-semibold text-muted"
-          >
-            {navItems.map((item) => {
-              const active =
-                item.href === "/" ? pathname === item.href : pathname.startsWith(item.href);
-
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  prefetch={false}
-                  className={cn(
-                    "shrink-0 rounded-full border px-4 py-2 transition hover:border-sky-200 hover:bg-sky-50 hover:text-brand-dark",
-                    active
-                      ? "border-sky-200 bg-sky-100 text-brand-dark"
-                      : "bg-white/56 border-slate-200/80",
-                  )}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
+            ))}
           </nav>
         </Container>
       </div>

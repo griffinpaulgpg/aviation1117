@@ -299,6 +299,8 @@ export async function createFirebaseEnquiry(enquiry: Record<string, unknown>) {
   const saved = await runFirestore("Creating Firebase enquiry", () =>
     addDoc(collection(db, firebaseCollections.enquiries), {
       ...enquiry,
+      status: "New",
+      notes: "",
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     }),
@@ -326,10 +328,26 @@ export async function getFirebaseEnquiries(): Promise<FirebaseEnquiry[]> {
       email: String(data.email ?? ""),
       mobile: String(data.mobile ?? ""),
       selectedCourse: String(data.selectedCourse ?? ""),
+      status: ["New", "Contacted", "Enrolled", "Rejected"].includes(String(data.status))
+        ? (String(data.status) as FirebaseEnquiry["status"])
+        : "New",
+      notes: String(data.notes ?? ""),
       createdAt: data.createdAt,
       updatedAt: data.updatedAt,
     };
   });
+}
+
+export async function updateFirebaseEnquiry(
+  id: string,
+  enquiry: { status?: FirebaseEnquiry["status"]; notes?: string },
+) {
+  await runFirestore("Updating Firebase enquiry", () =>
+    updateDoc(doc(db, firebaseCollections.enquiries, id), {
+      ...enquiry,
+      updatedAt: serverTimestamp(),
+    }),
+  );
 }
 
 export async function createFirebaseChatbotChat(chat: {

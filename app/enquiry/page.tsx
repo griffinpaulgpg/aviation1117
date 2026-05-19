@@ -1,8 +1,21 @@
+import type { Metadata } from "next";
+
 import { Container } from "@/components/container";
 import { EnquiryForm } from "@/components/enquiry-form";
 import { PageHero } from "@/components/page-hero";
-import { SiteFrame } from "@/components/site-frame";
-import { getPublicCourses } from "@/lib/content-data";
+import { getPublicCourses } from "@/lib/public-content-data";
+
+export const metadata: Metadata = {
+  title: "Enquiry",
+  description:
+    "Submit an aviation institute enquiry form for course guidance, admissions support, and career training information.",
+  openGraph: {
+    title: "Aviation Course Enquiry",
+    description:
+      "Send your details to Arunand's Aviation Academy for course and admissions guidance.",
+    url: "/enquiry",
+  },
+};
 
 type EnquiryPageProps = {
   searchParams?: Promise<{
@@ -16,7 +29,7 @@ export default async function EnquiryPage({ searchParams }: EnquiryPageProps) {
   const courses = await getPublicCourses();
 
   return (
-    <SiteFrame>
+    <>
       <main className="site-sky">
         <PageHero
           eyebrow="Enquiry"
@@ -32,6 +45,6 @@ export default async function EnquiryPage({ searchParams }: EnquiryPageProps) {
           </Container>
         </section>
       </main>
-    </SiteFrame>
+    </>
   );
 }

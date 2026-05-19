@@ -1,13 +1,25 @@
 /* eslint-disable @next/next/no-html-link-for-pages */
 
+import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
 
 import { Container } from "@/components/container";
 import { PageHero } from "@/components/page-hero";
 import { SectionHeading } from "@/components/section-heading";
-import { SiteFrame } from "@/components/site-frame";
-import { getPublicTestimonials } from "@/lib/content-data";
 import { shouldBypassImageOptimizer } from "@/lib/media";
+import { getPublicTestimonials } from "@/lib/public-content-data";
+
+export const metadata: Metadata = {
+  title: "Testimonials",
+  description:
+    "Read student testimonials, video testimonials, and placement success stories from Arunand's Aviation Academy.",
+  openGraph: {
+    title: "Student Testimonials",
+    description: "Student voices and success stories from Arunand's Aviation Academy.",
+    url: "/testimonials",
+  },
+};
 
 const testimonialPlaceholders = Array.from({ length: 6 }, (_, index) => ({
   name: `Student Name ${index + 1}`,
@@ -27,8 +39,6 @@ const placementPlaceholders = Array.from({ length: 6 }, (_, index) => ({
   company: "Airline/company name",
   role: "Position/job role",
 }));
-
-export const dynamic = "force-dynamic";
 
 function getYouTubeEmbedUrl(value: string) {
   try {
@@ -63,7 +73,7 @@ export default async function TestimonialsPage() {
         }));
 
   return (
-    <SiteFrame>
+    <>
       <main className="site-sky">
         <PageHero
           eyebrow="Testimonials"
@@ -238,16 +248,17 @@ export default async function TestimonialsPage() {
               <h2 className="text-3xl font-semibold tracking-normal">
                 Want to be our next success story?
               </h2>
-              <a
+              <Link
                 href="/enquiry"
+                prefetch={true}
                 className="premium-button relative mt-8 inline-flex rounded-full bg-sky-200 px-8 py-3 text-sm font-semibold text-brand-dark transition hover:bg-white"
               >
                 Enquire Now
-              </a>
+              </Link>
             </div>
           </Container>
         </section>
       </main>
-    </SiteFrame>
+    </>
   );
 }

@@ -17,15 +17,23 @@ function Field({
   type = "text",
   required = false,
   autoComplete,
+  inputMode,
+  maxLength,
+  minLength,
+  pattern,
 }: {
   id: string;
   label: string;
   type?: string;
   required?: boolean;
   autoComplete?: string;
+  inputMode?: "text" | "email" | "tel" | "numeric";
+  maxLength?: number;
+  minLength?: number;
+  pattern?: string;
 }) {
   return (
-    <div className="grid gap-2">
+    <div className="grid min-w-0 gap-2">
       <label className="text-sm font-semibold text-foreground" htmlFor={id}>
         {label}
         {required ? <span className="text-brand"> *</span> : null}
@@ -36,6 +44,10 @@ function Field({
         type={type}
         required={required}
         autoComplete={autoComplete}
+        inputMode={inputMode}
+        maxLength={maxLength}
+        minLength={minLength}
+        pattern={pattern}
         className="bg-white/82 rounded-xl border border-sky-100 px-4 py-3 text-sm text-foreground shadow-inner shadow-sky-950/5 outline-none transition focus:border-brand focus:bg-white focus:ring-4 focus:ring-sky-200/60"
       />
     </div>
@@ -52,7 +64,7 @@ function TextArea({
   required?: boolean;
 }) {
   return (
-    <div className="grid gap-2">
+    <div className="grid min-w-0 gap-2">
       <label className="text-sm font-semibold text-foreground" htmlFor={id}>
         {label}
         {required ? <span className="text-brand"> *</span> : null}
@@ -80,7 +92,7 @@ function FormSection({
       <legend className="rounded-full border border-sky-100 bg-sky-50 px-4 py-2 text-sm font-semibold uppercase tracking-[0.12em] text-brand-dark">
         {title}
       </legend>
-      <div className="mt-5 grid gap-5 md:grid-cols-2">{children}</div>
+      <div className="mt-5 grid min-w-0 gap-5 md:grid-cols-2">{children}</div>
     </fieldset>
   );
 }
@@ -100,14 +112,35 @@ export function EnquiryForm({ initialCourse, courses }: EnquiryFormProps) {
     type: "success" | "error";
     message: string;
   } | null>(null);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    if (isSubmitting) {
+      return;
+    }
+
     const form = event.currentTarget;
     const formData = new FormData(form);
     const getValue = (key: string) => String(formData.get(key) ?? "");
+
+    if (getValue("website").trim()) {
+      setSubmitStatus({
+        type: "error",
+        message: "Unable to submit enquiry right now.",
+      });
+      return;
+    }
+
+    if (getValue("remarks").trim().length > 1000) {
+      setSubmitStatus({
+        type: "error",
+        message: "Remarks must be 1000 characters or less.",
+      });
+      return;
+    }
 
     setIsSubmitting(true);
     setSubmitStatus(null);
@@ -137,16 +170,24 @@ export function EnquiryForm({ initialCourse, courses }: EnquiryFormProps) {
           referenceName: getValue("referenceName"),
           remarks: getValue("remarks"),
           counselorName: getValue("counselorName"),
+          website: getValue("website"),
         }),
       });
 
       const result = (await response.json()) as {
+        errors?: Record<string, string[] | undefined>;
         message?: string;
         success?: boolean;
       };
 
       if (!response.ok || !result.success) {
-        throw new Error(result.message ?? "Unable to submit enquiry right now.");
+        const firstFieldError = result.errors
+          ? Object.values(result.errors)
+              .flatMap((messages) => messages ?? [])
+              .find(Boolean)
+          : undefined;
+
+        throw new Error(firstFieldError ?? result.message ?? "Unable to submit enquiry right now.");
       }
 
       form.reset();
@@ -156,6 +197,7 @@ export function EnquiryForm({ initialCourse, courses }: EnquiryFormProps) {
         type: "success",
         message: result.message ?? "Enquiry submitted successfully.",
       });
+      setShowSuccessDialog(true);
     } catch (error) {
       setSubmitStatus({
         type: "error",
@@ -167,7 +209,14 @@ export function EnquiryForm({ initialCourse, courses }: EnquiryFormProps) {
   }
 
   return (
-    <form className="grid gap-6" onSubmit={handleSubmit}>
+    <form className="grid gap-6" onSubmit={handleSubmit} aria-busy={isSubmitting}>
+      <input
+        className="hidden"
+        name="website"
+        tabIndex={-1}
+        autoComplete="off"
+        aria-hidden="true"
+      />
       <FormSection title="Student Details">
         <Field id="fullName" label="Full Name" required autoComplete="name" />
         <Field id="qualification" label="Qualification" required />
@@ -202,9 +251,27 @@ export function EnquiryForm({ initialCourse, courses }: EnquiryFormProps) {
       </FormSection>
 
       <FormSection title="Contact Details">
-        <Field id="email" label="Email" type="email" required autoComplete="email" />
-        <Field id="mobile" label="Mobile" type="tel" required autoComplete="tel" />
-        <Field id="landline" label="Landline" type="tel" />
+        <Field
+          id="email"
+          label="Email"
+          type="email"
+          required
+          autoComplete="email"
+          inputMode="email"
+          maxLength={180}
+        />
+        <Field
+          id="mobile"
+          label="Mobile"
+          type="tel"
+          required
+          autoComplete="tel"
+          inputMode="tel"
+          minLength={7}
+          maxLength={30}
+          pattern="[0-9+\\-\\s()]{7,30}"
+        />
+        <Field id="landline" label="Landline" type="tel" inputMode="tel" maxLength={30} />
       </FormSection>
 
       <FormSection title="Personal Details">
@@ -293,21 +360,45 @@ export function EnquiryForm({ initialCourse, courses }: EnquiryFormProps) {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="premium-button rounded-full bg-sky-200 px-7 py-3 text-sm font-semibold text-brand-dark transition hover:bg-white"
+          className="premium-button rounded-full bg-sky-200 px-7 py-3 text-sm font-semibold text-brand-dark transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-70"
         >
           {isSubmitting ? "Submitting..." : "Submit Enquiry"}
         </button>
       </div>
-      {submitStatus ? (
+      {submitStatus?.type === "error" ? (
         <p
-          className={`rounded-2xl border px-5 py-4 text-sm font-semibold ${
-            submitStatus.type === "success"
-              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-              : "border-red-200 bg-red-50 text-red-800"
-          }`}
+          className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-semibold text-red-800"
         >
           {submitStatus.message}
         </p>
+      ) : null}
+      {submitStatus?.type === "success" && showSuccessDialog ? (
+        <div
+          className="fixed inset-0 z-[80] grid place-items-center bg-slate-950/45 px-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="enquiry-success-title"
+        >
+          <div className="w-full max-w-md rounded-3xl border border-sky-100 bg-white p-6 text-center shadow-[0_30px_90px_rgb(8_47_73_/_0.22)]">
+            <p className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-emerald-50 text-2xl text-emerald-700">
+              ✓
+            </p>
+            <h2
+              id="enquiry-success-title"
+              className="mt-4 text-2xl font-bold text-brand-dark"
+            >
+              Enquiry Submitted
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-muted">{submitStatus.message}</p>
+            <button
+              type="button"
+              onClick={() => setShowSuccessDialog(false)}
+              className="premium-button mt-6 rounded-full bg-brand px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-dark"
+            >
+              Close
+            </button>
+          </div>
+        </div>
       ) : null}
     </form>
   );

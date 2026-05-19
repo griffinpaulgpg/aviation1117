@@ -23,6 +23,7 @@ import {
   deleteFirebaseVideoTestimonial,
   deleteFirebaseWrittenTestimonial,
   getFirebaseAdminUsers,
+  updateFirebaseEnquiry,
   updateFirebaseAdminUser,
   updateFirebaseCourse,
   updateFirebaseEvent,
@@ -99,6 +100,11 @@ const adminUserSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
+const enquiryAdminSchema = z.object({
+  status: z.enum(["New", "Contacted", "Enrolled", "Rejected"]),
+  notes: z.string().trim().max(1200, "Notes must be 1200 characters or less").optional(),
+});
+
 const contentActionSchema = z.object({
   action: z.enum(["create", "update", "delete"]),
   resource: z.enum([
@@ -110,6 +116,7 @@ const contentActionSchema = z.object({
     "videoTestimonials",
     "facultyUsers",
     "adminUsers",
+    "enquiries",
   ]),
   id: z.string().nullish(),
   data: z.unknown().optional(),
@@ -307,6 +314,14 @@ export async function POST(request: Request) {
           await updateFirebaseAdminUser(requireId(payload.id), data);
         }
       }
+    }
+
+    if (payload.resource === "enquiries") {
+      if (payload.action !== "update") {
+        throw new Error("Enquiries can only be updated.");
+      }
+
+      await updateFirebaseEnquiry(requireId(payload.id), enquiryAdminSchema.parse(payload.data));
     }
 
     revalidateTag(PUBLIC_CONTENT_CACHE_TAG);

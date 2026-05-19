@@ -1,6 +1,8 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 
@@ -20,7 +22,8 @@ type ResourceName =
   | "writtenTestimonials"
   | "videoTestimonials"
   | "facultyUsers"
-  | "adminUsers";
+  | "adminUsers"
+  | "enquiries";
 
 type TabName =
   | "overview"
@@ -49,6 +52,8 @@ const tabs: Array<{ key: TabName; label: string }> = [
   { key: "faculty", label: "Faculty Accounts" },
   { key: "admins", label: "Admin Accounts" },
 ];
+
+const enquiryStatuses = ["New", "Contacted", "Enrolled", "Rejected"] as const;
 
 const emptyCourse = {
   title: "",
@@ -177,13 +182,15 @@ function MediaField({
       {label}
       <div className="grid gap-3 rounded-2xl border border-sky-100 bg-white/60 p-3 shadow-inner shadow-sky-950/5">
         {showImagePreview ? (
-          <img
-            src={value}
-            alt={`${label} preview`}
-            loading="lazy"
-            decoding="async"
-            className="aspect-[16/9] w-full rounded-xl object-cover"
-          />
+          <div className="relative aspect-[16/9] overflow-hidden rounded-xl">
+            <Image
+              src={value}
+              alt={`${label} preview`}
+              fill
+              sizes="(min-width: 768px) 42rem, 100vw"
+              className="object-cover"
+            />
+          </div>
         ) : null}
         {showVideoPreview ? (
           <video
@@ -282,6 +289,7 @@ function StatCard({ label, value }: { label: string; value: number }) {
 }
 
 export function AdminConsole({ initialData }: AdminConsoleProps) {
+  const router = useRouter();
   const [data, setData] = useState(initialData);
   const [activeTab, setActiveTab] = useState<TabName>("overview");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(
@@ -315,6 +323,8 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
   const [enquirySearch, setEnquirySearch] = useState("");
   const [enquiryCourse, setEnquiryCourse] = useState("");
   const [enquiryDate, setEnquiryDate] = useState("");
+  const [enquiryStatus, setEnquiryStatus] = useState("");
+  const [enquiryNotes, setEnquiryNotes] = useState<Record<string, string>>({});
   const [chatSearch, setChatSearch] = useState("");
 
   const enquiryCourses = useMemo(
@@ -331,13 +341,16 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
         enquiry.enquiryNumber.toLowerCase().includes(search) ||
         enquiry.fullName.toLowerCase().includes(search) ||
         enquiry.email.toLowerCase().includes(search) ||
-        enquiry.mobile.toLowerCase().includes(search);
+        enquiry.mobile.toLowerCase().includes(search) ||
+        enquiry.selectedCourse.toLowerCase().includes(search) ||
+        (enquiry.notes ?? "").toLowerCase().includes(search);
       const matchesCourse = !enquiryCourse || enquiry.selectedCourse === enquiryCourse;
       const matchesDate = !enquiryDate || enquiry.createdAt.slice(0, 10) === enquiryDate;
+      const matchesStatus = !enquiryStatus || enquiry.status === enquiryStatus;
 
-      return matchesSearch && matchesCourse && matchesDate;
+      return matchesSearch && matchesCourse && matchesDate && matchesStatus;
     });
-  }, [data.enquiries, enquiryCourse, enquiryDate, enquirySearch]);
+  }, [data.enquiries, enquiryCourse, enquiryDate, enquirySearch, enquiryStatus]);
 
   const filteredChats = useMemo(() => {
     const search = chatSearch.trim().toLowerCase();
@@ -352,6 +365,20 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
       );
     });
   }, [chatSearch, data.chatbotChats]);
+
+  useEffect(() => {
+    setEnquiryNotes((current) => {
+      const next = { ...current };
+
+      for (const enquiry of data.enquiries) {
+        if (!(enquiry.id in next)) {
+          next[enquiry.id] = enquiry.notes ?? "";
+        }
+      }
+
+      return next;
+    });
+  }, [data.enquiries]);
 
   useEffect(() => {
     let cancelled = false;
@@ -789,6 +816,24 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
     }
   }
 
+  async function updateEnquiryAdminFields(
+    id: string,
+    status: (typeof enquiryStatuses)[number],
+    notes: string,
+  ) {
+    return mutateContent("enquiries", "update", { status, notes }, id);
+  }
+
+  function getWhatsAppReplyLink(mobile: string) {
+    const digits = mobile.replace(/\D/g, "");
+    const normalized = digits.length === 10 ? `91${digits}` : digits;
+    const message = encodeURIComponent(
+      "Hello, thank you for contacting Arunand's Aviation Academy. How can we help you?",
+    );
+
+    return normalized ? `https://wa.me/${normalized}?text=${message}` : null;
+  }
+
   async function uploadMedia({
     file,
     kind,
@@ -834,7 +879,8 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
 
   async function logout() {
     await fetch("/api/admin/logout", { method: "POST" });
-    window.location.href = "/admin";
+    router.replace("/admin");
+    router.refresh();
   }
 
   function handleCourseSubmit(event: FormEvent<HTMLFormElement>) {
@@ -1439,12 +1485,12 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
         {activeTab === "enquiries" ? (
           <AdminSection
             title="Enquiry Management"
-            description="Review every student enquiry with search and filters."
+            description="Review every student enquiry with search, filters, status, notes, and quick WhatsApp follow-up."
           >
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-4">
               <Field
                 label="Search"
-                placeholder="Enquiry no., name, email, mobile"
+                placeholder="Enquiry no., name, email, mobile, notes"
                 value={enquirySearch}
                 onChange={setEnquirySearch}
               />
@@ -1463,30 +1509,106 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
                   ))}
                 </select>
               </label>
+              <label className="grid gap-2 text-sm font-semibold text-foreground">
+                Status
+                <select
+                  className={inputClass}
+                  value={enquiryStatus}
+                  onChange={(event) => setEnquiryStatus(event.target.value)}
+                >
+                  <option value="">All statuses</option>
+                  {enquiryStatuses.map((status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <Field label="Date" type="date" value={enquiryDate} onChange={setEnquiryDate} />
             </div>
             <div className="mt-8 overflow-hidden rounded-3xl border border-sky-100 bg-white/80">
-              <div className="grid gap-3 border-b border-sky-100 bg-sky-50/70 p-4 text-xs font-semibold uppercase tracking-[0.12em] text-muted md:grid-cols-[1.1fr_1fr_1fr_0.8fr]">
+              <div className="grid gap-3 border-b border-sky-100 bg-sky-50/70 p-4 text-xs font-semibold uppercase tracking-[0.12em] text-muted lg:grid-cols-[1.1fr_1fr_0.9fr_0.8fr_1.2fr]">
                 <span>Name</span>
                 <span>Contact</span>
                 <span>Course interest</span>
-                <span>Date</span>
+                <span>Status</span>
+                <span>Notes / Actions</span>
               </div>
               {filteredEnquiries.map((enquiry) => (
                 <div
                   key={enquiry.id}
-                  className="grid gap-3 border-b border-sky-100 p-4 text-sm last:border-b-0 md:grid-cols-[1.1fr_1fr_1fr_0.8fr]"
+                  className="grid gap-4 border-b border-sky-100 p-4 text-sm last:border-b-0 lg:grid-cols-[1.1fr_1fr_0.9fr_0.8fr_1.2fr]"
                 >
                   <div>
                     <p className="font-semibold text-foreground">{enquiry.fullName}</p>
                     <p className="mt-1 text-xs font-semibold text-brand">{enquiry.enquiryNumber}</p>
+                    <p className="mt-1 text-xs text-muted">{formatDate(enquiry.createdAt)}</p>
                   </div>
                   <div className="text-muted">
                     <p>{enquiry.mobile}</p>
                     <p>{enquiry.email}</p>
                   </div>
                   <p className="font-medium text-foreground">{enquiry.selectedCourse}</p>
-                  <p className="text-muted">{formatDate(enquiry.createdAt)}</p>
+                  <label className="grid gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-muted">
+                    Status
+                    <select
+                      className={inputClass}
+                      value={enquiry.status}
+                      disabled={isSaving}
+                      onChange={(event) =>
+                        void updateEnquiryAdminFields(
+                          enquiry.id,
+                          event.currentTarget.value as (typeof enquiryStatuses)[number],
+                          enquiryNotes[enquiry.id] ?? enquiry.notes ?? "",
+                        )
+                      }
+                    >
+                      {enquiryStatuses.map((status) => (
+                        <option key={status} value={status}>
+                          {status}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <div className="grid gap-3">
+                    <textarea
+                      className={`${inputClass} min-h-24 resize-y`}
+                      value={enquiryNotes[enquiry.id] ?? enquiry.notes ?? ""}
+                      onChange={(event) =>
+                        setEnquiryNotes((current) => ({
+                          ...current,
+                          [enquiry.id]: event.currentTarget.value,
+                        }))
+                      }
+                      placeholder="Add follow-up notes"
+                    />
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        disabled={isSaving}
+                        onClick={() =>
+                          void updateEnquiryAdminFields(
+                            enquiry.id,
+                            enquiry.status,
+                            enquiryNotes[enquiry.id] ?? enquiry.notes ?? "",
+                          )
+                        }
+                        className="rounded-full bg-brand px-4 py-2 text-xs font-semibold text-white transition hover:bg-brand-dark disabled:opacity-60"
+                      >
+                        Save Notes
+                      </button>
+                      {getWhatsAppReplyLink(enquiry.mobile) ? (
+                        <a
+                          href={getWhatsAppReplyLink(enquiry.mobile) ?? undefined}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100"
+                        >
+                          WhatsApp
+                        </a>
+                      ) : null}
+                    </div>
+                  </div>
                 </div>
               ))}
               {filteredEnquiries.length === 0 ? (
@@ -1823,13 +1945,15 @@ function AdminListItem({
                 Video Link
               </div>
             ) : (
-              <img
-                src={mediaSrc}
-                alt=""
-                loading="lazy"
-                decoding="async"
-                className="aspect-video h-full w-full object-cover"
-              />
+              <div className="relative aspect-video h-full w-full">
+                <Image
+                  src={mediaSrc}
+                  alt=""
+                  fill
+                  sizes="7rem"
+                  className="object-cover"
+                />
+              </div>
             )}
           </div>
         ) : null}

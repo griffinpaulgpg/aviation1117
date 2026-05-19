@@ -1,9 +1,10 @@
 /* eslint-disable @next/next/no-html-link-for-pages */
 
 import Image from "next/image";
+import Link from "next/link";
 
-import type { PublicCourse } from "@/lib/content-data";
 import { shouldBypassImageOptimizer } from "@/lib/media";
+import type { PublicCourse } from "@/lib/public-content-data";
 
 export function CourseCard({ course }: { course: PublicCourse }) {
   const enquiryHref = course.reachUsLink || `/enquiry?course=${encodeURIComponent(course.title)}`;
@@ -33,12 +34,13 @@ export function CourseCard({ course }: { course: PublicCourse }) {
           ) : null}
         </div>
         <p className="mt-4 flex-1 text-sm leading-7 text-muted">{course.description}</p>
-        <a
+        <Link
           href={enquiryHref}
+          prefetch={true}
           className="premium-button mt-6 rounded-full bg-brand px-6 py-3 text-center text-sm font-semibold text-white transition hover:bg-brand-dark"
         >
           Reach Us Now
-        </a>
+        </Link>
       </div>
     </article>
   );

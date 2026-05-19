@@ -1,14 +1,27 @@
 /* eslint-disable @next/next/no-html-link-for-pages */
 
+import type { Metadata } from "next";
+import Link from "next/link";
+
 import { ContactPanel } from "@/components/contact-panel";
 import { Container } from "@/components/container";
 import { PageHero } from "@/components/page-hero";
-import { SiteFrame } from "@/components/site-frame";
 import { siteContent } from "@/lib/site-content";
+
+export const metadata: Metadata = {
+  title: "Contact",
+  description:
+    "Contact Arunand's Aviation Academy in Bengaluru for aviation course enquiries, admissions guidance, and academy location details.",
+  openGraph: {
+    title: "Contact Arunand's Aviation Academy",
+    description: "Reach the admissions team and find Arunand's Aviation Academy in Bengaluru.",
+    url: "/contact",
+  },
+};
 
 export default function ContactPage() {
   return (
-    <SiteFrame>
+    <>
       <main className="site-sky">
         <PageHero
           eyebrow="Contact"
@@ -31,12 +44,13 @@ export default function ContactPage() {
                     address, contact, parent details, source, and references.
                   </p>
                 </div>
-                <a
+                <Link
                   href="/enquiry"
+                  prefetch={true}
                   className="premium-button rounded-full bg-brand px-6 py-3 text-center text-sm font-semibold text-white transition hover:bg-brand-dark"
                 >
                   Open Enquiry Form
-                </a>
+                </Link>
               </div>
             </div>
             <ContactPanel />
@@ -77,6 +91,6 @@ export default function ContactPage() {
           </Container>
         </section>
       </main>
-    </SiteFrame>
+    </>
   );
 }

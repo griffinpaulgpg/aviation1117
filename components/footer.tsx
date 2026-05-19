@@ -1,5 +1,8 @@
 /* eslint-disable @next/next/no-html-link-for-pages */
 
+import Image from "next/image";
+import Link from "next/link";
+
 import { Container } from "@/components/container";
 import { SocialLink } from "@/components/social-link";
 import { siteContent } from "@/lib/site-content";
@@ -26,7 +29,21 @@ export function Footer() {
       />
       <Container className="relative grid gap-8 md:grid-cols-[1.3fr_1fr]">
         <div className="footer-glass p-6">
-          <p className="text-xl font-semibold">{siteContent.meta.name}</p>
+          <Link
+            href="/"
+            prefetch={true}
+            aria-label={siteContent.meta.name}
+            className="inline-flex rounded-3xl transition duration-200 hover:scale-[1.03] focus:outline-none focus:ring-4 focus:ring-sky-200/40"
+          >
+            <Image
+              src="/images/company-logo.png"
+              alt={siteContent.meta.name}
+              width={180}
+              height={180}
+              loading="lazy"
+              className="h-32 w-32 rounded-3xl object-contain shadow-lg shadow-sky-950/20 sm:h-40 sm:w-40"
+            />
+          </Link>
           <div className="text-white/72 mt-4 max-w-xl space-y-4 text-sm leading-6">
             <p>
               Arunand&apos;s Aviation Academy is a Bangalore-based aviation training academy
@@ -47,13 +64,14 @@ export function Footer() {
           <p className="font-semibold">Quick Links</p>
           <div className="text-white/72 mt-4 flex flex-wrap gap-3 text-sm">
             {footerLinks.map((link) => (
-              <a
+              <Link
                 key={link.href}
                 href={link.href}
+                prefetch={true}
                 className="rounded-full border border-white/10 px-3 py-2 transition hover:border-sky-200/50 hover:bg-white/10 hover:text-white"
               >
                 {link.label}
-              </a>
+              </Link>
             ))}
           </div>
           <p className="mt-6 font-semibold">Follow Us</p>

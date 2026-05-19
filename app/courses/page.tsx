@@ -1,17 +1,28 @@
+import type { Metadata } from "next";
+
 import { Container } from "@/components/container";
 import { CourseCard } from "@/components/course-card";
 import { PageHero } from "@/components/page-hero";
-import { SiteFrame } from "@/components/site-frame";
 import { ThreeDFlow } from "@/components/three-d-flow";
-import { getPublicCourses } from "@/lib/content-data";
+import { getPublicCourses } from "@/lib/public-content-data";
 
-export const dynamic = "force-dynamic";
+export const metadata: Metadata = {
+  title: "Courses",
+  description:
+    "Explore aviation courses at Arunand's Aviation Academy, including cabin crew, ground handling, airport operations, airline operations, hospitality, and logistics.",
+  openGraph: {
+    title: "Aviation Courses",
+    description:
+      "Career-focused aviation training programs for students preparing for airport and airline roles.",
+    url: "/courses",
+  },
+};
 
 export default async function CoursesPage() {
   const courses = await getPublicCourses();
 
   return (
-    <SiteFrame>
+    <>
       <main className="site-sky">
         <PageHero
           eyebrow="Courses"
@@ -39,6 +50,6 @@ export default async function CoursesPage() {
           </Container>
         </section>
       </main>
-    </SiteFrame>
+    </>
   );
 }

@@ -1,12 +1,26 @@
 /* eslint-disable @next/next/no-html-link-for-pages */
 
+import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
 
 import { Container } from "@/components/container";
+import { PlacementLogoMarquee, type PlacementLogo } from "@/components/placement-logo-marquee";
 import { SectionHeading } from "@/components/section-heading";
-import { SiteFrame } from "@/components/site-frame";
 import { StatCard } from "@/components/stat-card";
 import { siteContent } from "@/lib/site-content";
+
+export const metadata: Metadata = {
+  title: "Aviation Training Academy in Bangalore",
+  description:
+    "Arunand's Aviation Academy offers aviation and air cargo certificate courses with grooming, practical exposure, and placement-oriented training in Bangalore.",
+  openGraph: {
+    title: "Arunand's Aviation Academy",
+    description:
+      "Premium aviation academy in Bangalore for cabin crew, ground handling, airport operations, airline operations, hospitality, and logistics training.",
+    url: "/",
+  },
+};
 
 const offeredCourses = [
   "Cabin Crew",
@@ -17,9 +31,110 @@ const offeredCourses = [
   "Air Cargo & Logistics",
 ];
 
+const accreditationLogos = [
+  {
+    title: "NSDC",
+    subtitle: "National Skill Development Corporation",
+    image: "/images/nsdc-logo.png",
+    width: 294,
+    height: 266,
+  },
+  {
+    title: "AASSC",
+    subtitle: "Aerospace & Aviation Sector Skill Council",
+    image: "/images/aassc-logo.png",
+    width: 162,
+    height: 164,
+  },
+  {
+    title: "Skill India",
+    subtitle: "Government Skill Initiative",
+    image: "/images/skill-india-logo.png",
+    width: 416,
+    height: 114,
+  },
+];
+
+const placementCompanyLogos: PlacementLogo[] = [
+  {
+    name: "Air India",
+    image: "/images/placements/air-india-premium-logo.png",
+    width: 460,
+    height: 180,
+  },
+  {
+    name: "AirAsia",
+    image: "/images/placements/airasia-premium-logo.png",
+    width: 360,
+    height: 190,
+  },
+  {
+    name: "Kempegowda International Airport Bengaluru",
+    image: "/images/placements/blr-airport-premium-logo.png",
+    width: 560,
+    height: 190,
+  },
+  {
+    name: "GlobeGround India",
+    image: "/images/placements/globeground-india-premium-logo.png",
+    width: 460,
+    height: 180,
+  },
+  {
+    name: "GoAir / Go First",
+    image: "/images/placements/go-first-premium-logo.png",
+    width: 380,
+    height: 190,
+  },
+  {
+    name: "SpiceJet",
+    image: "/images/placements/spicejet-premium-logo.png",
+    width: 420,
+    height: 190,
+  },
+  {
+    name: "Zero Eight Zero",
+    image: "/images/placements/zero-eight-zero-placement-logo.png",
+    width: 320,
+    height: 210,
+  },
+  {
+    name: "Vistara",
+    image: "/images/placements/vistara-premium-logo.png",
+    width: 360,
+    height: 190,
+  },
+  {
+    name: "Menzies Aviation",
+    image: "/images/placements/menzies-aviation-premium-logo.png",
+    width: 360,
+    height: 190,
+  },
+  {
+    name: "Plaza Premium Lounge",
+    image: "/images/placements/plaza-premium-lounge-premium-logo.png",
+    width: 420,
+    height: 190,
+  },
+  {
+    name: "HMS Host",
+    image: "/images/placements/hms-host-premium-logo.png",
+    width: 320,
+    height: 210,
+  },
+];
+
+const focusAreas = [
+  "Cabin Crew",
+  "Ground Handling",
+  "Airport Operations",
+  "Airline Operations",
+  "Hospitality",
+];
+
 export default function HomePage() {
   return (
-    <SiteFrame>
+    <>
       <main className="home-canvas">
         <section className="home-hero relative overflow-hidden bg-brand-dark text-white">
           <div className="hero-orbit md:block" aria-hidden="true" />
@@ -47,18 +162,20 @@ export default function HomePage() {
                 {siteContent.home.intro}
               </p>
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-                <a
+                <Link
                   href="/enquiry"
+                  prefetch={true}
                   className="premium-button rounded-full bg-sky-200 px-6 py-3 text-center text-sm font-semibold text-brand-dark transition hover:bg-white"
                 >
                   {siteContent.home.primaryCta}
-                </a>
-                <a
+                </Link>
+                <Link
                   href="/courses"
+                  prefetch={true}
                   className="premium-button border-white/24 rounded-full border px-6 py-3 text-center text-sm font-semibold text-white transition hover:border-white hover:bg-white/10"
                 >
                   {siteContent.home.secondaryCta}
-                </a>
+                </Link>
               </div>
             </div>
             <div className="home-stat-grid grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -104,12 +221,13 @@ export default function HomePage() {
               <h2 className="mt-5 max-w-xl text-4xl font-semibold tracking-normal text-foreground sm:text-5xl">
                 We Are The Best Aviation In Town
               </h2>
-              <a
+              <Link
                 href="/courses"
+                prefetch={true}
                 className="premium-button mt-8 inline-flex rounded-2xl bg-brand px-7 py-4 text-sm font-semibold tracking-[0.2em] text-white transition hover:bg-brand-dark"
               >
                 About Us
-              </a>
+              </Link>
             </div>
             <div className="grid gap-5 sm:grid-cols-2">
               {offeredCourses.map((course) => (
@@ -130,24 +248,44 @@ export default function HomePage() {
         <section className="home-affiliation-section aviation-section py-20 sm:py-24">
           <Container className="grid gap-12">
             <div className="home-logo-band rounded-2xl p-5 sm:p-8">
-              <div className="grid gap-4 rounded-xl bg-white p-8 text-center sm:grid-cols-3 sm:items-center">
-                <div>
-                  <p className="text-3xl font-semibold text-brand">NSDC</p>
-                  <p className="mt-2 text-sm font-medium text-muted">
-                    National Skill Development Corporation
-                  </p>
-                </div>
-                <div>
-                  <p className="text-3xl font-semibold text-brand">AASSC</p>
-                  <p className="mt-2 text-sm font-medium text-muted">
-                    Aerospace & Aviation Sector Skill Council
-                  </p>
-                </div>
-                <div>
-                  <p className="text-3xl font-semibold text-brand-dark">Skill India</p>
-                  <p className="mt-2 text-sm font-medium text-muted">Government skill initiative</p>
-                </div>
+              <div className="grid gap-4 rounded-xl bg-white p-5 text-center sm:grid-cols-3 sm:items-stretch sm:p-8">
+                {accreditationLogos.map((item) => (
+                  <article
+                    key={item.title}
+                    className="flex min-h-52 flex-col items-center justify-center rounded-2xl border border-sky-100 bg-white/90 p-5 shadow-[0_18px_40px_rgba(11,19,32,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_22px_50px_rgba(14,116,144,0.16)]"
+                  >
+                    <div className="flex h-28 w-full items-center justify-center">
+                      <Image
+                        src={item.image}
+                        alt={`${item.title} logo`}
+                        width={item.width}
+                        height={item.height}
+                        loading="lazy"
+                        className="max-h-24 w-auto object-contain"
+                        sizes="(min-width: 640px) 26vw, 80vw"
+                      />
+                    </div>
+                    <h3 className="mt-5 text-2xl font-semibold tracking-normal text-brand-dark">
+                      {item.title}
+                    </h3>
+                    <p className="mt-2 text-sm font-medium leading-6 text-muted">
+                      {item.subtitle}
+                    </p>
+                  </article>
+                ))}
               </div>
+            </div>
+
+            <div className="home-placement-strip overflow-hidden rounded-3xl border border-sky-100 bg-white/82 p-5 shadow-[0_18px_48px_rgba(11,19,32,0.08)] sm:p-6 lg:p-8">
+              <div className="relative z-10 text-center">
+                <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand">
+                  Placements
+                </p>
+                <h2 className="mt-3 text-3xl font-semibold tracking-normal text-foreground sm:text-4xl">
+                  Placements In Major Companies
+                </h2>
+              </div>
+              <PlacementLogoMarquee logos={placementCompanyLogos} />
             </div>
 
             <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr_0.85fr] lg:items-center">
@@ -169,10 +307,16 @@ export default function HomePage() {
                 <p className="mt-8 text-3xl leading-tight text-foreground">
                   An Aviation Academy With Focus On
                 </p>
-                <p className="mt-8 text-3xl font-semibold leading-tight text-foreground">
-                  Cabin Crew | Ground Handling | Airport Operations | Airline Operations |
-                  Hospitality
-                </p>
+                <div className="mt-8 grid gap-3">
+                  {focusAreas.map((area) => (
+                    <p
+                      key={area}
+                      className="rounded-2xl border border-sky-100 bg-white/80 px-5 py-3 text-2xl font-semibold leading-tight text-foreground shadow-sm"
+                    >
+                      {area}
+                    </p>
+                  ))}
+                </div>
               </div>
               <div className="home-photo-lift relative min-h-72 overflow-hidden rounded-xl">
                 <Image
@@ -209,6 +353,6 @@ export default function HomePage() {
           </Container>
         </section>
       </main>
-    </SiteFrame>
+    </>
   );
 }

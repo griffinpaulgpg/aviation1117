@@ -1,13 +1,22 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { AdminConsole } from "@/components/admin-console";
 import { Container } from "@/components/container";
 import { PageHero } from "@/components/page-hero";
-import { SiteFrame } from "@/components/site-frame";
 import { isAdminSignedIn } from "@/lib/admin-auth";
 import { getEmptyAdminDashboardData } from "@/lib/admin-dashboard-empty";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Admin Dashboard",
+  description: "Protected dashboard for Arunand's Aviation Academy website management.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default async function AdminDashboardPage() {
   if (!(await isAdminSignedIn())) {
@@ -15,7 +24,7 @@ export default async function AdminDashboardPage() {
   }
 
   return (
-    <SiteFrame>
+    <>
       <main className="site-sky">
         <PageHero
           eyebrow="Admin Dashboard"
@@ -28,6 +37,6 @@ export default async function AdminDashboardPage() {
           </Container>
         </section>
       </main>
-    </SiteFrame>
+    </>
   );
 }

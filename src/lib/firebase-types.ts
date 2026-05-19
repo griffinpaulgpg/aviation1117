@@ -26,6 +26,8 @@ export type FirebaseEnquiry = {
   email: string;
   mobile: string;
   selectedCourse: string;
+  status: "New" | "Contacted" | "Enrolled" | "Rejected";
+  notes?: string;
   createdAt: string;
   updatedAt?: string;
 };

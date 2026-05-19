@@ -1,20 +1,30 @@
 /* eslint-disable @next/next/no-html-link-for-pages */
 
+import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
 
 import { Container } from "@/components/container";
 import { PageHero } from "@/components/page-hero";
-import { SiteFrame } from "@/components/site-frame";
-import { getPublicEvents } from "@/lib/content-data";
 import { shouldBypassImageOptimizer } from "@/lib/media";
+import { getPublicEvents } from "@/lib/public-content-data";
 
-export const dynamic = "force-dynamic";
+export const metadata: Metadata = {
+  title: "Events",
+  description:
+    "View aviation academy events, airport visits, guest sessions, mock interview weeks, and student programs.",
+  openGraph: {
+    title: "Aviation Academy Events",
+    description: "Programs and industry exposure activities at Arunand's Aviation Academy.",
+    url: "/events",
+  },
+};
 
 export default async function EventsPage() {
   const events = await getPublicEvents();
 
   return (
-    <SiteFrame>
+    <>
       <main className="site-sky">
         <PageHero
           eyebrow="Events"
@@ -47,18 +57,28 @@ export default async function EventsPage() {
                 <h2 className="mt-4 text-2xl font-semibold text-foreground">{event.title}</h2>
                 <p className="mt-4 text-sm leading-7 text-muted">{event.description}</p>
                 {event.applyLink ? (
-                  <a
-                    href={event.applyLink}
-                    className="premium-button mt-6 inline-flex rounded-full bg-brand px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-dark"
-                  >
-                    Apply
-                  </a>
+                  event.applyLink.startsWith("/") ? (
+                    <Link
+                      href={event.applyLink}
+                      prefetch={true}
+                      className="premium-button mt-6 inline-flex rounded-full bg-brand px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-dark"
+                    >
+                      Apply
+                    </Link>
+                  ) : (
+                    <a
+                      href={event.applyLink}
+                      className="premium-button mt-6 inline-flex rounded-full bg-brand px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-dark"
+                    >
+                      Apply
+                    </a>
+                  )
                 ) : null}
               </article>
             ))}
           </Container>
         </section>
       </main>
-    </SiteFrame>
+    </>
   );
 }

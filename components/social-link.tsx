@@ -7,24 +7,24 @@ type SocialLinkProps = {
 function SocialIcon({ label }: { label: string }) {
   if (label === "Instagram") {
     return (
-      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand shadow-lg shadow-sky-950/20">
+      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[radial-gradient(circle_at_30%_110%,#feda75_0%,#fa7e1e_25%,#d62976_52%,#962fbf_75%,#4f5bd5_100%)] shadow-lg shadow-pink-950/20">
         <svg
           viewBox="0 0 24 24"
           aria-hidden="true"
-          className="h-4 w-4 fill-none stroke-white stroke-[2.2]"
+          className="h-5 w-5 fill-none stroke-white stroke-[2]"
         >
-          <rect x="5" y="5" width="14" height="14" rx="4" />
-          <circle cx="12" cy="12" r="3.2" />
-          <circle cx="16.7" cy="7.3" r="0.8" className="fill-white stroke-none" />
+          <rect x="4.75" y="4.75" width="14.5" height="14.5" rx="4.4" />
+          <circle cx="12" cy="12" r="3.45" />
+          <circle cx="16.75" cy="7.25" r="1" className="fill-white stroke-none" />
         </svg>
       </span>
     );
   }
 
   return (
-    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-dark shadow-lg shadow-sky-950/20">
-      <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4 fill-white">
-        <path d="M10 8.5v7l6-3.5-6-3.5Z" />
+    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#FF0000] shadow-lg shadow-red-950/20">
+      <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 fill-white">
+        <path d="M21.58 7.19a2.72 2.72 0 0 0-1.91-1.93C17.98 4.8 11.2 4.8 11.2 4.8s-6.78 0-8.47.46A2.72 2.72 0 0 0 .82 7.19 28.25 28.25 0 0 0 .36 12a28.25 28.25 0 0 0 .46 4.81 2.72 2.72 0 0 0 1.91 1.93c1.69.46 8.47.46 8.47.46s6.78 0 8.47-.46a2.72 2.72 0 0 0 1.91-1.93A28.25 28.25 0 0 0 22.04 12a28.25 28.25 0 0 0-.46-4.81ZM9.04 15.2V8.8L14.67 12l-5.63 3.2Z" />
       </svg>
     </span>
   );

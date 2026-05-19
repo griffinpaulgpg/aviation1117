@@ -1,18 +1,27 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 
 import { Container } from "@/components/container";
 import { PageHero } from "@/components/page-hero";
-import { SiteFrame } from "@/components/site-frame";
-import { getPublicGallery } from "@/lib/content-data";
 import { shouldBypassImageOptimizer } from "@/lib/media";
+import { getPublicGallery } from "@/lib/public-content-data";
 
-export const dynamic = "force-dynamic";
+export const metadata: Metadata = {
+  title: "Gallery",
+  description:
+    "See Arunand's Aviation Academy training moments, student activities, classroom sessions, and aviation exposure photos.",
+  openGraph: {
+    title: "Academy Gallery",
+    description: "Photos from aviation training, academy life, airport visits, and student activities.",
+    url: "/gallery",
+  },
+};
 
 export default async function GalleryPage() {
   const gallery = await getPublicGallery();
 
   return (
-    <SiteFrame>
+    <>
       <main className="site-sky">
         <PageHero
           eyebrow="Gallery"
@@ -62,6 +71,6 @@ export default async function GalleryPage() {
           </Container>
         </section>
       </main>
-    </SiteFrame>
+    </>
   );
 }

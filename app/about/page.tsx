@@ -1,7 +1,19 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 
 import { Container } from "@/components/container";
-import { SiteFrame } from "@/components/site-frame";
+
+export const metadata: Metadata = {
+  title: "About Us",
+  description:
+    "Learn about Arunand's Aviation Academy, an AASSC affiliated aviation training academy in Bangalore led by experienced airline professionals.",
+  openGraph: {
+    title: "About Arunand's Aviation Academy",
+    description:
+      "A Bangalore aviation academy focused on professional training, grooming, communication, and aviation career readiness.",
+    url: "/about",
+  },
+};
 
 const aboutParagraphs = [
   "We would like to take this opportunity to introduce Arunand's Aviation Academy. We are situated in the Silicon Valley of India, Bangalore. Arunand's Aviation Academy offers Aviation and Air Cargo Certificate courses.",
@@ -59,7 +71,7 @@ const leaders = [
 
 export default function AboutPage() {
   return (
-    <SiteFrame>
+    <>
       <main className="site-sky">
         <section className="page-hero py-20 text-center text-white">
           <div className="hero-orbit md:block" aria-hidden="true" />
@@ -181,6 +193,6 @@ export default function AboutPage() {
           </Container>
         </section>
       </main>
-    </SiteFrame>
+    </>
   );
 }

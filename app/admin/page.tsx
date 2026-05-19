@@ -1,10 +1,20 @@
+import type { Metadata } from "next";
+
 import { AdminLoginForm } from "@/components/admin-login-form";
 import { Container } from "@/components/container";
-import { SiteFrame } from "@/components/site-frame";
+
+export const metadata: Metadata = {
+  title: "Admin Login",
+  description: "Secure admin login for Arunand's Aviation Academy website management.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default function AdminLoginPage() {
   return (
-    <SiteFrame>
+    <>
       <main className="site-sky py-20">
         <Container className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
           <div>
@@ -22,6 +32,6 @@ export default function AdminLoginPage() {
           <AdminLoginForm />
         </Container>
       </main>
-    </SiteFrame>
+    </>
   );
 }

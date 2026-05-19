@@ -1,8 +1,10 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export function AdminLoginForm() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -28,7 +30,8 @@ export function AdminLoginForm() {
         throw new Error(result.message ?? "Unable to login.");
       }
 
-      window.location.href = "/admin/dashboard";
+      router.replace("/admin/dashboard");
+      router.refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to login.");
     } finally {
