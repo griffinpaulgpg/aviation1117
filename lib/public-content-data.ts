@@ -66,6 +66,11 @@ export type PublicWrittenTestimonial = {
   photo?: string | null;
 };
 
+export type PublicEnquirySource = {
+  id?: string;
+  name: string;
+};
+
 function optimizedMediaPath(value?: string | null) {
   return value ? (staticMediaAliases[value] ?? value) : value;
 }
@@ -80,6 +85,35 @@ function fallbackCourses() {
     reachUsLink: `/enquiry?course=${encodeURIComponent(course.title)}`,
     createdAt: new Date(0).toISOString(),
   }));
+}
+
+function fallbackEnquirySources(): PublicEnquirySource[] {
+  return [
+    "Newspaper Ads",
+    "Pamphlet",
+    "Hoardings",
+    "Seminar",
+    "JustDial",
+    "Friends & Relatives",
+    "Other",
+  ].map((name, index) => ({ id: `fallback-source-${index}`, name }));
+}
+
+async function safeFirebaseRead<T>(read: () => Promise<T>, fallback: T, timeoutMs = 3000) {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    return await Promise.race([
+      read().catch(() => fallback),
+      new Promise<T>((resolve) => {
+        timeoutId = setTimeout(() => resolve(fallback), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
 }
 
 function fallbackEvents() {
@@ -115,7 +149,26 @@ function fallbackWrittenTestimonials(): PublicWrittenTestimonial[] {
 }
 
 async function loadPublicCourses(): Promise<PublicCourse[]> {
-  return fallbackCourses();
+  return safeFirebaseRead(async () => {
+    const { getFirebaseCourses } = await import("@/src/lib/firebase-services");
+    const courses = await getFirebaseCourses();
+
+    return courses.length > 0
+      ? courses.map((course) => ({
+          ...course,
+          image: optimizedMediaPath(course.image) ?? course.image,
+        }))
+      : fallbackCourses();
+  }, fallbackCourses());
+}
+
+async function loadPublicEnquirySources(): Promise<PublicEnquirySource[]> {
+  return safeFirebaseRead(async () => {
+    const { getFirebaseEnquirySources } = await import("@/src/lib/firebase-services");
+    const sources = await getFirebaseEnquirySources();
+
+    return sources.length > 0 ? sources : fallbackEnquirySources();
+  }, fallbackEnquirySources());
 }
 
 async function loadPublicEvents(): Promise<PublicEvent[]> {
@@ -136,10 +189,8 @@ async function loadPublicTestimonials() {
   };
 }
 
-export const getPublicCourses = unstable_cache(loadPublicCourses, ["public-courses"], {
-  revalidate: 300,
-  tags: [PUBLIC_CONTENT_CACHE_TAG],
-});
+export const getPublicCourses = loadPublicCourses;
+export const getPublicEnquirySources = loadPublicEnquirySources;
 
 export const getPublicEvents = unstable_cache(loadPublicEvents, ["public-events"], {
   revalidate: 300,

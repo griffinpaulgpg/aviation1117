@@ -8,6 +8,7 @@ import { hashPassword } from "@/lib/passwords";
 import {
   createFirebaseAdminUser,
   createFirebaseCourse,
+  createFirebaseEnquirySource,
   createFirebaseEvent,
   createFirebaseFacultyUser,
   createFirebaseGalleryFolder,
@@ -16,6 +17,8 @@ import {
   createFirebaseWrittenTestimonial,
   deleteFirebaseAdminUser,
   deleteFirebaseCourse,
+  deleteFirebaseEnquiry,
+  deleteFirebaseEnquirySource,
   deleteFirebaseEvent,
   deleteFirebaseFacultyUser,
   deleteFirebaseGalleryFolder,
@@ -24,6 +27,7 @@ import {
   deleteFirebaseWrittenTestimonial,
   getFirebaseAdminUsers,
   updateFirebaseEnquiry,
+  updateFirebaseEnquirySource,
   updateFirebaseAdminUser,
   updateFirebaseCourse,
   updateFirebaseEvent,
@@ -105,6 +109,10 @@ const enquiryAdminSchema = z.object({
   notes: z.string().trim().max(1200, "Notes must be 1200 characters or less").optional(),
 });
 
+const enquirySourceSchema = z.object({
+  name: z.string().trim().min(1, "Enquiry source is required"),
+});
+
 const contentActionSchema = z.object({
   action: z.enum(["create", "update", "delete"]),
   resource: z.enum([
@@ -117,6 +125,7 @@ const contentActionSchema = z.object({
     "facultyUsers",
     "adminUsers",
     "enquiries",
+    "enquirySources",
   ]),
   id: z.string().nullish(),
   data: z.unknown().optional(),
@@ -133,6 +142,10 @@ function requireId(id?: string | null) {
 function getAffectedPaths(resource: z.infer<typeof contentActionSchema>["resource"]) {
   if (resource === "courses") {
     return ["/", "/courses", "/enquiry"];
+  }
+
+  if (resource === "enquirySources") {
+    return ["/enquiry"];
   }
 
   if (resource === "events") {
@@ -215,6 +228,19 @@ export async function POST(request: Request) {
         await updateFirebaseEvent(requireId(payload.id), eventSchema.parse(payload.data));
       } else {
         await deleteFirebaseEvent(requireId(payload.id));
+      }
+    }
+
+    if (payload.resource === "enquirySources") {
+      if (payload.action === "create") {
+        await createFirebaseEnquirySource(enquirySourceSchema.parse(payload.data));
+      } else if (payload.action === "update") {
+        await updateFirebaseEnquirySource(
+          requireId(payload.id),
+          enquirySourceSchema.parse(payload.data),
+        );
+      } else {
+        await deleteFirebaseEnquirySource(requireId(payload.id));
       }
     }
 
@@ -317,11 +343,13 @@ export async function POST(request: Request) {
     }
 
     if (payload.resource === "enquiries") {
-      if (payload.action !== "update") {
-        throw new Error("Enquiries can only be updated.");
+      if (payload.action === "update") {
+        await updateFirebaseEnquiry(requireId(payload.id), enquiryAdminSchema.parse(payload.data));
+      } else if (payload.action === "delete") {
+        await deleteFirebaseEnquiry(requireId(payload.id));
+      } else {
+        throw new Error("Enquiries can only be updated or deleted.");
       }
-
-      await updateFirebaseEnquiry(requireId(payload.id), enquiryAdminSchema.parse(payload.data));
     }
 
     revalidateTag(PUBLIC_CONTENT_CACHE_TAG);

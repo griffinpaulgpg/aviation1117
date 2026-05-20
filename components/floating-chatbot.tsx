@@ -8,7 +8,38 @@ import { cn } from "@/lib/cn";
 import { db } from "@/src/lib/firebase";
 
 const botReply =
-  "Thank you! Our team will contact you shortly with more details about Arunand's Aviation Academy.";
+  "Thank you! Our team will contact you shortly. You can also share your preferred course and our admissions team will guide you.";
+
+type ChatMessage = {
+  id: string;
+  from: "bot" | "user";
+  text: string;
+  time: string;
+};
+
+function formatChatTime(value: string) {
+  return new Intl.DateTimeFormat("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs = 4500) {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error("Request timed out.")), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
+}
 
 function getSessionId() {
   if (typeof window === "undefined") {
@@ -62,6 +93,15 @@ export function FloatingChatbot() {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      id: "welcome",
+      from: "bot",
+      text: "Hello, welcome to Arunand's Aviation Institute. How can I help you with courses, admissions, or placement support?",
+      time: new Date().toISOString(),
+    },
+  ]);
   const [notice, setNotice] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const sessionId = useMemo(getSessionId, []);
 
@@ -102,25 +142,60 @@ export function FloatingChatbot() {
       return;
     }
 
+    const now = new Date().toISOString();
+    const userChat: ChatMessage = {
+      id: `user-${Date.now()}`,
+      from: "user",
+      text: userMessage,
+      time: now,
+    };
+
+    setMessages((current) => [...current, userChat]);
+    setMessage("");
     setIsSending(true);
+    setIsTyping(true);
     setNotice(null);
 
     try {
-      await addDoc(collection(db, "chatbotChats"), {
-        userMessage,
-        botReply,
-        timestamp: serverTimestamp(),
-        pageUrl: window.location.href,
-        sessionId,
-      });
+      await withTimeout(
+        addDoc(collection(db, "chatbotChats"), {
+          userMessage,
+          botReply,
+          timestamp: serverTimestamp(),
+          pageUrl: window.location.href,
+          sessionId,
+        }),
+      );
 
-      setMessage("");
-      setNotice({ type: "success", text: botReply });
+      window.setTimeout(() => {
+        setMessages((current) => [
+          ...current,
+          {
+            id: `bot-${Date.now()}`,
+            from: "bot",
+            text: botReply,
+            time: new Date().toISOString(),
+          },
+        ]);
+        setIsTyping(false);
+      }, 650);
     } catch {
       setNotice({
         type: "error",
-        text: "Unable to send your message right now. Please try again shortly.",
+        text: "Message shown here, but Firebase could not save it right now. Please check the connection.",
       });
+      window.setTimeout(() => {
+        setMessages((current) => [
+          ...current,
+          {
+            id: `bot-${Date.now()}`,
+            from: "bot",
+            text: botReply,
+            time: new Date().toISOString(),
+          },
+        ]);
+        setIsTyping(false);
+      }, 650);
     } finally {
       setIsSending(false);
     }
@@ -148,6 +223,40 @@ export function FloatingChatbot() {
               Close
             </button>
           </div>
+          <div className="max-h-80 space-y-3 overflow-y-auto bg-sky-50/45 p-4">
+            {messages.map((chat) => (
+              <div
+                key={chat.id}
+                className={cn("flex", chat.from === "user" ? "justify-end" : "justify-start")}
+              >
+                <div
+                  className={cn(
+                    "max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-6 shadow-sm",
+                    chat.from === "user"
+                      ? "rounded-br-md bg-brand text-white"
+                      : "rounded-bl-md border border-sky-100 bg-white text-foreground",
+                  )}
+                >
+                  <p>{chat.text}</p>
+                  <p
+                    className={cn(
+                      "mt-1 text-[0.68rem] font-semibold",
+                      chat.from === "user" ? "text-white/70" : "text-muted",
+                    )}
+                  >
+                    {formatChatTime(chat.time)}
+                  </p>
+                </div>
+              </div>
+            ))}
+            {isTyping ? (
+              <div className="flex justify-start">
+                <div className="rounded-2xl rounded-bl-md border border-sky-100 bg-white px-4 py-3 text-xs font-semibold text-muted shadow-sm">
+                  Assistant is typing...
+                </div>
+              </div>
+            ) : null}
+          </div>
           <form onSubmit={handleSubmit} className="grid gap-3 p-4">
             <label className="grid gap-2 text-sm font-semibold text-foreground">
               Message
@@ -155,7 +264,7 @@ export function FloatingChatbot() {
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}
                 placeholder="Ask about courses, admissions, or placement support"
-                className="min-h-28 resize-none rounded-2xl border border-sky-100 bg-sky-50/55 px-4 py-3 text-sm leading-6 text-foreground outline-none transition focus:border-brand focus:bg-white focus:ring-4 focus:ring-sky-200/60"
+                className="min-h-20 resize-none rounded-2xl border border-sky-100 bg-sky-50/55 px-4 py-3 text-sm leading-6 text-foreground outline-none transition focus:border-brand focus:bg-white focus:ring-4 focus:ring-sky-200/60"
               />
             </label>
             {notice ? (

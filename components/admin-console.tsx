@@ -23,7 +23,8 @@ type ResourceName =
   | "videoTestimonials"
   | "facultyUsers"
   | "adminUsers"
-  | "enquiries";
+  | "enquiries"
+  | "enquirySources";
 
 type TabName =
   | "overview"
@@ -32,6 +33,7 @@ type TabName =
   | "gallery"
   | "testimonials"
   | "enquiries"
+  | "sources"
   | "chatbot"
   | "whatsapp"
   | "faculty"
@@ -47,6 +49,7 @@ const tabs: Array<{ key: TabName; label: string }> = [
   { key: "gallery", label: "Gallery" },
   { key: "testimonials", label: "Testimonials" },
   { key: "enquiries", label: "Enquiries" },
+  { key: "sources", label: "Enquiry Sources" },
   { key: "chatbot", label: "Chatbot" },
   { key: "whatsapp", label: "WhatsApp" },
   { key: "faculty", label: "Faculty Accounts" },
@@ -76,6 +79,7 @@ const emptyWrittenTestimonial = { name: "", position: "", description: "", photo
 const emptyVideoTestimonial = { video: "", name: "", position: "", description: "" };
 const emptyFaculty = { name: "", email: "", password: "" };
 const emptyAdmin = { name: "", email: "", password: "" };
+const emptyEnquirySource = { name: "" };
 
 type MediaKind = "image" | "video";
 
@@ -312,6 +316,7 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
   const [videoForm, setVideoForm] = useState(emptyVideoTestimonial);
   const [facultyForm, setFacultyForm] = useState(emptyFaculty);
   const [adminForm, setAdminForm] = useState(emptyAdmin);
+  const [sourceForm, setSourceForm] = useState(emptyEnquirySource);
 
   const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
@@ -319,6 +324,7 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
   const [editingPhotoId, setEditingPhotoId] = useState<string | null>(null);
   const [editingWrittenId, setEditingWrittenId] = useState<string | null>(null);
   const [editingVideoId, setEditingVideoId] = useState<string | null>(null);
+  const [editingSourceId, setEditingSourceId] = useState<string | null>(null);
 
   const [enquirySearch, setEnquirySearch] = useState("");
   const [enquiryCourse, setEnquiryCourse] = useState("");
@@ -328,8 +334,16 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
   const [chatSearch, setChatSearch] = useState("");
 
   const enquiryCourses = useMemo(
-    () => Array.from(new Set(data.enquiries.map((enquiry) => enquiry.selectedCourse))).sort(),
-    [data.enquiries],
+    () =>
+      Array.from(
+        new Set([
+          ...data.courses.map((course) => course.title),
+          ...data.enquiries.map((enquiry) => enquiry.selectedCourse),
+        ]),
+      )
+        .filter(Boolean)
+        .sort(),
+    [data.courses, data.enquiries],
   );
 
   const filteredEnquiries = useMemo(() => {
@@ -406,6 +420,7 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
           getFirebaseAdminUsers,
           getFirebaseCourses,
           getFirebaseEnquiries,
+          getFirebaseEnquirySources,
           getFirebaseEvents,
           getFirebaseFacultyUsers,
           getFirebaseGalleryFolders,
@@ -419,6 +434,7 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
           courses,
           events,
           enquiries,
+          enquirySources,
           settings,
           galleryFolders,
           galleryPhotos,
@@ -430,6 +446,7 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
           getFirebaseCourses(),
           getFirebaseEvents(),
           getFirebaseEnquiries(),
+          getFirebaseEnquirySources(),
           getFirebaseSettings(),
           getFirebaseGalleryFolders(),
           getFirebaseGalleryPhotos(),
@@ -449,6 +466,7 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
           courses,
           events,
           enquiries,
+          enquirySources,
           settings,
           galleryFolders,
           galleryPhotos,
@@ -994,6 +1012,21 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
     void mutateContent("adminUsers", "create", adminForm).then((saved) => {
       if (saved) {
         setAdminForm(emptyAdmin);
+      }
+    });
+  }
+
+  function handleSourceSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void mutateContent(
+      "enquirySources",
+      editingSourceId ? "update" : "create",
+      sourceForm,
+      editingSourceId,
+    ).then((saved) => {
+      if (saved) {
+        setSourceForm(emptyEnquirySource);
+        setEditingSourceId(null);
       }
     });
   }
@@ -1582,6 +1615,25 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
                       }
                       placeholder="Add follow-up notes"
                     />
+                    <details className="rounded-2xl border border-sky-100 bg-sky-50/60 p-3 text-xs leading-5 text-muted">
+                      <summary className="cursor-pointer font-semibold text-brand-dark">
+                        View full enquiry
+                      </summary>
+                      <div className="mt-3 grid gap-1">
+                        <p><span className="font-semibold">Qualification:</span> {enquiry.qualification || "-"}</p>
+                        <p><span className="font-semibold">School / College:</span> {enquiry.schoolCollege || "-"}</p>
+                        <p><span className="font-semibold">Landline:</span> {enquiry.landline || "-"}</p>
+                        <p><span className="font-semibold">Sources:</span> {enquiry.enquirySources?.join(", ") || "-"}</p>
+                        <p><span className="font-semibold">Present Address:</span> {enquiry.presentAddress || "-"}</p>
+                        <p><span className="font-semibold">Permanent Address:</span> {enquiry.permanentAddress || "-"}</p>
+                        <p><span className="font-semibold">Gender:</span> {enquiry.gender || "-"}</p>
+                        <p><span className="font-semibold">Guardian:</span> {enquiry.guardianName || "-"}</p>
+                        <p><span className="font-semibold">Occupation:</span> {enquiry.guardianOccupation || "-"}</p>
+                        <p><span className="font-semibold">Reference:</span> {enquiry.referenceName || "-"}</p>
+                        <p><span className="font-semibold">Counsellor:</span> {enquiry.counselorName || "-"}</p>
+                        <p><span className="font-semibold">Remarks:</span> {enquiry.remarks || "-"}</p>
+                      </div>
+                    </details>
                     <div className="flex flex-wrap gap-2">
                       <button
                         type="button"
@@ -1607,12 +1659,64 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
                           WhatsApp
                         </a>
                       ) : null}
+                      <button
+                        type="button"
+                        disabled={isSaving}
+                        onClick={() =>
+                          void mutateContent("enquiries", "delete", undefined, enquiry.id)
+                        }
+                        className="rounded-full border border-red-100 bg-red-50 px-4 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-60"
+                      >
+                        Delete
+                      </button>
                     </div>
                   </div>
                 </div>
               ))}
               {filteredEnquiries.length === 0 ? (
                 <p className="p-5 text-sm text-muted">No enquiries match the current filters.</p>
+              ) : null}
+            </div>
+          </AdminSection>
+        ) : null}
+
+        {activeTab === "sources" ? (
+          <AdminSection
+            title="Enquiry Source Management"
+            description="Add or delete enquiry sources. The enquiry form updates from this same list."
+          >
+            <form onSubmit={handleSourceSubmit} className="grid gap-4 md:grid-cols-[1fr_auto]">
+              <Field
+                label="Enquiry source"
+                required
+                placeholder="Example: Seminar"
+                value={sourceForm.name}
+                onChange={(name) => setSourceForm({ name })}
+              />
+              <SubmitButton
+                isSaving={isSaving}
+                label={editingSourceId ? "Update Source" : "Add Source"}
+              />
+            </form>
+            <div className="mt-8 grid gap-3">
+              {data.enquirySources.map((source) => (
+                <AdminListItem
+                  key={source.id}
+                  title={source.name}
+                  meta="Enquiry source"
+                  onEdit={() => {
+                    setEditingSourceId(source.id);
+                    setSourceForm({ name: source.name });
+                  }}
+                  onDelete={() =>
+                    mutateContent("enquirySources", "delete", undefined, source.id)
+                  }
+                />
+              ))}
+              {data.enquirySources.length === 0 ? (
+                <p className="rounded-2xl border border-sky-100 bg-white/75 p-5 text-sm text-muted">
+                  No enquiry sources yet. Add one to show it on the enquiry form.
+                </p>
               ) : null}
             </div>
           </AdminSection>

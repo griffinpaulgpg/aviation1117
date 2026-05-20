@@ -11,11 +11,11 @@ export const siteContent = {
     email: "info@arunandsaviation.com",
     phone: "+91 9035043521",
     address:
-      "13, 1st Main Road, Near Presidency College, Pampa Extension, Hebbal Kempapura, Bengaluru, Karnataka 560024",
+      "Arunand's Aviation Institute Pvt Ltd, 3rd Floor, AMS Complex, No 182/183, Bagalur Main Rd, opposite to Indian Oil Petrol Bunk, above Clique Salon, Munneshwara Block, Dwarka Nagar, Kattigenahalli, Bengaluru, Karnataka 560064",
     mapLink:
-      "https://www.google.com/maps/place/Arunand's+Aviation+Institute+Pvt+Ltd/@13.12191,77.6232171,17z/data=!4m6!3m5!1s0x3bae1729ab3715cb:0xe80e37d55ac6687f!8m2!3d13.12191!4d77.6232171!16s%2Fg%2F11t7_6jqts",
+      "https://www.google.com/maps/search/?api=1&query=Arunand%27s%20Aviation%20Institute%20Pvt%20Ltd%203rd%20Floor%20AMS%20Complex%20No%20182%20183%20Bagalur%20Main%20Rd%20Kattigenahalli%20Bengaluru%20560064",
     mapEmbedUrl:
-      "https://www.google.com/maps?q=Arunand%27s%20Aviation%20Institute%20Pvt%20Ltd%2C%20Bengaluru&z=17&output=embed",
+      "https://www.google.com/maps?q=Arunand%27s%20Aviation%20Institute%20Pvt%20Ltd%203rd%20Floor%20AMS%20Complex%20No%20182%20183%20Bagalur%20Main%20Rd%20Kattigenahalli%20Bengaluru%20560064&z=17&output=embed",
     batchTimings: ["10:00 am to 01:00 pm", "03:00 pm to 06:00 pm"],
     socialLinks: [
       {
@@ -36,7 +36,7 @@ export const siteContent = {
     secondaryCta: "Explore Courses",
   },
   stats: [
-    { value: "300+", label: "Students trained" },
+    { value: "550+", label: "Students Trained" },
     { value: "10+", label: "Services" },
     { value: "6", label: "Career courses" },
     { value: "15+", label: "Years experience" },

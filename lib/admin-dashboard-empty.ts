@@ -11,6 +11,7 @@ export function getEmptyAdminDashboardData(): AdminDashboardData {
     writtenTestimonials: [],
     videoTestimonials: [],
     enquiries: [],
+    enquirySources: [],
     facultyUsers: [],
     adminUsers: [],
     chatbotChats: [],

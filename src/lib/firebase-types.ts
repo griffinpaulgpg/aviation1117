@@ -23,9 +23,21 @@ export type FirebaseEnquiry = {
   id: string;
   enquiryNumber: string;
   fullName: string;
+  qualification?: string;
+  schoolCollege?: string;
   email: string;
   mobile: string;
+  landline?: string;
   selectedCourse: string;
+  enquirySources?: string[];
+  presentAddress?: string;
+  permanentAddress?: string;
+  gender?: string;
+  guardianName?: string;
+  guardianOccupation?: string;
+  referenceName?: string;
+  remarks?: string;
+  counselorName?: string;
   status: "New" | "Contacted" | "Enrolled" | "Rejected";
   notes?: string;
   createdAt: string;
@@ -48,6 +60,13 @@ export type FirebaseSettings = {
   chatbotEnabled: boolean;
   instagramEnabled?: boolean;
   youtubeEnabled?: boolean;
+  updatedAt?: string;
+};
+
+export type FirebaseEnquirySource = {
+  id: string;
+  name: string;
+  createdAt: string;
   updatedAt?: string;
 };
 

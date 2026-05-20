@@ -3,7 +3,8 @@ import type { Metadata } from "next";
 import { Container } from "@/components/container";
 import { EnquiryForm } from "@/components/enquiry-form";
 import { PageHero } from "@/components/page-hero";
-import { getPublicCourses } from "@/lib/public-content-data";
+import { getPublicCourses, getPublicEnquirySources } from "@/lib/public-content-data";
+import { siteContent } from "@/lib/site-content";
 
 export const metadata: Metadata = {
   title: "Enquiry",
@@ -26,7 +27,10 @@ type EnquiryPageProps = {
 export default async function EnquiryPage({ searchParams }: EnquiryPageProps) {
   const params = await searchParams;
   const selectedCourse = Array.isArray(params?.course) ? params.course[0] : params?.course;
-  const courses = await getPublicCourses();
+  const [courses, enquirySources] = await Promise.all([
+    getPublicCourses(),
+    getPublicEnquirySources(),
+  ]);
 
   return (
     <>
@@ -38,9 +42,14 @@ export default async function EnquiryPage({ searchParams }: EnquiryPageProps) {
         />
         <section className="aviation-section py-20">
           <Container>
+            <div className="mb-6 rounded-3xl border border-sky-100 bg-white/80 p-5 text-sm leading-6 text-muted shadow-[0_18px_50px_rgba(11,19,32,0.08)]">
+              <p className="font-semibold text-brand-dark">Academy Address</p>
+              <p className="mt-2">{siteContent.contact.address}</p>
+            </div>
             <EnquiryForm
               initialCourse={selectedCourse}
               courses={courses.map((course) => course.title)}
+              enquirySources={enquirySources.map((source) => source.name)}
             />
           </Container>
         </section>

@@ -89,12 +89,30 @@ export type AdminDashboardData = {
     id: string;
     enquiryNumber: string;
     fullName: string;
+    qualification?: string;
+    schoolCollege?: string;
     email: string;
     mobile: string;
+    landline?: string;
     selectedCourse: string;
+    enquirySources?: string[];
+    presentAddress?: string;
+    permanentAddress?: string;
+    gender?: string;
+    guardianName?: string;
+    guardianOccupation?: string;
+    referenceName?: string;
+    remarks?: string;
+    counselorName?: string;
     status: "New" | "Contacted" | "Enrolled" | "Rejected";
     notes?: string;
     createdAt: string;
+  }>;
+  enquirySources: Array<{
+    id: string;
+    name: string;
+    createdAt: string;
+    updatedAt?: string;
   }>;
   facultyUsers: Array<{
     id: string;
@@ -237,6 +255,19 @@ function fallbackAdminContent(): AdminDashboardData {
     })),
     videoTestimonials: [],
     enquiries: [],
+    enquirySources: [
+      "Newspaper Ads",
+      "Pamphlet",
+      "Hoardings",
+      "Seminar",
+      "JustDial",
+      "Friends & Relatives",
+      "Other",
+    ].map((name, index) => ({
+      id: `fallback-source-${index}`,
+      name,
+      createdAt: new Date(index).toISOString(),
+    })),
     facultyUsers: [],
     adminUsers: [
       {
@@ -268,6 +299,7 @@ export function getEmptyAdminDashboardData(): AdminDashboardData {
     writtenTestimonials: [],
     videoTestimonials: [],
     enquiries: [],
+    enquirySources: [],
     facultyUsers: [],
     adminUsers: [],
     chatbotChats: [],
@@ -289,6 +321,7 @@ async function loadFirebaseAdminContent(): Promise<AdminDashboardData> {
       getFirebaseAdminUsers,
       getFirebaseCourses,
       getFirebaseEnquiries,
+      getFirebaseEnquirySources,
       getFirebaseEvents,
       getFirebaseFacultyUsers,
       getFirebaseGalleryFolders,
@@ -309,6 +342,7 @@ async function loadFirebaseAdminContent(): Promise<AdminDashboardData> {
       courses,
       events,
       enquiries,
+      enquirySources,
       settings,
       galleryFolders,
       galleryPhotos,
@@ -320,6 +354,7 @@ async function loadFirebaseAdminContent(): Promise<AdminDashboardData> {
       getFirebaseCourses(),
       getFirebaseEvents(),
       getFirebaseEnquiries(),
+      getFirebaseEnquirySources(),
       getFirebaseSettings(),
       getFirebaseGalleryFolders(),
       getFirebaseGalleryPhotos(),
@@ -351,6 +386,7 @@ async function loadFirebaseAdminContent(): Promise<AdminDashboardData> {
       })),
       videoTestimonials,
       enquiries,
+      enquirySources,
       facultyUsers,
       adminUsers,
       chatbotChats: [],

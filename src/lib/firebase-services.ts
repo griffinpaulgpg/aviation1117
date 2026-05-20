@@ -23,6 +23,7 @@ import type {
   FirebaseAdminUser,
   FirebaseCourse,
   FirebaseEnquiry,
+  FirebaseEnquirySource,
   FirebaseEvent,
   FirebaseFacultyUser,
   FirebaseGalleryFolder,
@@ -37,6 +38,7 @@ export const firebaseCollections = {
   courses: "courses",
   events: "events",
   enquiries: "enquiries",
+  enquirySources: "enquirySources",
   chatbotChats: "chatbotChats",
   settings: "settings",
   galleryFolders: "galleryFolders",
@@ -56,6 +58,16 @@ const defaultSettings: FirebaseSettings = {
 const settingsDocumentId = "global";
 export const defaultBotReply =
   "Thank you! Our team will contact you shortly with more details about Arunand's Aviation Academy.";
+
+export const defaultEnquirySources = [
+  "Newspaper Ads",
+  "Pamphlet",
+  "Hoardings",
+  "Seminar",
+  "JustDial",
+  "Friends & Relatives",
+  "Other",
+];
 
 function isBuildPhase() {
   return process.env.NEXT_PHASE === "phase-production-build";
@@ -147,6 +159,7 @@ export async function ensureFirebaseCollectionsSeeded() {
   await getFirebaseSettings();
 
   const [courses, events] = await Promise.all([getFirebaseCourses(), getFirebaseEvents()]);
+  const enquirySources = await getFirebaseEnquirySources();
 
   if (courses.length === 0) {
     await Promise.all(
@@ -173,6 +186,10 @@ export async function ensureFirebaseCollectionsSeeded() {
         }),
       ),
     );
+  }
+
+  if (enquirySources.length === 0) {
+    await Promise.all(defaultEnquirySources.map((name) => createFirebaseEnquirySource({ name })));
   }
 }
 
@@ -241,6 +258,54 @@ export async function updateFirebaseCourse(id: string, course: Omit<FirebaseCour
 export async function deleteFirebaseCourse(id: string) {
   await runFirestore("Deleting Firebase course", () =>
     deleteDoc(doc(db, firebaseCollections.courses, id)),
+  );
+}
+
+export async function getFirebaseEnquirySources(): Promise<FirebaseEnquirySource[]> {
+  if (isBuildPhase()) {
+    return [];
+  }
+
+  const snapshot = await runFirestore("Loading Firebase enquiry sources", () =>
+    getDocs(query(collection(db, firebaseCollections.enquirySources), orderBy("createdAt", "asc"))),
+  );
+
+  return snapshot.docs.map((item) => {
+    const data = docWithDates(item);
+
+    return {
+      id: data.id,
+      name: String(data.name ?? ""),
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
+    };
+  });
+}
+
+export async function createFirebaseEnquirySource(source: { name: string }) {
+  const saved = await runFirestore("Creating Firebase enquiry source", () =>
+    addDoc(collection(db, firebaseCollections.enquirySources), {
+      name: source.name.trim(),
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    }),
+  );
+
+  return saved.id;
+}
+
+export async function updateFirebaseEnquirySource(id: string, source: { name: string }) {
+  await runFirestore("Updating Firebase enquiry source", () =>
+    updateDoc(doc(db, firebaseCollections.enquirySources, id), {
+      name: source.name.trim(),
+      updatedAt: serverTimestamp(),
+    }),
+  );
+}
+
+export async function deleteFirebaseEnquirySource(id: string) {
+  await runFirestore("Deleting Firebase enquiry source", () =>
+    deleteDoc(doc(db, firebaseCollections.enquirySources, id)),
   );
 }
 
@@ -325,9 +390,23 @@ export async function getFirebaseEnquiries(): Promise<FirebaseEnquiry[]> {
       id: data.id,
       enquiryNumber: String(data.enquiryNumber ?? data.id),
       fullName: String(data.fullName ?? ""),
+      qualification: data.qualification ? String(data.qualification) : undefined,
+      schoolCollege: data.schoolCollege ? String(data.schoolCollege) : undefined,
       email: String(data.email ?? ""),
       mobile: String(data.mobile ?? ""),
+      landline: data.landline ? String(data.landline) : undefined,
       selectedCourse: String(data.selectedCourse ?? ""),
+      enquirySources: Array.isArray(data.enquirySources)
+        ? data.enquirySources.map(String)
+        : undefined,
+      presentAddress: data.presentAddress ? String(data.presentAddress) : undefined,
+      permanentAddress: data.permanentAddress ? String(data.permanentAddress) : undefined,
+      gender: data.gender ? String(data.gender) : undefined,
+      guardianName: data.guardianName ? String(data.guardianName) : undefined,
+      guardianOccupation: data.guardianOccupation ? String(data.guardianOccupation) : undefined,
+      referenceName: data.referenceName ? String(data.referenceName) : undefined,
+      remarks: data.remarks ? String(data.remarks) : undefined,
+      counselorName: data.counselorName ? String(data.counselorName) : undefined,
       status: ["New", "Contacted", "Enrolled", "Rejected"].includes(String(data.status))
         ? (String(data.status) as FirebaseEnquiry["status"])
         : "New",
@@ -347,6 +426,12 @@ export async function updateFirebaseEnquiry(
       ...enquiry,
       updatedAt: serverTimestamp(),
     }),
+  );
+}
+
+export async function deleteFirebaseEnquiry(id: string) {
+  await runFirestore("Deleting Firebase enquiry", () =>
+    deleteDoc(doc(db, firebaseCollections.enquiries, id)),
   );
 }
 

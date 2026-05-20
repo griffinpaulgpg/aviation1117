@@ -1,15 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-
-const enquirySources = [
-  "Newspaper Ads",
-  "Hoardings",
-  "JustDial",
-  "Friends & Relatives",
-  "Seminar",
-  "Other",
-];
+import { FormEvent, useMemo, useState } from "react";
 
 function Field({
   id,
@@ -21,6 +12,8 @@ function Field({
   maxLength,
   minLength,
   pattern,
+  defaultValue,
+  readOnly = false,
 }: {
   id: string;
   label: string;
@@ -31,6 +24,8 @@ function Field({
   maxLength?: number;
   minLength?: number;
   pattern?: string;
+  defaultValue?: string;
+  readOnly?: boolean;
 }) {
   return (
     <div className="grid min-w-0 gap-2">
@@ -48,6 +43,8 @@ function Field({
         maxLength={maxLength}
         minLength={minLength}
         pattern={pattern}
+        defaultValue={defaultValue}
+        readOnly={readOnly}
         className="bg-white/82 rounded-xl border border-sky-100 px-4 py-3 text-sm text-foreground shadow-inner shadow-sky-950/5 outline-none transition focus:border-brand focus:bg-white focus:ring-4 focus:ring-sky-200/60"
       />
     </div>
@@ -100,13 +97,16 @@ function FormSection({
 type EnquiryFormProps = {
   initialCourse?: string;
   courses: string[];
+  enquirySources: string[];
 };
 
-export function EnquiryForm({ initialCourse, courses }: EnquiryFormProps) {
-  const courseOptions = ["None", ...courses];
+export function EnquiryForm({ initialCourse, courses, enquirySources }: EnquiryFormProps) {
+  const courseOptions = courses.filter(Boolean);
+  const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const enquiryFormNumber = useMemo(() => `AAA-${Date.now().toString().slice(-6)}`, []);
   const [showOtherSource, setShowOtherSource] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(
-    initialCourse && courseOptions.includes(initialCourse) ? initialCourse : "None",
+    initialCourse && courseOptions.includes(initialCourse) ? initialCourse : "",
   );
   const [submitStatus, setSubmitStatus] = useState<{
     type: "success" | "error";
@@ -153,6 +153,8 @@ export function EnquiryForm({ initialCourse, courses }: EnquiryFormProps) {
         },
         body: JSON.stringify({
           fullName: getValue("fullName"),
+          enquiryDate: getValue("enquiryDate"),
+          enquiryFormNumber: getValue("enquiryFormNumber"),
           qualification: getValue("qualification"),
           schoolCollege: getValue("schoolCollege"),
           selectedCourse: getValue("selectedCourse"),
@@ -191,7 +193,7 @@ export function EnquiryForm({ initialCourse, courses }: EnquiryFormProps) {
       }
 
       form.reset();
-      setSelectedCourse("None");
+      setSelectedCourse("");
       setShowOtherSource(false);
       setSubmitStatus({
         type: "success",
@@ -209,7 +211,30 @@ export function EnquiryForm({ initialCourse, courses }: EnquiryFormProps) {
   }
 
   return (
-    <form className="grid gap-6" onSubmit={handleSubmit} aria-busy={isSubmitting}>
+    <form
+      className="relative grid gap-6 overflow-hidden rounded-[2rem] border border-sky-100 bg-[linear-gradient(145deg,rgba(255,255,255,0.94),rgba(234,246,255,0.82))] p-4 shadow-[0_28px_90px_rgba(11,19,32,0.12)] sm:p-6"
+      onSubmit={handleSubmit}
+      aria-busy={isSubmitting}
+    >
+      <div
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_8%,rgba(93,173,226,0.22),transparent_17rem),radial-gradient(circle_at_90%_6%,rgba(255,255,255,0.9),transparent_15rem)]"
+        aria-hidden="true"
+      />
+      <div className="pointer-events-none absolute right-8 top-8 text-5xl text-sky-200/70" aria-hidden="true">
+        ✈
+      </div>
+      <div className="relative rounded-[1.6rem] border border-white/80 bg-white/72 p-5 shadow-inner shadow-sky-950/5">
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-brand">
+          Arunand&apos;s Aviation Institute
+        </p>
+        <h2 className="mt-2 text-3xl font-bold tracking-normal text-brand-dark">
+          Aviation Enquiry Form
+        </h2>
+        <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
+          Please fill the details below. The course and enquiry source options are managed from the
+          admin dashboard.
+        </p>
+      </div>
       <input
         className="hidden"
         name="website"
@@ -218,7 +243,15 @@ export function EnquiryForm({ initialCourse, courses }: EnquiryFormProps) {
         aria-hidden="true"
       />
       <FormSection title="Student Details">
-        <Field id="fullName" label="Full Name" required autoComplete="name" />
+        <Field id="enquiryDate" label="Date" type="date" required defaultValue={today} />
+        <Field
+          id="enquiryFormNumber"
+          label="Enquiry Form Number"
+          required
+          defaultValue={enquiryFormNumber}
+          readOnly
+        />
+        <Field id="fullName" label="Name in Full" required autoComplete="name" />
         <Field id="qualification" label="Qualification" required />
         <Field id="schoolCollege" label="School/College" required />
       </FormSection>
@@ -226,7 +259,7 @@ export function EnquiryForm({ initialCourse, courses }: EnquiryFormProps) {
       <FormSection title="Course Details">
         <div className="grid gap-2 md:col-span-2">
           <label className="text-sm font-semibold text-foreground" htmlFor="selectedCourse">
-            Course <span className="text-brand">*</span>
+            Course Interested <span className="text-brand">*</span>
           </label>
           <select
             id="selectedCourse"
@@ -236,6 +269,7 @@ export function EnquiryForm({ initialCourse, courses }: EnquiryFormProps) {
             onChange={(event) => setSelectedCourse(event.currentTarget.value)}
             className="bg-white/82 rounded-xl border border-sky-100 px-4 py-3 text-sm text-foreground shadow-inner shadow-sky-950/5 outline-none transition focus:border-brand focus:bg-white focus:ring-4 focus:ring-sky-200/60"
           >
+            <option value="">Select course</option>
             {courseOptions.map((course) => (
               <option key={course} value={course}>
                 {course}
@@ -298,7 +332,7 @@ export function EnquiryForm({ initialCourse, courses }: EnquiryFormProps) {
       </FormSection>
 
       <FormSection title="Parent/Guardian Details">
-        <Field id="guardianName" label="Name" required autoComplete="name" />
+        <Field id="guardianName" label="Father's / Guardian's Name" required autoComplete="name" />
         <Field id="guardianOccupation" label="Occupation" />
       </FormSection>
 
@@ -349,6 +383,21 @@ export function EnquiryForm({ initialCourse, courses }: EnquiryFormProps) {
         <Field id="counselorName" label="Counselor Name" />
         <div className="md:col-span-2">
           <TextArea id="remarks" label="Remarks" />
+        </div>
+      </FormSection>
+
+      <FormSection title="Declaration / Signature">
+        <div className="md:col-span-2 rounded-2xl border border-dashed border-sky-200 bg-white/60 p-4 text-sm leading-6 text-muted">
+          I confirm that the details shared in this enquiry form are correct to the best of my
+          knowledge.
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            <div className="border-t border-sky-200 pt-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+              Student Signature
+            </div>
+            <div className="border-t border-sky-200 pt-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+              Parent / Guardian Signature
+            </div>
+          </div>
         </div>
       </FormSection>
 

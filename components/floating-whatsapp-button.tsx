@@ -6,9 +6,8 @@ import { doc, getDoc } from "firebase/firestore";
 
 import { db } from "@/src/lib/firebase";
 
-const whatsappMessage =
-  "Hello Arunand's Aviation Academy, I would like to know more about your courses.";
-const whatsappUrl = `https://wa.me/9036960521?text=${encodeURIComponent(whatsappMessage)}`;
+const whatsappUrl =
+  "https://wa.me/919036960521?text=Hello%20Arunand%27s%20Aviation%20Institute%2C%20I%20want%20to%20enquire%20about%20your%20courses";
 
 export function FloatingWhatsAppButton() {
   const pathname = usePathname();

@@ -58,6 +58,10 @@ export function Footer() {
               careers by building confidence, discipline, industry knowledge, and professional
               presentation.
             </p>
+            <p>
+              <span className="font-semibold text-white">Address:</span>{" "}
+              {siteContent.contact.address}
+            </p>
           </div>
         </div>
         <div className="footer-glass p-6">
