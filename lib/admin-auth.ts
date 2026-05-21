@@ -5,6 +5,14 @@ import { cookies } from "next/headers";
 const ADMIN_COOKIE = "arunands_admin_session";
 const SESSION_MAX_AGE = 60 * 60 * 8;
 
+export type AdminSession = {
+  role: "admin" | "staff" | "counsellor";
+  uid?: string;
+  email?: string;
+  name?: string;
+  issuedAt: number;
+};
+
 export function getPrimaryAdminId() {
   return process.env.ADMIN_EMAIL ?? process.env.ADMIN_ID ?? "arunand@avation";
 }
@@ -45,9 +53,10 @@ export async function isAdminCredential(adminId: string, password: string) {
   );
 }
 
-export function createAdminToken() {
+export function createAdminToken(session?: Partial<Omit<AdminSession, "issuedAt">>) {
   const payload = JSON.stringify({
     role: "admin",
+    ...session,
     issuedAt: Date.now(),
   });
   const encodedPayload = Buffer.from(payload).toString("base64url");
@@ -57,35 +66,58 @@ export function createAdminToken() {
 
 export function verifyAdminToken(token?: string) {
   if (!token) {
-    return false;
+    return null;
   }
 
   const [payload, signature] = token.split(".");
 
   if (!payload || !signature || !safeCompare(signature, sign(payload))) {
-    return false;
+    return null;
   }
 
   try {
     const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as {
       role?: string;
       issuedAt?: number;
+      uid?: string;
+      email?: string;
+      name?: string;
     };
 
-    return (
-      parsed.role === "admin" &&
-      typeof parsed.issuedAt === "number" &&
-      Date.now() - parsed.issuedAt < SESSION_MAX_AGE * 1000
-    );
+    if (
+      !["admin", "staff", "counsellor"].includes(parsed.role ?? "") ||
+      typeof parsed.issuedAt !== "number" ||
+      Date.now() - parsed.issuedAt >= SESSION_MAX_AGE * 1000
+    ) {
+      return null;
+    }
+
+    return {
+      role: parsed.role as AdminSession["role"],
+      uid: parsed.uid,
+      email: parsed.email,
+      name: parsed.name,
+      issuedAt: parsed.issuedAt,
+    };
   } catch {
-    return false;
+    return null;
   }
 }
 
-export async function isAdminSignedIn() {
+export async function getAdminSession() {
   const cookieStore = await cookies();
 
   return verifyAdminToken(cookieStore.get(ADMIN_COOKIE)?.value);
+}
+
+export async function isAdminSignedIn() {
+  return Boolean(await getAdminSession());
+}
+
+export async function isFullAdminSignedIn() {
+  const session = await getAdminSession();
+
+  return session?.role === "admin";
 }
 
 export async function setAdminCookie(token: string) {

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { Container } from "@/components/container";
-import { CourseCard } from "@/components/course-card";
+import { CourseGridClient } from "@/components/course-grid-client";
 import { PageHero } from "@/components/page-hero";
 import { ThreeDFlow } from "@/components/three-d-flow";
 import { getPublicCourses } from "@/lib/public-content-data";
@@ -31,11 +31,7 @@ export default async function CoursesPage() {
         />
         <section className="aviation-section py-20">
           <Container>
-            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-              {courses.map((course) => (
-                <CourseCard key={course.title} course={course} />
-              ))}
-            </div>
+            <CourseGridClient initialCourses={courses} />
           </Container>
         </section>
         <section className="aviation-section bg-white/62 border-t border-white/70 py-20">

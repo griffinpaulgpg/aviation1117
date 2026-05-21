@@ -6,12 +6,14 @@ import { useRouter } from "next/navigation";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 
+import type { AdminSession } from "@/lib/admin-auth";
 import type { AdminDashboardData } from "@/lib/content-data";
 import { cn } from "@/lib/cn";
 import { db, storage } from "@/src/lib/firebase";
 
 type AdminConsoleProps = {
   initialData: AdminDashboardData;
+  currentSession: AdminSession;
 };
 
 type ResourceName =
@@ -37,23 +39,25 @@ type TabName =
   | "chatbot"
   | "whatsapp"
   | "faculty"
-  | "admins";
+  | "admins"
+  | "loginAccounts";
 
 const inputClass =
   "bg-white/82 rounded-xl border border-sky-100 px-4 py-3 text-sm text-foreground shadow-inner shadow-sky-950/5 outline-none transition focus:border-brand focus:bg-white focus:ring-4 focus:ring-sky-200/60";
 
-const tabs: Array<{ key: TabName; label: string }> = [
+const tabs: Array<{ key: TabName; label: string; adminOnly?: boolean }> = [
   { key: "overview", label: "Dashboard Overview" },
-  { key: "courses", label: "Courses" },
-  { key: "events", label: "Events" },
-  { key: "gallery", label: "Gallery" },
-  { key: "testimonials", label: "Testimonials" },
+  { key: "courses", label: "Courses", adminOnly: true },
+  { key: "events", label: "Events", adminOnly: true },
+  { key: "gallery", label: "Gallery", adminOnly: true },
+  { key: "testimonials", label: "Testimonials", adminOnly: true },
   { key: "enquiries", label: "Enquiries" },
-  { key: "sources", label: "Enquiry Sources" },
+  { key: "sources", label: "Enquiry Sources", adminOnly: true },
   { key: "chatbot", label: "Chatbot" },
-  { key: "whatsapp", label: "WhatsApp" },
-  { key: "faculty", label: "Faculty Accounts" },
-  { key: "admins", label: "Admin Accounts" },
+  { key: "whatsapp", label: "WhatsApp", adminOnly: true },
+  { key: "faculty", label: "Faculty Accounts", adminOnly: true },
+  { key: "admins", label: "Admin Accounts", adminOnly: true },
+  { key: "loginAccounts", label: "Login Accounts", adminOnly: true },
 ];
 
 const enquiryStatuses = ["New", "Contacted", "Enrolled", "Rejected"] as const;
@@ -80,6 +84,18 @@ const emptyVideoTestimonial = { video: "", name: "", position: "", description: 
 const emptyFaculty = { name: "", email: "", password: "" };
 const emptyAdmin = { name: "", email: "", password: "" };
 const emptyEnquirySource = { name: "" };
+type LoginAccountForm = {
+  name: string;
+  email: string;
+  password: string;
+  role: "Admin" | "Staff" | "Counsellor";
+};
+const emptyLoginAccount: LoginAccountForm = {
+  name: "",
+  email: "",
+  password: "",
+  role: "Staff",
+};
 
 type MediaKind = "image" | "video";
 
@@ -292,8 +308,13 @@ function StatCard({ label, value }: { label: string; value: number }) {
   );
 }
 
-export function AdminConsole({ initialData }: AdminConsoleProps) {
+export function AdminConsole({ initialData, currentSession }: AdminConsoleProps) {
   const router = useRouter();
+  const isFullAdmin = currentSession.role === "admin";
+  const visibleTabs = useMemo(
+    () => tabs.filter((tab) => isFullAdmin || !tab.adminOnly),
+    [isFullAdmin],
+  );
   const [data, setData] = useState(initialData);
   const [activeTab, setActiveTab] = useState<TabName>("overview");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(
@@ -316,6 +337,7 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
   const [videoForm, setVideoForm] = useState(emptyVideoTestimonial);
   const [facultyForm, setFacultyForm] = useState(emptyFaculty);
   const [adminForm, setAdminForm] = useState(emptyAdmin);
+  const [loginAccountForm, setLoginAccountForm] = useState(emptyLoginAccount);
   const [sourceForm, setSourceForm] = useState(emptyEnquirySource);
 
   const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
@@ -332,6 +354,12 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
   const [enquiryStatus, setEnquiryStatus] = useState("");
   const [enquiryNotes, setEnquiryNotes] = useState<Record<string, string>>({});
   const [chatSearch, setChatSearch] = useState("");
+
+  useEffect(() => {
+    if (!visibleTabs.some((tab) => tab.key === activeTab)) {
+      setActiveTab("overview");
+    }
+  }, [activeTab, visibleTabs]);
 
   const enquiryCourses = useMemo(
     () =>
@@ -370,10 +398,17 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
     const search = chatSearch.trim().toLowerCase();
 
     return data.chatbotChats.filter((chat) => {
+      const transcript = (chat.conversation ?? [])
+        .map((item) => item.text.toLowerCase())
+        .join(" ");
+      const guided = (chat.guidedSelections ?? []).join(" ").toLowerCase();
+
       return (
         !search ||
         chat.userMessage.toLowerCase().includes(search) ||
         chat.botReply.toLowerCase().includes(search) ||
+        transcript.includes(search) ||
+        guided.includes(search) ||
         chat.pageUrl.toLowerCase().includes(search) ||
         chat.sessionId.toLowerCase().includes(search)
       );
@@ -425,6 +460,7 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
           getFirebaseFacultyUsers,
           getFirebaseGalleryFolders,
           getFirebaseGalleryPhotos,
+          getFirebaseLoginAccounts,
           getFirebaseSettings,
           getFirebaseVideoTestimonials,
           getFirebaseWrittenTestimonials,
@@ -442,6 +478,7 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
           videoTestimonials,
           facultyUsers,
           adminUsers,
+          loginAccounts,
         ] = await Promise.all([
           getFirebaseCourses(),
           getFirebaseEvents(),
@@ -454,6 +491,7 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
           getFirebaseVideoTestimonials(),
           getFirebaseFacultyUsers(),
           getFirebaseAdminUsers(),
+          isFullAdmin ? getFirebaseLoginAccounts() : Promise.resolve([]),
         ]);
 
         if (cancelled) {
@@ -474,6 +512,7 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
           videoTestimonials,
           facultyUsers,
           adminUsers,
+          loginAccounts,
           chatbotChats: [],
         });
         setFirebaseStatus("connected");
@@ -498,7 +537,7 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
     return () => {
       cancelled = true;
     };
-  }, [initialData]);
+  }, [initialData, isFullAdmin]);
 
   async function loadChatbotManagementData({ silent = false }: { silent?: boolean } = {}) {
     setIsLoadingChats(true);
@@ -791,6 +830,47 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
     }
   }
 
+  async function mutateLoginAccounts(payload: unknown, confirmMessage?: string) {
+    if (confirmMessage && !window.confirm(confirmMessage)) {
+      return false;
+    }
+
+    setIsSaving(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch("/api/admin/login-accounts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const result = (await response.json()) as {
+        success?: boolean;
+        message?: string;
+        data?: Pick<AdminDashboardData, "loginAccounts">;
+      };
+
+      if (!response.ok || !result.success || !result.data) {
+        throw new Error(result.message ?? "Unable to update login accounts.");
+      }
+
+      setData((current) => ({
+        ...current,
+        loginAccounts: result.data?.loginAccounts ?? current.loginAccounts,
+      }));
+      setMessage({ type: "success", text: result.message ?? "Login accounts updated." });
+      return true;
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : "Unable to update login accounts.",
+      });
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
   async function updateWhatsAppEnabled(enabled: boolean) {
     setIsSaving(true);
     setMessage(null);
@@ -1016,6 +1096,18 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
     });
   }
 
+  function handleLoginAccountSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void mutateLoginAccounts({
+      action: "create",
+      data: loginAccountForm,
+    }).then((saved) => {
+      if (saved) {
+        setLoginAccountForm(emptyLoginAccount);
+      }
+    });
+  }
+
   function handleSourceSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void mutateContent(
@@ -1035,7 +1127,7 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
     <div className="grid gap-8 lg:grid-cols-[17rem_1fr]">
       <aside className="premium-card h-max p-3 lg:sticky lg:top-24">
         <nav className="grid gap-2">
-          {tabs.map((tab) => (
+          {visibleTabs.map((tab) => (
             <button
               key={tab.key}
               type="button"
@@ -1805,13 +1897,37 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
                           </p>
                           <p className="mt-2 break-all text-sm text-muted">{chat.pageUrl}</p>
                           <div className="mt-4 grid gap-3 text-sm leading-6">
+                            {(chat.conversation?.length ?? 0) > 0 ? (
+                              <div className="grid gap-2">
+                                {chat.conversation?.map((item, index) => (
+                                  <p
+                                    key={`${chat.id}-line-${index}`}
+                                    className={cn(
+                                      "rounded-2xl px-4 py-3",
+                                      item.from === "user"
+                                        ? "bg-sky-50 text-brand-dark"
+                                        : "bg-white text-muted shadow-inner shadow-sky-950/5",
+                                    )}
+                                  >
+                                    <span className="font-semibold text-brand-dark">
+                                      {item.from === "user" ? "Visitor:" : "Bot:"}
+                                    </span>{" "}
+                                    {item.text}
+                                  </p>
+                                ))}
+                              </div>
+                            ) : null}
+                            {(chat.conversation?.length ?? 0) === 0 ? (
                             <p className="rounded-2xl bg-sky-50 px-4 py-3 text-brand-dark">
                               <span className="font-semibold">Visitor:</span> {chat.userMessage}
                             </p>
+                            ) : null}
+                            {(chat.conversation?.length ?? 0) === 0 ? (
                             <p className="rounded-2xl bg-white px-4 py-3 text-muted shadow-inner shadow-sky-950/5">
                               <span className="font-semibold text-brand-dark">Bot:</span>{" "}
                               {chat.botReply}
                             </p>
+                            ) : null}
                           </div>
                         </div>
                         <div className="flex flex-wrap gap-2 lg:justify-end">
@@ -1972,6 +2088,136 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
                       : () => mutateContent("adminUsers", "delete", undefined, admin.id)
                   }
                 />
+              ))}
+            </div>
+          </AdminSection>
+        ) : null}
+
+        {activeTab === "loginAccounts" && isFullAdmin ? (
+          <AdminSection
+            title="Login Accounts"
+            description="Create Firebase Authentication website login accounts and control dashboard access."
+          >
+            <form onSubmit={handleLoginAccountSubmit} className="grid gap-4 md:grid-cols-4">
+              <Field
+                label="Name"
+                required
+                value={loginAccountForm.name}
+                onChange={(name) => setLoginAccountForm((current) => ({ ...current, name }))}
+              />
+              <Field
+                label="Email"
+                required
+                type="email"
+                value={loginAccountForm.email}
+                onChange={(email) => setLoginAccountForm((current) => ({ ...current, email }))}
+              />
+              <Field
+                label="Password"
+                required
+                type="password"
+                value={loginAccountForm.password}
+                onChange={(password) =>
+                  setLoginAccountForm((current) => ({ ...current, password }))
+                }
+              />
+              <label className="grid gap-2 text-sm font-semibold text-foreground">
+                Role
+                <select
+                  className={inputClass}
+                  value={loginAccountForm.role}
+                  onChange={(event) =>
+                    setLoginAccountForm((current) => ({
+                      ...current,
+                      role: event.target.value as LoginAccountForm["role"],
+                    }))
+                  }
+                >
+                  <option value="Admin">Admin</option>
+                  <option value="Staff">Staff</option>
+                  <option value="Counsellor">Counsellor</option>
+                </select>
+              </label>
+              <SubmitButton
+                isSaving={isSaving || Boolean(uploadingField)}
+                label="Create Login Account"
+              />
+            </form>
+
+            <div className="mt-8 grid gap-3">
+              {data.loginAccounts.length === 0 ? (
+                <p className="rounded-2xl border border-sky-100 bg-sky-50 px-5 py-4 text-sm font-semibold text-brand-dark">
+                  No Firebase login accounts have been created yet.
+                </p>
+              ) : null}
+              {data.loginAccounts.map((account) => (
+                <div
+                  key={account.uid}
+                  className="rounded-2xl border border-sky-100 bg-white/70 p-4 shadow-sm"
+                >
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-foreground">{account.name}</h3>
+                      <p className="mt-1 text-sm text-muted">
+                        {account.email} • {account.role} • {account.status}
+                      </p>
+                      <p className="mt-1 text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+                        Created {formatDate(account.createdAt)}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        disabled={isSaving}
+                        onClick={() =>
+                          mutateLoginAccounts(
+                            {
+                              action: "sendPasswordReset",
+                              email: account.email,
+                            },
+                            `Send a password reset email to ${account.email}?`,
+                          )
+                        }
+                        className="rounded-full border border-sky-100 px-4 py-2 text-xs font-semibold text-brand-dark transition hover:bg-sky-50 disabled:opacity-60"
+                      >
+                        Send reset
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isSaving}
+                        onClick={() =>
+                          mutateLoginAccounts(
+                            {
+                              action: "updateStatus",
+                              uid: account.uid,
+                              status: account.status === "active" ? "inactive" : "active",
+                            },
+                            `${account.status === "active" ? "Disable" : "Enable"} ${account.email}?`,
+                          )
+                        }
+                        className="rounded-full border border-sky-100 px-4 py-2 text-xs font-semibold text-brand-dark transition hover:bg-sky-50 disabled:opacity-60"
+                      >
+                        {account.status === "active" ? "Disable" : "Enable"}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isSaving}
+                        onClick={() =>
+                          mutateLoginAccounts(
+                            {
+                              action: "deleteProfile",
+                              uid: account.uid,
+                            },
+                            `Delete the Firestore profile for ${account.email}?`,
+                          )
+                        }
+                        className="rounded-full border border-red-100 px-4 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-60"
+                      >
+                        Delete profile
+                      </button>
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           </AdminSection>

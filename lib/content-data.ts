@@ -104,6 +104,7 @@ export type AdminDashboardData = {
     referenceName?: string;
     remarks?: string;
     counselorName?: string;
+    declarationAccepted?: boolean;
     status: "New" | "Contacted" | "Enrolled" | "Rejected";
     notes?: string;
     createdAt: string;
@@ -128,10 +129,26 @@ export type AdminDashboardData = {
     isPrimary: boolean;
     createdAt: string;
   }>;
+  loginAccounts: Array<{
+    id: string;
+    uid: string;
+    name: string;
+    email: string;
+    role: "Admin" | "Staff" | "Counsellor";
+    status: "active" | "inactive";
+    createdAt: string;
+    updatedAt?: string;
+  }>;
   chatbotChats: Array<{
     id: string;
     userMessage: string;
     botReply: string;
+    guidedSelections?: string[];
+    conversation?: Array<{
+      from: "bot" | "user";
+      text: string;
+      time: string;
+    }>;
     pageUrl: string;
     sessionId: string;
     timestamp: string;
@@ -278,6 +295,7 @@ function fallbackAdminContent(): AdminDashboardData {
         createdAt: new Date(0).toISOString(),
       },
     ],
+    loginAccounts: [],
     chatbotChats: [],
     settings: {
       whatsappEnabled: true,
@@ -302,6 +320,7 @@ export function getEmptyAdminDashboardData(): AdminDashboardData {
     enquirySources: [],
     facultyUsers: [],
     adminUsers: [],
+    loginAccounts: [],
     chatbotChats: [],
     settings: {
       whatsappEnabled: true,
@@ -326,6 +345,7 @@ async function loadFirebaseAdminContent(): Promise<AdminDashboardData> {
       getFirebaseFacultyUsers,
       getFirebaseGalleryFolders,
       getFirebaseGalleryPhotos,
+      getFirebaseLoginAccounts,
       getFirebaseSettings,
       getFirebaseVideoTestimonials,
       getFirebaseWrittenTestimonials,
@@ -350,6 +370,7 @@ async function loadFirebaseAdminContent(): Promise<AdminDashboardData> {
       videoTestimonials,
       facultyUsers,
       adminUsers,
+      loginAccounts,
     ] = await Promise.all([
       getFirebaseCourses(),
       getFirebaseEvents(),
@@ -362,6 +383,7 @@ async function loadFirebaseAdminContent(): Promise<AdminDashboardData> {
       getFirebaseVideoTestimonials(),
       getFirebaseFacultyUsers(),
       getFirebaseAdminUsers(),
+      getFirebaseLoginAccounts(),
     ]);
 
     return {
@@ -389,6 +411,7 @@ async function loadFirebaseAdminContent(): Promise<AdminDashboardData> {
       enquirySources,
       facultyUsers,
       adminUsers,
+      loginAccounts,
       chatbotChats: [],
       settings,
     };

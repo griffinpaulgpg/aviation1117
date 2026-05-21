@@ -14,6 +14,7 @@ export function getEmptyAdminDashboardData(): AdminDashboardData {
     enquirySources: [],
     facultyUsers: [],
     adminUsers: [],
+    loginAccounts: [],
     chatbotChats: [],
     settings: {
       whatsappEnabled: true,

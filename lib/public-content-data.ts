@@ -99,23 +99,6 @@ function fallbackEnquirySources(): PublicEnquirySource[] {
   ].map((name, index) => ({ id: `fallback-source-${index}`, name }));
 }
 
-async function safeFirebaseRead<T>(read: () => Promise<T>, fallback: T, timeoutMs = 3000) {
-  let timeoutId: ReturnType<typeof setTimeout> | undefined;
-
-  try {
-    return await Promise.race([
-      read().catch(() => fallback),
-      new Promise<T>((resolve) => {
-        timeoutId = setTimeout(() => resolve(fallback), timeoutMs);
-      }),
-    ]);
-  } finally {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-    }
-  }
-}
-
 function fallbackEvents() {
   return siteContent.events.map((event, index) => ({
     id: `fallback-event-${index}`,
@@ -149,26 +132,11 @@ function fallbackWrittenTestimonials(): PublicWrittenTestimonial[] {
 }
 
 async function loadPublicCourses(): Promise<PublicCourse[]> {
-  return safeFirebaseRead(async () => {
-    const { getFirebaseCourses } = await import("@/src/lib/firebase-services");
-    const courses = await getFirebaseCourses();
-
-    return courses.length > 0
-      ? courses.map((course) => ({
-          ...course,
-          image: optimizedMediaPath(course.image) ?? course.image,
-        }))
-      : fallbackCourses();
-  }, fallbackCourses());
+  return fallbackCourses();
 }
 
 async function loadPublicEnquirySources(): Promise<PublicEnquirySource[]> {
-  return safeFirebaseRead(async () => {
-    const { getFirebaseEnquirySources } = await import("@/src/lib/firebase-services");
-    const sources = await getFirebaseEnquirySources();
-
-    return sources.length > 0 ? sources : fallbackEnquirySources();
-  }, fallbackEnquirySources());
+  return fallbackEnquirySources();
 }
 
 async function loadPublicEvents(): Promise<PublicEvent[]> {

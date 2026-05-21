@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 
 function Field({
   id,
@@ -101,7 +101,8 @@ type EnquiryFormProps = {
 };
 
 export function EnquiryForm({ initialCourse, courses, enquirySources }: EnquiryFormProps) {
-  const courseOptions = courses.filter(Boolean);
+  const [courseOptions, setCourseOptions] = useState(courses.filter(Boolean));
+  const [sourceOptions, setSourceOptions] = useState(enquirySources.filter(Boolean));
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const enquiryFormNumber = useMemo(() => `AAA-${Date.now().toString().slice(-6)}`, []);
   const [showOtherSource, setShowOtherSource] = useState(false);
@@ -114,6 +115,54 @@ export function EnquiryForm({ initialCourse, courses, enquirySources }: EnquiryF
   } | null>(null);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [declarationAccepted, setDeclarationAccepted] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+    async function loadFirebaseOptions() {
+      try {
+        const { getPublicFirebaseCoursesRest, getPublicFirebaseEnquirySourcesRest } = await import(
+          "@/lib/firebase-rest-public"
+        );
+        const timeout = new Promise<never>((_, reject) => {
+          timeoutId = setTimeout(() => reject(new Error("Firebase options timed out.")), 4500);
+        });
+        const [firebaseCourses, firebaseSources] = await Promise.race([
+          Promise.all([getPublicFirebaseCoursesRest(), getPublicFirebaseEnquirySourcesRest()]),
+          timeout,
+        ]);
+
+        if (!cancelled) {
+          if (firebaseCourses.length > 0) {
+            setCourseOptions(firebaseCourses.map((course) => course.title).filter(Boolean));
+          }
+
+          if (firebaseSources.length > 0) {
+            setSourceOptions(firebaseSources.map((source) => source.name).filter(Boolean));
+          }
+        }
+      } catch (error) {
+        if (process.env.NODE_ENV === "development") {
+          console.warn("Firebase enquiry options unavailable; using fallback options.", error);
+        }
+      } finally {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+      }
+    }
+
+    void loadFirebaseOptions();
+
+    return () => {
+      cancelled = true;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -138,6 +187,14 @@ export function EnquiryForm({ initialCourse, courses, enquirySources }: EnquiryF
       setSubmitStatus({
         type: "error",
         message: "Remarks must be 1000 characters or less.",
+      });
+      return;
+    }
+
+    if (!declarationAccepted) {
+      setSubmitStatus({
+        type: "error",
+        message: "Please confirm the declaration before submitting.",
       });
       return;
     }
@@ -172,6 +229,7 @@ export function EnquiryForm({ initialCourse, courses, enquirySources }: EnquiryF
           referenceName: getValue("referenceName"),
           remarks: getValue("remarks"),
           counselorName: getValue("counselorName"),
+          declarationAccepted,
           website: getValue("website"),
         }),
       });
@@ -195,6 +253,7 @@ export function EnquiryForm({ initialCourse, courses, enquirySources }: EnquiryF
       form.reset();
       setSelectedCourse("");
       setShowOtherSource(false);
+      setDeclarationAccepted(false);
       setSubmitStatus({
         type: "success",
         message: result.message ?? "Enquiry submitted successfully.",
@@ -341,7 +400,7 @@ export function EnquiryForm({ initialCourse, courses, enquirySources }: EnquiryF
           Enquiry Source
         </legend>
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {enquirySources.map((source) => (
+          {sourceOptions.map((source) => (
             <label
               key={source}
               className="bg-white/72 flex items-center gap-3 rounded-xl border border-sky-100 px-4 py-3 text-sm font-medium text-foreground shadow-sm transition hover:border-sky-200 hover:bg-sky-50/70"
@@ -386,19 +445,20 @@ export function EnquiryForm({ initialCourse, courses, enquirySources }: EnquiryF
         </div>
       </FormSection>
 
-      <FormSection title="Declaration / Signature">
-        <div className="md:col-span-2 rounded-2xl border border-dashed border-sky-200 bg-white/60 p-4 text-sm leading-6 text-muted">
-          I confirm that the details shared in this enquiry form are correct to the best of my
-          knowledge.
-          <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            <div className="border-t border-sky-200 pt-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted">
-              Student Signature
-            </div>
-            <div className="border-t border-sky-200 pt-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted">
-              Parent / Guardian Signature
-            </div>
-          </div>
-        </div>
+      <FormSection title="Declaration">
+        <label className="md:col-span-2 flex gap-4 rounded-2xl border border-sky-200 bg-white/70 p-4 text-sm leading-6 text-muted shadow-inner shadow-sky-950/5">
+          <input
+            className="mt-1 h-5 w-5 shrink-0 rounded border-sky-200 text-brand focus:ring-4 focus:ring-sky-200/70"
+            type="checkbox"
+            aria-required="true"
+            checked={declarationAccepted}
+            onChange={(event) => setDeclarationAccepted(event.currentTarget.checked)}
+          />
+          <span>
+            I confirm that the details shared in this enquiry form are correct to the best of my
+            knowledge. <span className="text-brand">*</span>
+          </span>
+        </label>
       </FormSection>
 
       <div className="flex flex-col justify-between gap-4 rounded-3xl bg-brand-dark p-5 text-white shadow-[0_24px_70px_rgb(14_116_144_/_0.18)] sm:flex-row sm:items-center">

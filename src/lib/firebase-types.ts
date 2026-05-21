@@ -38,6 +38,7 @@ export type FirebaseEnquiry = {
   referenceName?: string;
   remarks?: string;
   counselorName?: string;
+  declarationAccepted?: boolean;
   status: "New" | "Contacted" | "Enrolled" | "Rejected";
   notes?: string;
   createdAt: string;
@@ -48,6 +49,12 @@ export type FirebaseChatbotChat = {
   id: string;
   userMessage: string;
   botReply: string;
+  guidedSelections?: string[];
+  conversation?: Array<{
+    from: "bot" | "user";
+    text: string;
+    time: string;
+  }>;
   pageUrl: string;
   sessionId: string;
   timestamp: string;
@@ -124,6 +131,19 @@ export type FirebaseAdminUser = {
   passwordHash?: string;
   isPrimary: boolean;
   role: string;
+  createdAt: string;
+  updatedAt?: string;
+};
+
+export type FirebaseLoginRole = "Admin" | "Staff" | "Counsellor";
+
+export type FirebaseLoginAccount = {
+  id: string;
+  uid: string;
+  name: string;
+  email: string;
+  role: FirebaseLoginRole;
+  status: "active" | "inactive";
   createdAt: string;
   updatedAt?: string;
 };

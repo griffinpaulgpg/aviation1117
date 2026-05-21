@@ -45,6 +45,9 @@ export const enquirySchema = z
     referenceName: optionalText,
     remarks: optionalText,
     counselorName: optionalText,
+    declarationAccepted: z.boolean().refine((value) => value, {
+      message: "Please confirm the declaration before submitting.",
+    }),
   })
   .superRefine((data, context) => {
     if (data.enquirySources.includes("Other") && !data.otherEnquirySource) {

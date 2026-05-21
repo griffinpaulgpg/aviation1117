@@ -28,6 +28,7 @@ import type {
   FirebaseFacultyUser,
   FirebaseGalleryFolder,
   FirebaseGalleryPhoto,
+  FirebaseLoginAccount,
   FirebaseSettings,
   FirebaseVideoTestimonial,
   FirebaseWrittenTestimonial,
@@ -47,6 +48,7 @@ export const firebaseCollections = {
   videoTestimonials: "videoTestimonials",
   facultyUsers: "facultyUsers",
   adminUsers: "adminUsers",
+  loginAccounts: "loginAccounts",
 } as const;
 
 const defaultSettings: FirebaseSettings = {
@@ -102,6 +104,18 @@ function docWithDates<T extends DocumentData>(snapshot: QueryDocumentSnapshot<T>
     createdAt: toIso(data.createdAt),
     updatedAt: data.updatedAt ? toIso(data.updatedAt) : undefined,
   };
+}
+
+function normalizeLoginRole(value: unknown): FirebaseLoginAccount["role"] {
+  if (value === "Admin" || value === "admin") {
+    return "Admin";
+  }
+
+  if (value === "Counsellor" || value === "counsellor") {
+    return "Counsellor";
+  }
+
+  return "Staff";
 }
 
 async function runFirestore<T>(label: string, operation: () => Promise<T>) {
@@ -407,6 +421,7 @@ export async function getFirebaseEnquiries(): Promise<FirebaseEnquiry[]> {
       referenceName: data.referenceName ? String(data.referenceName) : undefined,
       remarks: data.remarks ? String(data.remarks) : undefined,
       counselorName: data.counselorName ? String(data.counselorName) : undefined,
+      declarationAccepted: Boolean(data.declarationAccepted),
       status: ["New", "Contacted", "Enrolled", "Rejected"].includes(String(data.status))
         ? (String(data.status) as FirebaseEnquiry["status"])
         : "New",
@@ -440,6 +455,12 @@ export async function createFirebaseChatbotChat(chat: {
   pageUrl: string;
   sessionId: string;
   botReply?: string;
+  guidedSelections?: string[];
+  conversation?: Array<{
+    from: "bot" | "user";
+    text: string;
+    time: string;
+  }>;
 }) {
   const settings = await getFirebaseSettings();
 
@@ -451,6 +472,8 @@ export async function createFirebaseChatbotChat(chat: {
     addDoc(collection(db, firebaseCollections.chatbotChats), {
       userMessage: chat.userMessage,
       botReply: chat.botReply ?? defaultBotReply,
+      guidedSelections: chat.guidedSelections ?? [],
+      conversation: chat.conversation ?? [],
       pageUrl: chat.pageUrl,
       sessionId: chat.sessionId,
       timestamp: serverTimestamp(),
@@ -480,6 +503,18 @@ export async function getFirebaseChatbotChats(): Promise<FirebaseChatbotChat[]> 
       id: data.id,
       userMessage: String(data.userMessage ?? data.message ?? ""),
       botReply: String(data.botReply ?? defaultBotReply),
+      guidedSelections: Array.isArray(data.guidedSelections)
+        ? data.guidedSelections.map(String)
+        : [],
+      conversation: Array.isArray(data.conversation)
+        ? data.conversation
+            .filter((item) => item && typeof item === "object")
+            .map((item) => ({
+              from: item.from === "user" ? "user" : "bot",
+              text: String(item.text ?? ""),
+              time: toIso(item.time ?? data.createdAt),
+            }))
+        : [],
       pageUrl: String(data.pageUrl ?? ""),
       sessionId: String(data.sessionId ?? ""),
       timestamp: toIso(data.timestamp ?? data.createdAt),
@@ -690,6 +725,96 @@ export async function updateFirebaseFacultyUser(
 export async function deleteFirebaseFacultyUser(id: string) {
   await runFirestore("Deleting Firebase faculty user", () =>
     deleteDoc(doc(db, firebaseCollections.facultyUsers, id)),
+  );
+}
+
+export async function getFirebaseLoginAccounts(): Promise<FirebaseLoginAccount[]> {
+  if (isBuildPhase()) {
+    return [];
+  }
+
+  const snapshot = await runFirestore("Loading Firebase login accounts", () =>
+    getDocs(query(collection(db, firebaseCollections.loginAccounts), orderBy("createdAt", "desc"))),
+  );
+
+  return snapshot.docs.map((item) => {
+    const data = docWithDates(item);
+
+    return {
+      id: data.id,
+      uid: String(data.uid ?? data.id),
+      name: String(data.name ?? ""),
+      email: String(data.email ?? ""),
+      role: normalizeLoginRole(data.role),
+      status: data.status === "inactive" ? "inactive" : "active",
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
+    };
+  });
+}
+
+export async function getFirebaseLoginAccount(uid: string): Promise<FirebaseLoginAccount | null> {
+  if (isBuildPhase()) {
+    return null;
+  }
+
+  const snapshot = await runFirestore("Loading Firebase login account", () =>
+    getDoc(doc(db, firebaseCollections.loginAccounts, uid)),
+  );
+
+  if (!snapshot.exists()) {
+    return null;
+  }
+
+  const data = docWithDates(snapshot as unknown as QueryDocumentSnapshot<DocumentData>);
+
+  return {
+    id: data.id,
+    uid: String(data.uid ?? snapshot.id),
+    name: String(data.name ?? ""),
+    email: String(data.email ?? ""),
+    role: normalizeLoginRole(data.role),
+    status: data.status === "inactive" ? "inactive" : "active",
+    createdAt: data.createdAt,
+    updatedAt: data.updatedAt,
+  };
+}
+
+export async function saveFirebaseLoginAccountProfile(
+  account: Omit<FirebaseLoginAccount, "id" | "createdAt" | "updatedAt">,
+) {
+  await runFirestore("Saving Firebase login account", () =>
+    setDoc(
+      doc(db, firebaseCollections.loginAccounts, account.uid),
+      {
+        uid: account.uid,
+        name: account.name,
+        email: account.email,
+        role: account.role,
+        status: account.status,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true },
+    ),
+  );
+}
+
+export async function updateFirebaseLoginAccountStatus(
+  uid: string,
+  status: FirebaseLoginAccount["status"],
+) {
+  await runFirestore("Updating Firebase login account status", () =>
+    updateDoc(doc(db, firebaseCollections.loginAccounts, uid), {
+      status,
+      updatedAt: serverTimestamp(),
+    }),
+  );
+}
+
+export async function deleteFirebaseLoginAccountProfile(uid: string) {
+  await runFirestore("Deleting Firebase login account profile", () =>
+    deleteDoc(doc(db, firebaseCollections.loginAccounts, uid)),
   );
 }
 

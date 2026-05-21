@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { isAdminSignedIn } from "@/lib/admin-auth";
+import { getAdminSession } from "@/lib/admin-auth";
 import {
   clearFirebaseChatbotChats,
   deleteFirebaseChatbotChat,
@@ -36,7 +36,9 @@ const chatbotActionSchema = z.discriminatedUnion("action", [
 ]);
 
 async function ensureAdmin() {
-  if (!(await isAdminSignedIn())) {
+  const session = await getAdminSession();
+
+  if (!session) {
     return NextResponse.json(
       {
         success: false,
@@ -46,7 +48,7 @@ async function ensureAdmin() {
     );
   }
 
-  return null;
+  return session;
 }
 
 async function getChatbotPayload() {
@@ -59,10 +61,10 @@ async function getChatbotPayload() {
 }
 
 export async function GET() {
-  const unauthorized = await ensureAdmin();
+  const session = await ensureAdmin();
 
-  if (unauthorized) {
-    return unauthorized;
+  if (session instanceof NextResponse) {
+    return session;
   }
 
   try {
@@ -82,16 +84,26 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const unauthorized = await ensureAdmin();
+  const session = await ensureAdmin();
 
-  if (unauthorized) {
-    return unauthorized;
+  if (session instanceof NextResponse) {
+    return session;
   }
 
   try {
     const payload = chatbotActionSchema.parse(await request.json());
 
     if (payload.action === "updateSettings") {
+      if (session.role !== "admin") {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Only admin users can change website settings.",
+          },
+          { status: 403 },
+        );
+      }
+
       const current = await getFirebaseSettings();
 
       await updateFirebaseSettings({
@@ -107,6 +119,16 @@ export async function POST(request: Request) {
     }
 
     if (payload.action === "clearChats") {
+      if (session.role !== "admin") {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Only admin users can clear all chatbot chats.",
+          },
+          { status: 403 },
+        );
+      }
+
       await clearFirebaseChatbotChats();
     }
 

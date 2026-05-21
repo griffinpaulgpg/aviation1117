@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { AdminConsole } from "@/components/admin-console";
 import { Container } from "@/components/container";
 import { PageHero } from "@/components/page-hero";
-import { isAdminSignedIn } from "@/lib/admin-auth";
+import { getAdminSession } from "@/lib/admin-auth";
 import { getEmptyAdminDashboardData } from "@/lib/admin-dashboard-empty";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +19,9 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminDashboardPage() {
-  if (!(await isAdminSignedIn())) {
+  const session = await getAdminSession();
+
+  if (!session) {
     redirect("/admin");
   }
 
@@ -33,7 +35,7 @@ export default async function AdminDashboardPage() {
         />
         <section className="aviation-section py-14 sm:py-20">
           <Container>
-            <AdminConsole initialData={getEmptyAdminDashboardData()} />
+            <AdminConsole initialData={getEmptyAdminDashboardData()} currentSession={session} />
           </Container>
         </section>
       </main>

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 
-import { isAdminSignedIn, isPrimaryAdminId } from "@/lib/admin-auth";
+import { getAdminSession, isPrimaryAdminId } from "@/lib/admin-auth";
 import { getAdminDashboardData, PUBLIC_CONTENT_CACHE_TAG } from "@/lib/content-data";
 import { hashPassword } from "@/lib/passwords";
 import {
@@ -175,7 +175,9 @@ function getZodMessage(error: z.ZodError) {
 }
 
 async function ensureAdmin() {
-  if (!(await isAdminSignedIn())) {
+  const session = await getAdminSession();
+
+  if (!session) {
     return NextResponse.json(
       {
         success: false,
@@ -185,14 +187,14 @@ async function ensureAdmin() {
     );
   }
 
-  return null;
+  return session;
 }
 
 export async function GET() {
-  const unauthorized = await ensureAdmin();
+  const session = await ensureAdmin();
 
-  if (unauthorized) {
-    return unauthorized;
+  if (session instanceof NextResponse) {
+    return session;
   }
 
   return NextResponse.json({
@@ -202,14 +204,24 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const unauthorized = await ensureAdmin();
+  const session = await ensureAdmin();
 
-  if (unauthorized) {
-    return unauthorized;
+  if (session instanceof NextResponse) {
+    return session;
   }
 
   try {
     const payload = contentActionSchema.parse(await request.json());
+
+    if (session.role !== "admin" && payload.resource !== "enquiries") {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "This login role can only manage enquiries and chat.",
+        },
+        { status: 403 },
+      );
+    }
 
     if (payload.resource === "courses") {
       if (payload.action === "create") {
