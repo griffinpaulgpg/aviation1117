@@ -31,22 +31,48 @@ export function Header() {
   const [isPlaneFlying, setIsPlaneFlying] = useState(false);
   const [planeDirection, setPlaneDirection] = useState<"left" | "right">("right");
   const [isLogoVisible, setIsLogoVisible] = useState(true);
+  const navTimeoutsRef = useRef<number[]>([]);
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 12);
+    let frameId = 0;
+
+    const handleScroll = () => {
+      if (frameId) {
+        return;
+      }
+
+      frameId = window.requestAnimationFrame(() => {
+        setIsScrolled(window.scrollY > 12);
+        frameId = 0;
+      });
+    };
 
     handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
 
-    return () => window.removeEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+
+      if (frameId) {
+        window.cancelAnimationFrame(frameId);
+      }
+    };
   }, []);
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [pathname]);
 
+  useEffect(() => {
+    document.body.classList.toggle("site-mobile-menu-open", isMobileMenuOpen);
+
+    return () => {
+      document.body.classList.remove("site-mobile-menu-open");
+    };
+  }, [isMobileMenuOpen]);
+
   const isActiveLink = (href: string) =>
-    href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
+    href === "/" ? pathname === "/" : pathname === href || pathname?.startsWith(`${href}/`) === true;
 
   const activeHref = navItems.find((item) => isActiveLink(item.href))?.href ?? "/";
 
@@ -97,7 +123,7 @@ export function Header() {
       event.altKey ||
       event.button !== 0 ||
       href === pathname ||
-      (href !== "/" && pathname.startsWith(`${href}/`))
+      (href !== "/" && pathname?.startsWith(`${href}/`) === true)
     ) {
       return;
     }
@@ -123,14 +149,35 @@ export function Header() {
     setIsPlaneFlying(true);
     setPlaneX(nextX);
 
-    window.setTimeout(() => {
+    const pushTimeout = window.setTimeout(() => {
       router.push(href);
     }, 600);
 
-    window.setTimeout(() => {
+    const settleTimeout = window.setTimeout(() => {
       setIsPlaneFlying(false);
     }, 680);
+
+    navTimeoutsRef.current.push(pushTimeout, settleTimeout);
   }
+
+  useEffect(() => {
+    return () => {
+      navTimeoutsRef.current.forEach((timeoutId) => window.clearTimeout(timeoutId));
+      navTimeoutsRef.current = [];
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   return (
     <header className={cn("site-header", isScrolled && "site-header-scrolled")}>
@@ -189,16 +236,6 @@ export function Header() {
         </nav>
 
         <div className="flex shrink-0 items-center gap-2">
-          <Link
-            href="/admin/dashboard"
-            prefetch={true}
-            className={cn(
-              "site-admin-link",
-              isActiveLink("/admin/dashboard") && "site-admin-link-active",
-            )}
-          >
-            Admin Login
-          </Link>
           <button
             type="button"
             className="site-mobile-toggle"

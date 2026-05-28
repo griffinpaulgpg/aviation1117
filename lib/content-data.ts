@@ -1,6 +1,10 @@
 import { unstable_cache } from "next/cache";
 
 import { getPrimaryAdminId, getPrimaryAdminPassword } from "@/lib/admin-auth";
+import {
+  getLocalFallbackChatbotChats,
+  getLocalFallbackEnquiries,
+} from "@/lib/runtime-fallback-store";
 import { hashPassword } from "@/lib/passwords";
 import { siteContent } from "@/lib/site-content";
 
@@ -29,6 +33,8 @@ export type PublicCourse = {
   duration?: string | null;
   image: string;
   reachUsLink?: string | null;
+  status?: "active" | "inactive";
+  order?: number;
 };
 
 export type PublicEvent = {
@@ -37,7 +43,10 @@ export type PublicEvent = {
   description: string;
   image?: string | null;
   applyLink?: string | null;
-  date?: string;
+  date?: string | null;
+  location?: string | null;
+  status?: "active" | "inactive";
+  order?: number;
 };
 
 export type PublicGalleryFolder = {
@@ -48,11 +57,17 @@ export type PublicGalleryFolder = {
 export type PublicGalleryPhoto = {
   id?: string;
   image: string;
+  mediaType?: "image" | "video";
+  mediaUrl?: string;
+  thumbnailUrl?: string | null;
+  description?: string | null;
   caption?: string | null;
   folderId?: string | null;
   folderName?: string | null;
-  title?: string;
+  title?: string | null;
   alt?: string;
+  status?: "active" | "inactive";
+  order?: number;
 };
 
 export type PublicGalleryData = {
@@ -66,6 +81,7 @@ export type PublicWrittenTestimonial = {
   position: string;
   description: string;
   photo?: string | null;
+  status?: "active" | "inactive";
 };
 
 export type PublicVideoTestimonial = {
@@ -74,6 +90,7 @@ export type PublicVideoTestimonial = {
   name: string;
   position: string;
   description: string;
+  status?: "active" | "inactive";
 };
 
 export type AdminDashboardData = {
@@ -89,6 +106,7 @@ export type AdminDashboardData = {
     id: string;
     enquiryNumber: string;
     fullName: string;
+    dateOfBirth?: string;
     qualification?: string;
     schoolCollege?: string;
     email: string;
@@ -117,9 +135,13 @@ export type AdminDashboardData = {
   }>;
   facultyUsers: Array<{
     id: string;
+    facultyId?: string;
     name: string;
     email: string;
+    phone?: string;
     role: string;
+    department?: string;
+    status?: "active" | "inactive";
     createdAt: string;
   }>;
   adminUsers: Array<{
@@ -169,7 +191,25 @@ function optimizedMediaPath(value?: string | null) {
 }
 
 function firebaseErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "Unknown Firebase error";
+  if (error instanceof Error && error.message) {
+    if (
+      error.message.includes("offline") ||
+      error.message.includes("unavailable") ||
+      error.message.includes("Failed to get document because the client is offline") ||
+      error.message.includes("Could not reach Cloud Firestore backend") ||
+      error.message.includes("network-request-failed")
+    ) {
+      return "Database connection unavailable. Please check Firebase configuration or internet connection.";
+    }
+
+    if (error.message.includes("permission") || error.message.includes("Permission")) {
+      return "Firebase permission denied. Check Firestore rules.";
+    }
+
+    return error.message;
+  }
+
+  return "Database connection unavailable. Please check Firebase configuration or internet connection.";
 }
 
 async function firebaseRead<T extends { firebaseError?: string | null }>(
@@ -239,16 +279,10 @@ function fallbackGalleryPhotos(): PublicGalleryPhoto[] {
   }));
 }
 
-function fallbackWrittenTestimonials(): PublicWrittenTestimonial[] {
-  return siteContent.testimonials.map((testimonial) => ({
-    name: testimonial.name,
-    position: testimonial.role,
-    description: testimonial.quote,
-    photo: null,
-  }));
-}
-
 function fallbackAdminContent(): AdminDashboardData {
+  const fallbackEnquiries = getLocalFallbackEnquiries();
+  const fallbackChats = getLocalFallbackChatbotChats();
+
   return {
     databaseReady: false,
     firebaseError: null,
@@ -265,13 +299,9 @@ function fallbackAdminContent(): AdminDashboardData {
       alt: photo.alt,
       createdAt: new Date(index).toISOString(),
     })),
-    writtenTestimonials: fallbackWrittenTestimonials().map((testimonial, index) => ({
-      id: `fallback-written-${index}`,
-      ...testimonial,
-      createdAt: new Date(index).toISOString(),
-    })),
+    writtenTestimonials: [],
     videoTestimonials: [],
-    enquiries: [],
+    enquiries: fallbackEnquiries,
     enquirySources: [
       "Newspaper Ads",
       "Pamphlet",
@@ -296,7 +326,7 @@ function fallbackAdminContent(): AdminDashboardData {
       },
     ],
     loginAccounts: [],
-    chatbotChats: [],
+    chatbotChats: fallbackChats,
     settings: {
       whatsappEnabled: true,
       chatbotEnabled: true,
@@ -334,9 +364,11 @@ export function getEmptyAdminDashboardData(): AdminDashboardData {
 async function loadFirebaseAdminContent(): Promise<AdminDashboardData> {
   return firebaseRead<AdminDashboardData>(async () => {
     const {
+      ensureFirebaseCollectionsSeeded,
       ensureFirebasePrimaryAdmin,
       fallbackFirebaseCourses,
       fallbackFirebaseEvents,
+      fallbackFirebaseGalleryPhotos,
       getFirebaseAdminUsers,
       getFirebaseCourses,
       getFirebaseEnquiries,
@@ -357,6 +389,7 @@ async function loadFirebaseAdminContent(): Promise<AdminDashboardData> {
       role: "admin",
       passwordHash: hashPassword(getPrimaryAdminPassword()),
     });
+    await ensureFirebaseCollectionsSeeded();
 
     const [
       courses,
@@ -398,9 +431,9 @@ async function loadFirebaseAdminContent(): Promise<AdminDashboardData> {
         image: optimizedMediaPath(event.image),
       })),
       galleryFolders,
-      galleryPhotos: galleryPhotos.map((photo) => ({
+      galleryPhotos: (galleryPhotos.length > 0 ? galleryPhotos : fallbackFirebaseGalleryPhotos()).map((photo) => ({
         ...photo,
-        image: optimizedMediaPath(photo.image) ?? photo.image,
+        image: optimizedMediaPath(photo.mediaUrl ?? photo.image) ?? photo.mediaUrl ?? photo.image,
       })),
       writtenTestimonials: writtenTestimonials.map((testimonial) => ({
         ...testimonial,
@@ -438,10 +471,35 @@ async function loadPublicGallery(): Promise<PublicGalleryData> {
 }
 
 async function loadPublicTestimonials() {
-  return {
-    written: fallbackWrittenTestimonials(),
-    video: [],
-  };
+  try {
+    const { getFirebaseVideoTestimonials, getFirebaseWrittenTestimonials } = await import(
+      "@/src/lib/firebase-services"
+    );
+
+    const [written, video] = await Promise.all([
+      getFirebaseWrittenTestimonials(),
+      getFirebaseVideoTestimonials(),
+    ]);
+
+    return {
+      written: written
+        .filter((testimonial) => (testimonial.status ?? "active") === "active")
+        .map((testimonial) => ({
+          id: testimonial.id,
+          name: testimonial.name,
+          position: testimonial.position,
+          description: testimonial.description,
+          photo: optimizedMediaPath(testimonial.photo) ?? testimonial.photo ?? null,
+          status: testimonial.status ?? "active",
+        })),
+      video: video.filter((testimonial) => (testimonial.status ?? "active") === "active"),
+    };
+  } catch {
+    return {
+      written: [],
+      video: [],
+    };
+  }
 }
 
 export const getPublicCourses = unstable_cache(loadPublicCourses, ["public-courses"], {

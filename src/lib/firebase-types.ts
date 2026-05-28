@@ -5,6 +5,8 @@ export type FirebaseCourse = {
   duration?: string | null;
   image: string;
   reachUsLink?: string | null;
+  status?: "active" | "inactive";
+  order?: number;
   createdAt: string;
   updatedAt?: string;
 };
@@ -15,6 +17,10 @@ export type FirebaseEvent = {
   description: string;
   image?: string | null;
   applyLink?: string | null;
+  date?: string | null;
+  location?: string | null;
+  status?: "active" | "inactive";
+  order?: number;
   createdAt: string;
   updatedAt?: string;
 };
@@ -23,6 +29,7 @@ export type FirebaseEnquiry = {
   id: string;
   enquiryNumber: string;
   fullName: string;
+  dateOfBirth?: string;
   qualification?: string;
   schoolCollege?: string;
   email: string;
@@ -87,9 +94,16 @@ export type FirebaseGalleryFolder = {
 export type FirebaseGalleryPhoto = {
   id: string;
   image: string;
+  title?: string | null;
+  mediaType?: "image" | "video";
+  mediaUrl?: string;
+  thumbnailUrl?: string | null;
+  description?: string | null;
   folderId?: string | null;
   folderName?: string | null;
   caption?: string | null;
+  status?: "active" | "inactive";
+  order?: number;
   createdAt: string;
   updatedAt?: string;
 };
@@ -100,6 +114,7 @@ export type FirebaseWrittenTestimonial = {
   position: string;
   description: string;
   photo?: string | null;
+  status?: "active" | "inactive";
   createdAt: string;
   updatedAt?: string;
 };
@@ -110,15 +125,20 @@ export type FirebaseVideoTestimonial = {
   name: string;
   position: string;
   description: string;
+  status?: "active" | "inactive";
   createdAt: string;
   updatedAt?: string;
 };
 
 export type FirebaseFacultyUser = {
   id: string;
+  facultyId?: string;
   name: string;
   email: string;
+  phone?: string;
   role: string;
+  department?: string;
+  status?: "active" | "inactive";
   passwordHash?: string;
   createdAt: string;
   updatedAt?: string;

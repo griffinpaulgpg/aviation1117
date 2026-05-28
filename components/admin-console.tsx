@@ -2,14 +2,28 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import { signOut } from "firebase/auth";
+import {
+  getDownloadURL,
+  ref,
+  uploadBytesResumable,
+  type StorageError,
+  type UploadTask,
+} from "firebase/storage";
 
 import type { AdminSession } from "@/lib/admin-auth";
 import type { AdminDashboardData } from "@/lib/content-data";
 import { cn } from "@/lib/cn";
-import { db, storage } from "@/src/lib/firebase";
+import { getReadableErrorMessage, normalizeUnknownError } from "@/lib/error-utils";
+import { getSafeImageSrc } from "@/lib/media";
+import { auth, storage } from "@/src/lib/firebase";
+import {
+  invalidateClientFirebaseCache,
+  loadClientAdminDashboardData,
+  loadClientChatbotAdminData,
+} from "@/src/lib/firebase-client-loaders";
 
 type AdminConsoleProps = {
   initialData: AdminDashboardData;
@@ -62,26 +76,89 @@ const tabs: Array<{ key: TabName; label: string; adminOnly?: boolean }> = [
 
 const enquiryStatuses = ["New", "Contacted", "Enrolled", "Rejected"] as const;
 
-const emptyCourse = {
+const emptyCourse: {
+  title: string;
+  duration: string;
+  image: string;
+  reachUsLink: string;
+  description: string;
+  status: "active" | "inactive";
+} = {
   title: "",
   duration: "",
   image: "",
   reachUsLink: "/enquiry",
   description: "",
+  status: "active",
 };
 
-const emptyEvent = {
+const emptyEvent: {
+  title: string;
+  image: string;
+  applyLink: string;
+  description: string;
+  date: string;
+  location: string;
+  status: "active" | "inactive";
+} = {
   title: "",
   image: "",
   applyLink: "/enquiry",
   description: "",
+  date: "",
+  location: "",
+  status: "active",
 };
 
 const emptyFolder = { name: "" };
-const emptyPhoto = { image: "", folderId: "", caption: "" };
-const emptyWrittenTestimonial = { name: "", position: "", description: "", photo: "" };
-const emptyVideoTestimonial = { video: "", name: "", position: "", description: "" };
-const emptyFaculty = { name: "", email: "", password: "" };
+const emptyPhoto: {
+  image: string;
+  title: string;
+  mediaType: "image" | "video";
+  thumbnailUrl: string;
+  description: string;
+  folderId: string;
+  caption: string;
+  status: "active" | "inactive";
+} = {
+  image: "",
+  title: "",
+  mediaType: "image",
+  thumbnailUrl: "",
+  description: "",
+  folderId: "",
+  caption: "",
+  status: "active",
+};
+const emptyWrittenTestimonial: {
+  name: string;
+  position: string;
+  description: string;
+  photo: string;
+  status: "active" | "inactive";
+} = { name: "", position: "", description: "", photo: "", status: "active" };
+const emptyVideoTestimonial: {
+  video: string;
+  name: string;
+  position: string;
+  description: string;
+  status: "active" | "inactive";
+} = { video: "", name: "", position: "", description: "", status: "active" };
+const emptyFaculty: {
+  name: string;
+  email: string;
+  phone: string;
+  department: string;
+  status: "active" | "inactive";
+  password: string;
+} = {
+  name: "",
+  email: "",
+  phone: "",
+  department: "",
+  status: "active",
+  password: "",
+};
 const emptyAdmin = { name: "", email: "", password: "" };
 const emptyEnquirySource = { name: "" };
 type LoginAccountForm = {
@@ -98,10 +175,207 @@ const emptyLoginAccount: LoginAccountForm = {
 };
 
 type MediaKind = "image" | "video";
+type PendingMediaPreview = {
+  file: File;
+  previewUrl: string;
+  name: string;
+  size: number;
+  type: string;
+  kind: MediaKind;
+};
 
-const imageAccept = "*/*";
-const videoAccept = "*/*";
+const imageAccept = ".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp";
+const videoAccept = ".mp4,.webm,.mov,video/mp4,video/webm,video/quicktime";
 const facultyEmailDomain = "arunandsaviation.com";
+const maxImageBytes = 5 * 1024 * 1024;
+const maxVideoBytes = 100 * 1024 * 1024;
+const allowedImageExtensions = new Set(["jpg", "jpeg", "png", "webp"]);
+const allowedVideoExtensions = new Set(["mp4", "webm", "mov"]);
+const adminFirebaseCollections = [
+  "courses",
+  "events",
+  "enquiries",
+  "enquirySources",
+  "chatbotChats",
+  "settings/global",
+  "galleryFolders",
+  "galleryPhotos",
+  "writtenTestimonials",
+  "videoTestimonials",
+  "facultyUsers",
+  "adminUsers",
+  "loginAccounts",
+];
+const firestoreRulesText = `rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}`;
+const storageRulesText = `rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if true;
+    }
+  }
+}`;
+
+function getFileExtension(file: File) {
+  const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
+
+  return extension.replace(/[^a-z0-9]/g, "");
+}
+
+function isAllowedImageFile(file: File) {
+  return (
+    ["image/jpeg", "image/png", "image/webp"].includes(file.type) ||
+    allowedImageExtensions.has(getFileExtension(file))
+  );
+}
+
+function isAllowedVideoFile(file: File) {
+  return (
+    ["video/mp4", "video/webm", "video/quicktime"].includes(file.type) ||
+    allowedVideoExtensions.has(getFileExtension(file))
+  );
+}
+
+function formatUploadError(error: unknown) {
+  const storageError = error as Partial<StorageError> | undefined;
+  const code = storageError?.code ?? "";
+
+  if (
+    code === "storage/unknown" &&
+    error instanceof Error &&
+    /bucket does not exist|storage bucket|No default bucket found/i.test(error.message)
+  ) {
+    return "Firebase Storage not created.";
+  }
+
+  if (code === "storage/retry-limit-exceeded") {
+    return "Upload timed out while talking to Firebase Storage. Please try again.";
+  }
+
+  if (code === "storage/unauthorized" || code === "storage/permission-denied") {
+    return "Firebase rules are blocking access.";
+  }
+
+  if (code === "storage/canceled") {
+    return "Upload canceled.";
+  }
+
+  if (code === "storage/quota-exceeded") {
+    return "Firebase Storage quota exceeded. Please check your Firebase plan or try again later.";
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return getReadableErrorMessage(error, "Storage upload failed.");
+}
+
+function normalizeFirebaseWarning(message: string | null | undefined) {
+  if (!message) {
+    return null;
+  }
+
+  if (
+    message.includes("Firestore Database not created.") ||
+    message.includes("Firebase Storage not created.")
+  ) {
+    return "Firebase Firestore/Storage is not set up. Create Firestore Database and Storage in Firebase Console.";
+  }
+
+  if (message.includes("Firebase rules are blocking access.")) {
+    return "Firebase rules are blocking access.";
+  }
+
+  if (message.includes("Database connection unavailable")) {
+    return "Database temporarily unavailable.";
+  }
+
+  return message;
+}
+
+function shouldShowFirebaseSetupHelper(message: string | null | undefined) {
+  return Boolean(
+    message &&
+      (message.includes("Firestore Database not created.") ||
+        message.includes("Firebase Storage not created.") ||
+        message.includes("Firebase Firestore/Storage is not set up")),
+  );
+}
+
+async function compressImageFile(file: File) {
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    return file;
+  }
+
+  const imageUrl = URL.createObjectURL(file);
+
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const element = new window.Image();
+      element.onload = () => resolve(element);
+      element.onerror = () => reject(new Error("Unable to process the selected image."));
+      element.src = imageUrl;
+    });
+
+    const maxDimension = 1600;
+    const scale = Math.min(1, maxDimension / Math.max(image.width, image.height));
+    const width = Math.max(1, Math.round(image.width * scale));
+    const height = Math.max(1, Math.round(image.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+
+    if (!context) {
+      return file;
+    }
+
+    context.drawImage(image, 0, 0, width, height);
+
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, "image/webp", 0.82);
+    });
+
+    if (!blob) {
+      return file;
+    }
+
+    const compressedFile = new File([blob], file.name.replace(/\.[^.]+$/, "") + ".webp", {
+      type: "image/webp",
+      lastModified: Date.now(),
+    });
+
+    return compressedFile.size < file.size ? compressedFile : file;
+  } finally {
+    URL.revokeObjectURL(imageUrl);
+  }
+}
+
+function trackUploadProgress(task: UploadTask, onProgress: (progress: number) => void) {
+  return new Promise<void>((resolve, reject) => {
+    task.on(
+      "state_changed",
+      (snapshot) => {
+        const progress = snapshot.totalBytes
+          ? Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100)
+          : 0;
+        onProgress(progress);
+      },
+      (error) => reject(normalizeUnknownError(error, "Storage upload failed.")),
+      () => resolve(),
+    );
+  });
+}
 
 function toEmailPart(value: string) {
   return value
@@ -176,26 +450,30 @@ function Field({
 function MediaField({
   label,
   value,
-  onChange,
-  onUpload,
-  placeholder,
+  onSelectFile,
+  onClearSelectedFile,
+  selectedFile,
   required = false,
   mediaKind,
   accept,
   isUploading,
+  uploadProgress,
 }: {
   label: string;
   value: string;
-  onChange: (value: string) => void;
-  onUpload: (file: File) => Promise<void>;
-  placeholder?: string;
+  onSelectFile: (file: File) => void;
+  onClearSelectedFile: () => void;
+  selectedFile?: PendingMediaPreview | null;
   required?: boolean;
   mediaKind: MediaKind;
   accept: string;
   isUploading: boolean;
+  uploadProgress?: number | null;
 }) {
-  const showImagePreview = mediaKind === "image" && value;
-  const showVideoPreview = mediaKind === "video" && value && !isYouTubeUrl(value);
+  const previewSource = selectedFile?.previewUrl ?? value;
+  const showImagePreview = mediaKind === "image" && Boolean(previewSource);
+  const showVideoPreview = mediaKind === "video" && Boolean(previewSource) && !isYouTubeUrl(previewSource);
+  const isFieldEmpty = !selectedFile && !value;
 
   return (
     <label className="grid gap-2 text-sm font-semibold text-foreground">
@@ -204,25 +482,43 @@ function MediaField({
         {showImagePreview ? (
           <div className="relative aspect-[16/9] overflow-hidden rounded-xl">
             <Image
-              src={value}
+              src={selectedFile?.previewUrl ?? getSafeImageSrc(value)}
               alt={`${label} preview`}
               fill
-              sizes="(min-width: 768px) 42rem, 100vw"
+              unoptimized
+              sizes="(min-width: 768px) 28rem, 100vw"
               className="object-cover"
             />
           </div>
         ) : null}
         {showVideoPreview ? (
           <video
-            src={value}
+            src={previewSource}
             controls
             preload="none"
             className="aspect-video w-full rounded-xl bg-brand-dark object-cover"
           />
         ) : null}
-        {mediaKind === "video" && value && isYouTubeUrl(value) ? (
+        {mediaKind === "video" && previewSource && isYouTubeUrl(previewSource) ? (
           <div className="rounded-xl border border-sky-100 bg-sky-50 px-4 py-3 text-xs font-semibold text-brand-dark">
             YouTube/video link added.
+          </div>
+        ) : null}
+        {selectedFile ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-sky-100 bg-sky-50/70 px-4 py-3 text-xs font-semibold text-brand-dark">
+            <div className="grid gap-1">
+              <span>{selectedFile.name}</span>
+              <span className="text-muted">
+                {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB • {selectedFile.type || "Unknown type"}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={onClearSelectedFile}
+              className="rounded-full border border-sky-200 bg-white px-3 py-1 text-xs font-semibold text-brand-dark transition hover:bg-sky-50"
+            >
+              Remove File
+            </button>
           </div>
         ) : null}
         <input
@@ -231,32 +527,35 @@ function MediaField({
             "file:mr-4 file:rounded-full file:border-0 file:bg-brand file:px-4 file:py-2 file:text-xs file:font-semibold file:text-white",
           )}
           accept={accept}
+          required={required && isFieldEmpty}
           type="file"
           onChange={(event) => {
             const file = event.target.files?.[0];
 
             if (file) {
-              void onUpload(file);
+              onSelectFile(file);
             }
 
             event.currentTarget.value = "";
           }}
         />
-        <input
-          className={inputClass}
-          placeholder={placeholder}
-          required={required}
-          type="text"
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-        />
         <p className="text-xs font-medium leading-5 text-muted">
           {isUploading
-            ? "Uploading media..."
+            ? `Uploading ${uploadProgress ?? 0}%`
+            : selectedFile
+              ? "Preview ready. The file will upload when you save."
             : mediaKind === "video"
-              ? "Upload any video format or paste a YouTube/video URL."
-              : "Upload any image format or paste an image URL/path."}
+              ? "Upload a video file. The saved video URL will be generated automatically."
+              : "Upload an image file. The saved image URL will be generated automatically."}
         </p>
+        {isUploading ? (
+          <div className="h-2 overflow-hidden rounded-full bg-sky-100">
+            <div
+              className="h-full rounded-full bg-brand transition-[width] duration-200 ease-out"
+              style={{ width: `${uploadProgress ?? 0}%` }}
+            />
+          </div>
+        ) : null}
       </div>
     </label>
   );
@@ -299,6 +598,12 @@ function isYouTubeUrl(value: string) {
   return /(?:youtube\.com|youtu\.be)/i.test(value);
 }
 
+function logAdminFirebaseError(context: string, error: unknown) {
+  if (process.env.NODE_ENV === "development") {
+    console.error(`[admin-console] ${context}`, error);
+  }
+}
+
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
     <div className="premium-card p-5">
@@ -326,6 +631,7 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
   const [isLoadingDashboard, setIsLoadingDashboard] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [uploadingField, setUploadingField] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const [isLoadingChats, setIsLoadingChats] = useState(false);
   const [chatbotLoaded, setChatbotLoaded] = useState(initialData.chatbotChats.length > 0);
 
@@ -339,6 +645,7 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
   const [adminForm, setAdminForm] = useState(emptyAdmin);
   const [loginAccountForm, setLoginAccountForm] = useState(emptyLoginAccount);
   const [sourceForm, setSourceForm] = useState(emptyEnquirySource);
+  const [pendingMedia, setPendingMedia] = useState<Record<string, PendingMediaPreview | null>>({});
 
   const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
@@ -354,6 +661,128 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
   const [enquiryStatus, setEnquiryStatus] = useState("");
   const [enquiryNotes, setEnquiryNotes] = useState<Record<string, string>>({});
   const [chatSearch, setChatSearch] = useState("");
+  const topWarning = normalizeFirebaseWarning(
+    data.firebaseError || (message?.type === "error" ? message.text : null),
+  );
+  const showFirebaseSetupHelper = shouldShowFirebaseSetupHelper(
+    data.firebaseError || (message?.type === "error" ? message.text : null),
+  );
+
+  function clearPendingMedia(fieldKey: string) {
+    setPendingMedia((current) => {
+      const selected = current[fieldKey];
+
+      if (selected?.previewUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(selected.previewUrl);
+      }
+
+      return {
+        ...current,
+        [fieldKey]: null,
+      };
+    });
+    setUploadProgress((current) => {
+      const next = { ...current };
+      delete next[fieldKey];
+      return next;
+    });
+  }
+
+  function selectPendingMedia(fieldKey: string, kind: MediaKind, file: File) {
+    if (kind === "image" && !isAllowedImageFile(file)) {
+      setMessage({ type: "error", text: "Please select a valid image or video file." });
+      return;
+    }
+
+    if (kind === "video" && !isAllowedVideoFile(file)) {
+      setMessage({ type: "error", text: "Please select a valid image or video file." });
+      return;
+    }
+
+    if (kind === "image" && file.size > maxImageBytes) {
+      setMessage({ type: "error", text: "File is too large. Please upload a smaller file." });
+      return;
+    }
+
+    if (kind === "video" && file.size > maxVideoBytes) {
+      setMessage({ type: "error", text: "File is too large. Please upload a smaller file." });
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    setMessage(null);
+
+    setPendingMedia((current) => {
+      const previous = current[fieldKey];
+
+      if (previous?.previewUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(previous.previewUrl);
+      }
+
+      return {
+        ...current,
+        [fieldKey]: {
+          file,
+          previewUrl,
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          kind,
+        },
+      };
+    });
+  }
+
+  async function resolveMediaValue(
+    fieldKey: string,
+    kind: MediaKind,
+    currentValue: string,
+  ) {
+    const selected = pendingMedia[fieldKey];
+
+    if (!selected) {
+      return currentValue;
+    }
+
+    setUploadingField(fieldKey);
+    setUploadProgress((current) => ({ ...current, [fieldKey]: 0 }));
+
+    try {
+      const preparedFile =
+        kind === "image" ? await compressImageFile(selected.file) : selected.file;
+      const safeName = preparedFile.name
+        .toLowerCase()
+        .replace(/[^a-z0-9.]+/g, "-")
+        .replace(/(^-|-$)/g, "");
+      const uniqueId =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const fileRef = ref(storage, `admin/${kind}s/${Date.now()}-${uniqueId}-${safeName}`);
+      const uploadTask = uploadBytesResumable(fileRef, preparedFile, {
+        contentType: preparedFile.type || undefined,
+      });
+
+      await trackUploadProgress(uploadTask, (progress) => {
+        setUploadProgress((current) => ({ ...current, [fieldKey]: progress }));
+      });
+
+      const url = await getDownloadURL(fileRef);
+      clearPendingMedia(fieldKey);
+      setUploadProgress((current) => ({ ...current, [fieldKey]: 100 }));
+
+      return url;
+    } catch (error) {
+      logAdminFirebaseError(`resolveMediaValue:${fieldKey}`, error);
+      setMessage({
+        type: "error",
+        text: formatUploadError(error),
+      });
+      throw normalizeUnknownError(error, formatUploadError(error));
+    } finally {
+      setUploadingField(null);
+    }
+  }
 
   useEffect(() => {
     if (!visibleTabs.some((tab) => tab.key === activeTab)) {
@@ -438,92 +867,23 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
       setFirebaseStatus("checking");
 
       try {
-        const settingsRef = doc(db, "settings", "global");
-        const settingsSnapshot = await getDoc(settingsRef);
-
-        if (!settingsSnapshot.exists()) {
-          await setDoc(settingsRef, {
-            chatbotEnabled: true,
-            whatsappEnabled: true,
-            instagramEnabled: true,
-            youtubeEnabled: true,
-            updatedAt: serverTimestamp(),
-          });
-        }
-
-        const {
-          getFirebaseAdminUsers,
-          getFirebaseCourses,
-          getFirebaseEnquiries,
-          getFirebaseEnquirySources,
-          getFirebaseEvents,
-          getFirebaseFacultyUsers,
-          getFirebaseGalleryFolders,
-          getFirebaseGalleryPhotos,
-          getFirebaseLoginAccounts,
-          getFirebaseSettings,
-          getFirebaseVideoTestimonials,
-          getFirebaseWrittenTestimonials,
-        } = await import("@/src/lib/firebase-services");
-
-        const [
-          courses,
-          events,
-          enquiries,
-          enquirySources,
-          settings,
-          galleryFolders,
-          galleryPhotos,
-          writtenTestimonials,
-          videoTestimonials,
-          facultyUsers,
-          adminUsers,
-          loginAccounts,
-        ] = await Promise.all([
-          getFirebaseCourses(),
-          getFirebaseEvents(),
-          getFirebaseEnquiries(),
-          getFirebaseEnquirySources(),
-          getFirebaseSettings(),
-          getFirebaseGalleryFolders(),
-          getFirebaseGalleryPhotos(),
-          getFirebaseWrittenTestimonials(),
-          getFirebaseVideoTestimonials(),
-          getFirebaseFacultyUsers(),
-          getFirebaseAdminUsers(),
-          isFullAdmin ? getFirebaseLoginAccounts() : Promise.resolve([]),
-        ]);
+        const result = await loadClientAdminDashboardData(currentSession);
 
         if (cancelled) {
           return;
         }
 
-        setData({
-          databaseReady: true,
-          firebaseError: null,
-          courses,
-          events,
-          enquiries,
-          enquirySources,
-          settings,
-          galleryFolders,
-          galleryPhotos,
-          writtenTestimonials,
-          videoTestimonials,
-          facultyUsers,
-          adminUsers,
-          loginAccounts,
-          chatbotChats: [],
-        });
-        setFirebaseStatus("connected");
+        setData(result);
+        setChatbotLoaded(result.chatbotChats.length > 0);
+        setFirebaseStatus(result.firebaseError ? "error" : "connected");
       } catch {
         if (!cancelled) {
-          setData(initialData);
-          setFirebaseStatus("error");
-          setMessage({
-            type: "error",
-            text: "Firebase connection failed. Check internet, config, or Firestore rules.",
+          setData({
+            ...initialData,
+            firebaseError:
+              "Database connection unavailable. Please check Firebase configuration or internet connection.",
           });
+          setFirebaseStatus("error");
         }
       } finally {
         if (!cancelled) {
@@ -537,7 +897,7 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
     return () => {
       cancelled = true;
     };
-  }, [initialData, isFullAdmin]);
+  }, [currentSession, initialData, isFullAdmin]);
 
   async function loadChatbotManagementData({ silent = false }: { silent?: boolean } = {}) {
     setIsLoadingChats(true);
@@ -546,25 +906,17 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
       setMessage(null);
     }
 
-    try {
-      const response = await fetch("/api/admin/firebase", { cache: "no-store" });
-      const result = (await response.json()) as {
-        success?: boolean;
-        message?: string;
-        data?: Pick<AdminDashboardData, "chatbotChats" | "settings">;
-      };
+      try {
+        const result = await loadClientChatbotAdminData();
 
-      if (!response.ok || !result.success || !result.data) {
-        throw new Error(result.message ?? "Unable to load chatbot data.");
-      }
-
-      setData((current) => ({
-        ...current,
-        chatbotChats: result.data?.chatbotChats ?? current.chatbotChats,
-        settings: result.data?.settings ?? current.settings,
-      }));
-      setChatbotLoaded(true);
-    } catch (error) {
+        setData((current) => ({
+          ...current,
+          chatbotChats: result.chatbotChats ?? current.chatbotChats,
+          settings: result.settings ?? current.settings,
+          firebaseError: result.warning ?? current.firebaseError,
+        }));
+        setChatbotLoaded(true);
+      } catch (error) {
       setMessage({
         type: "error",
         text: error instanceof Error ? error.message : "Unable to load chatbot data.",
@@ -586,22 +938,14 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
       setMessage(null);
 
       try {
-        const response = await fetch("/api/admin/firebase", { cache: "no-store" });
-        const result = (await response.json()) as {
-          success?: boolean;
-          message?: string;
-          data?: Pick<AdminDashboardData, "chatbotChats" | "settings">;
-        };
-
-        if (!response.ok || !result.success || !result.data) {
-          throw new Error(result.message ?? "Unable to load chatbot data.");
-        }
+        const result = await loadClientChatbotAdminData();
 
         if (!cancelled) {
           setData((current) => ({
             ...current,
-            chatbotChats: result.data?.chatbotChats ?? current.chatbotChats,
-            settings: result.data?.settings ?? current.settings,
+            chatbotChats: result.chatbotChats ?? current.chatbotChats,
+            settings: result.settings ?? current.settings,
+            firebaseError: result.warning ?? current.firebaseError,
           }));
           setChatbotLoaded(true);
         }
@@ -662,121 +1006,88 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
     setMessage(null);
 
     try {
+      const firebase = await import("@/src/lib/firebase-services");
+      const targetId = id ?? null;
+
       if (resource === "courses") {
-        const {
-          createFirebaseCourse,
-          deleteFirebaseCourse,
-          updateFirebaseCourse,
-        } = await import("@/src/lib/firebase-services");
-        const course = payload as {
-          title: string;
-          description: string;
-          duration?: string | null;
-          image: string;
-          reachUsLink?: string | null;
+        if (action === "create") await firebase.createFirebaseCourse(payload as typeof courseForm);
+        if (action === "update" && targetId)
+          await firebase.updateFirebaseCourse(targetId, payload as typeof courseForm);
+        if (action === "delete" && targetId) await firebase.deleteFirebaseCourse(targetId);
+      } else if (resource === "events") {
+        if (action === "create") await firebase.createFirebaseEvent(payload as typeof eventForm);
+        if (action === "update" && targetId)
+          await firebase.updateFirebaseEvent(targetId, payload as typeof eventForm);
+        if (action === "delete" && targetId) await firebase.deleteFirebaseEvent(targetId);
+      } else if (resource === "galleryFolders") {
+        if (action === "create") await firebase.createFirebaseGalleryFolder(payload as typeof folderForm);
+        if (action === "update" && targetId)
+          await firebase.updateFirebaseGalleryFolder(targetId, payload as typeof folderForm);
+        if (action === "delete" && targetId) await firebase.deleteFirebaseGalleryFolder(targetId);
+      } else if (resource === "galleryPhotos") {
+        if (action === "create") await firebase.createFirebaseGalleryPhoto(payload as typeof photoForm);
+        if (action === "update" && targetId)
+          await firebase.updateFirebaseGalleryPhoto(targetId, payload as typeof photoForm);
+        if (action === "delete" && targetId) await firebase.deleteFirebaseGalleryPhoto(targetId);
+      } else if (resource === "writtenTestimonials") {
+        if (action === "create")
+          await firebase.createFirebaseWrittenTestimonial(payload as typeof writtenForm);
+        if (action === "update" && targetId)
+          await firebase.updateFirebaseWrittenTestimonial(targetId, payload as typeof writtenForm);
+        if (action === "delete" && targetId) await firebase.deleteFirebaseWrittenTestimonial(targetId);
+      } else if (resource === "videoTestimonials") {
+        if (action === "create")
+          await firebase.createFirebaseVideoTestimonial(payload as typeof videoForm);
+        if (action === "update" && targetId)
+          await firebase.updateFirebaseVideoTestimonial(targetId, payload as typeof videoForm);
+        if (action === "delete" && targetId) await firebase.deleteFirebaseVideoTestimonial(targetId);
+      } else if (resource === "enquiries") {
+        if (action === "update" && targetId)
+          await firebase.updateFirebaseEnquiry(
+            targetId,
+            payload as { status: (typeof enquiryStatuses)[number]; notes?: string },
+          );
+        if (action === "delete" && targetId) await firebase.deleteFirebaseEnquiry(targetId);
+      } else if (resource === "enquirySources") {
+        if (action === "create")
+          await firebase.createFirebaseEnquirySource(payload as typeof sourceForm);
+        if (action === "update" && targetId)
+          await firebase.updateFirebaseEnquirySource(targetId, payload as typeof sourceForm);
+        if (action === "delete" && targetId) await firebase.deleteFirebaseEnquirySource(targetId);
+      } else {
+        const response = await fetch("/api/admin/content", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({
+            resource,
+            action,
+            ...(id ? { id } : {}),
+            data: payload,
+          }),
+        });
+        const result = (await response.json()) as {
+          success?: boolean;
+          message?: string;
+          data?: AdminDashboardData;
         };
 
-        if (action === "create") {
-          const newId = await createFirebaseCourse(course);
-          setData((current) => ({
-            ...current,
-            courses: [
-              ...current.courses,
-              {
-                id: newId,
-                ...course,
-                createdAt: new Date().toISOString(),
-              },
-            ],
-          }));
-        } else if (action === "update") {
-          await updateFirebaseCourse(String(id), course);
-          setData((current) => ({
-            ...current,
-            courses: current.courses.map((item) =>
-              item.id === id ? { ...item, ...course } : item,
-            ),
-          }));
-        } else {
-          await deleteFirebaseCourse(String(id));
-          setData((current) => ({
-            ...current,
-            courses: current.courses.filter((item) => item.id !== id),
-          }));
+        if (!response.ok || !result.success || !result.data) {
+          throw new Error(result.message ?? "Unable to update dashboard.");
         }
 
-        setMessage({ type: "success", text: "Dashboard updated successfully." });
+        setData(result.data);
+        setMessage({ type: "success", text: result.message ?? "Dashboard updated successfully." });
         return true;
       }
 
-      if (resource === "events") {
-        const {
-          createFirebaseEvent,
-          deleteFirebaseEvent,
-          updateFirebaseEvent,
-        } = await import("@/src/lib/firebase-services");
-        const event = payload as {
-          title: string;
-          description: string;
-          image?: string | null;
-          applyLink?: string | null;
-        };
-
-        if (action === "create") {
-          const newId = await createFirebaseEvent(event);
-          setData((current) => ({
-            ...current,
-            events: [
-              {
-                id: newId,
-                ...event,
-                createdAt: new Date().toISOString(),
-              },
-              ...current.events,
-            ],
-          }));
-        } else if (action === "update") {
-          await updateFirebaseEvent(String(id), event);
-          setData((current) => ({
-            ...current,
-            events: current.events.map((item) => (item.id === id ? { ...item, ...event } : item)),
-          }));
-        } else {
-          await deleteFirebaseEvent(String(id));
-          setData((current) => ({
-            ...current,
-            events: current.events.filter((item) => item.id !== id),
-          }));
-        }
-
-        setMessage({ type: "success", text: "Dashboard updated successfully." });
-        return true;
-      }
-
-      const response = await fetch("/api/admin/content", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          resource,
-          action,
-          ...(id ? { id } : {}),
-          data: payload,
-        }),
-      });
-      const result = (await response.json()) as {
-        success?: boolean;
-        message?: string;
-        data?: AdminDashboardData;
-      };
-
-      if (!response.ok || !result.success || !result.data) {
-        throw new Error(result.message ?? "Unable to update dashboard.");
-      }
-
-      setData(result.data);
-      setMessage({ type: "success", text: result.message ?? "Dashboard updated successfully." });
+      invalidateClientFirebaseCache();
+      const result = await loadClientAdminDashboardData(currentSession);
+      setData(result);
+      setMessage({ type: "success", text: "Dashboard updated successfully." });
       return true;
     } catch (error) {
+      logAdminFirebaseError(`mutateContent:${resource}:${action}`, error);
       setMessage({
         type: "error",
         text: error instanceof Error ? error.message : "Unable to update dashboard.",
@@ -796,30 +1107,45 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
     setMessage(null);
 
     try {
-      const response = await fetch("/api/admin/firebase", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const result = (await response.json()) as {
-        success?: boolean;
-        message?: string;
-        data?: Pick<AdminDashboardData, "chatbotChats" | "settings">;
-      };
+      const firebase = await import("@/src/lib/firebase-services");
+      const action = (payload as { action?: string }).action;
 
-      if (!response.ok || !result.success || !result.data) {
-        throw new Error(result.message ?? "Unable to update Firebase data.");
+      if (action === "updateSettings") {
+        const dataPayload = (payload as {
+          data: {
+            whatsappEnabled?: boolean;
+            chatbotEnabled?: boolean;
+            instagramEnabled?: boolean;
+            youtubeEnabled?: boolean;
+          };
+        }).data;
+        const { settings: current } = await firebase.getFirebaseSettingsSafe();
+        await firebase.updateFirebaseSettings({
+          whatsappEnabled: dataPayload.whatsappEnabled ?? current.whatsappEnabled,
+          chatbotEnabled: dataPayload.chatbotEnabled ?? current.chatbotEnabled,
+          instagramEnabled: dataPayload.instagramEnabled ?? current.instagramEnabled ?? true,
+          youtubeEnabled: dataPayload.youtubeEnabled ?? current.youtubeEnabled ?? true,
+        });
+      } else if (action === "deleteChat") {
+        await firebase.deleteFirebaseChatbotChat((payload as { id: string }).id);
+      } else if (action === "clearChats") {
+        await firebase.clearFirebaseChatbotChats();
       }
 
+      invalidateClientFirebaseCache("settings");
+      invalidateClientFirebaseCache("admin-chatbot");
+      const result = await loadClientChatbotAdminData();
       setData((current) => ({
         ...current,
-        chatbotChats: result.data?.chatbotChats ?? current.chatbotChats,
-        settings: result.data?.settings ?? current.settings,
+        chatbotChats: result.chatbotChats ?? current.chatbotChats,
+        settings: result.settings ?? current.settings,
+        firebaseError: result.warning ?? current.firebaseError,
       }));
       setChatbotLoaded(true);
-      setMessage({ type: "success", text: result.message ?? "Firebase data updated." });
+      setMessage({ type: "success", text: "Firebase data updated." });
       return true;
     } catch (error) {
+      logAdminFirebaseError(`mutateFirebase:${String((payload as { action?: string }).action)}`, error);
       setMessage({
         type: "error",
         text: error instanceof Error ? error.message : "Unable to update Firebase data.",
@@ -839,28 +1165,56 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
     setMessage(null);
 
     try {
-      const response = await fetch("/api/admin/login-accounts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const result = (await response.json()) as {
-        success?: boolean;
-        message?: string;
-        data?: Pick<AdminDashboardData, "loginAccounts">;
-      };
+      const action = (payload as { action?: string }).action;
+      const firebase = await import("@/src/lib/firebase-services");
+      const authRest = await import("@/src/lib/firebase-auth-rest");
+      let successMessage = "Login accounts updated.";
 
-      if (!response.ok || !result.success || !result.data) {
-        throw new Error(result.message ?? "Unable to update login accounts.");
+      if (action === "create") {
+        const dataPayload = (payload as {
+          data: {
+            name: string;
+            email: string;
+            password: string;
+            role: "Admin" | "Staff" | "Counsellor";
+          };
+        }).data;
+        const authUser = await authRest.createFirebaseAuthUser(
+          dataPayload.email,
+          dataPayload.password,
+        );
+        await firebase.saveFirebaseLoginAccountProfile({
+          uid: authUser.uid,
+          name: dataPayload.name,
+          email: authUser.email.toLowerCase(),
+          role: dataPayload.role,
+          status: "active",
+        });
+        successMessage = "Login account created successfully.";
+      } else if (action === "updateStatus") {
+        const dataPayload = payload as { uid: string; status: "active" | "inactive" };
+        await firebase.updateFirebaseLoginAccountStatus(dataPayload.uid, dataPayload.status);
+      } else if (action === "deleteProfile") {
+        await firebase.deleteFirebaseLoginAccountProfile((payload as { uid: string }).uid);
+      } else if (action === "sendPasswordReset") {
+        await authRest.sendFirebasePasswordReset((payload as { email: string }).email);
+        successMessage = "Password reset email sent.";
       }
 
+      invalidateClientFirebaseCache();
+      const { loginAccounts, error } = await firebase.getFirebaseLoginAccountsSafe();
       setData((current) => ({
         ...current,
-        loginAccounts: result.data?.loginAccounts ?? current.loginAccounts,
+        loginAccounts,
+        firebaseError: error ?? current.firebaseError,
       }));
-      setMessage({ type: "success", text: result.message ?? "Login accounts updated." });
+      setMessage({ type: "success", text: error ?? successMessage });
       return true;
     } catch (error) {
+      logAdminFirebaseError(
+        `mutateLoginAccounts:${String((payload as { action?: string }).action)}`,
+        error,
+      );
       setMessage({
         type: "error",
         text: error instanceof Error ? error.message : "Unable to update login accounts.",
@@ -872,46 +1226,15 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
   }
 
   async function updateWhatsAppEnabled(enabled: boolean) {
-    setIsSaving(true);
-    setMessage(null);
-
-    try {
-      await setDoc(
-        doc(db, "settings", "global"),
-        {
-          whatsappEnabled: enabled,
-          chatbotEnabled: data.settings.chatbotEnabled,
-          instagramEnabled: data.settings.instagramEnabled ?? true,
-          youtubeEnabled: data.settings.youtubeEnabled ?? true,
-          updatedAt: serverTimestamp(),
-        },
-        { merge: true },
-      );
-
-      setData((current) => ({
-        ...current,
-        settings: {
-          ...current.settings,
-          whatsappEnabled: enabled,
-          chatbotEnabled: current.settings.chatbotEnabled,
-          instagramEnabled: current.settings.instagramEnabled ?? true,
-          youtubeEnabled: current.settings.youtubeEnabled ?? true,
-        },
-      }));
-      setMessage({
-        type: "success",
-        text: `WhatsApp button ${enabled ? "enabled" : "disabled"}.`,
-      });
-      return true;
-    } catch (error) {
-      setMessage({
-        type: "error",
-        text: error instanceof Error ? error.message : "Unable to update WhatsApp setting.",
-      });
-      return false;
-    } finally {
-      setIsSaving(false);
-    }
+    return mutateFirebase({
+      action: "updateSettings",
+      data: {
+        whatsappEnabled: enabled,
+        chatbotEnabled: data.settings.chatbotEnabled,
+        instagramEnabled: data.settings.instagramEnabled ?? true,
+        youtubeEnabled: data.settings.youtubeEnabled ?? true,
+      },
+    });
   }
 
   async function updateEnquiryAdminFields(
@@ -932,83 +1255,55 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
     return normalized ? `https://wa.me/${normalized}?text=${message}` : null;
   }
 
-  async function uploadMedia({
-    file,
-    kind,
-    fieldKey,
-    onUploaded,
-  }: {
-    file: File;
-    kind: MediaKind;
-    fieldKey: string;
-    onUploaded: (url: string) => void;
-  }) {
-    setUploadingField(fieldKey);
-    setMessage(null);
-
-    try {
-      const safeName = file.name
-        .toLowerCase()
-        .replace(/[^a-z0-9.]+/g, "-")
-        .replace(/(^-|-$)/g, "");
-      const uniqueId =
-        typeof crypto !== "undefined" && "randomUUID" in crypto
-          ? crypto.randomUUID()
-          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      const fileRef = ref(storage, `admin/${kind}s/${Date.now()}-${uniqueId}-${safeName}`);
-
-      await uploadBytes(fileRef, file, {
-        contentType: file.type || undefined,
-      });
-
-      const url = await getDownloadURL(fileRef);
-
-      onUploaded(url);
-      setMessage({ type: "success", text: "Media uploaded successfully." });
-    } catch (error) {
-      setMessage({
-        type: "error",
-        text: error instanceof Error ? error.message : "Unable to upload media.",
-      });
-    } finally {
-      setUploadingField(null);
-    }
-  }
-
   async function logout() {
     await fetch("/api/admin/logout", { method: "POST" });
-    router.replace("/admin");
+    await signOut(auth).catch(() => undefined);
+    router.replace("/login");
     router.refresh();
   }
 
   function handleCourseSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    void mutateContent(
-      "courses",
-      editingCourseId ? "update" : "create",
-      courseForm,
-      editingCourseId,
-    ).then((saved) => {
-      if (saved) {
-        setCourseForm(emptyCourse);
-        setEditingCourseId(null);
+    void (async () => {
+      try {
+        const image = await resolveMediaValue("course-image", "image", courseForm.image);
+        const saved = await mutateContent(
+          "courses",
+          editingCourseId ? "update" : "create",
+          { ...courseForm, image },
+          editingCourseId,
+        );
+
+        if (saved) {
+          setCourseForm(emptyCourse);
+          setEditingCourseId(null);
+        }
+      } catch {
+        return;
       }
-    });
+    })();
   }
 
   function handleEventSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    void mutateContent(
-      "events",
-      editingEventId ? "update" : "create",
-      eventForm,
-      editingEventId,
-    ).then((saved) => {
-      if (saved) {
-        setEventForm(emptyEvent);
-        setEditingEventId(null);
+    void (async () => {
+      try {
+        const image = await resolveMediaValue("event-image", "image", eventForm.image);
+        const saved = await mutateContent(
+          "events",
+          editingEventId ? "update" : "create",
+          { ...eventForm, image },
+          editingEventId,
+        );
+
+        if (saved) {
+          setEventForm(emptyEvent);
+          setEditingEventId(null);
+        }
+      } catch {
+        return;
       }
-    });
+    })();
   }
 
   function handleFolderSubmit(event: FormEvent<HTMLFormElement>) {
@@ -1028,47 +1323,73 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
 
   function handlePhotoSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    void mutateContent(
-      "galleryPhotos",
-      editingPhotoId ? "update" : "create",
-      photoForm,
-      editingPhotoId,
-    ).then((saved) => {
-      if (saved) {
-        setPhotoForm(emptyPhoto);
-        setEditingPhotoId(null);
+    void (async () => {
+      try {
+        const mediaKey = photoForm.mediaType === "video" ? "gallery-video" : "gallery-image";
+        const image = await resolveMediaValue(mediaKey, photoForm.mediaType, photoForm.image);
+        const thumbnailUrl =
+          photoForm.mediaType === "video"
+            ? await resolveMediaValue("gallery-thumbnail", "image", photoForm.thumbnailUrl)
+            : "";
+        const saved = await mutateContent(
+          "galleryPhotos",
+          editingPhotoId ? "update" : "create",
+          { ...photoForm, image, thumbnailUrl },
+          editingPhotoId,
+        );
+
+        if (saved) {
+          setPhotoForm(emptyPhoto);
+          setEditingPhotoId(null);
+        }
+      } catch {
+        return;
       }
-    });
+    })();
   }
 
   function handleWrittenSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    void mutateContent(
-      "writtenTestimonials",
-      editingWrittenId ? "update" : "create",
-      writtenForm,
-      editingWrittenId,
-    ).then((saved) => {
-      if (saved) {
-        setWrittenForm(emptyWrittenTestimonial);
-        setEditingWrittenId(null);
+    void (async () => {
+      try {
+        const photo = await resolveMediaValue("testimonial-image", "image", writtenForm.photo);
+        const saved = await mutateContent(
+          "writtenTestimonials",
+          editingWrittenId ? "update" : "create",
+          { ...writtenForm, photo },
+          editingWrittenId,
+        );
+
+        if (saved) {
+          setWrittenForm(emptyWrittenTestimonial);
+          setEditingWrittenId(null);
+        }
+      } catch {
+        return;
       }
-    });
+    })();
   }
 
   function handleVideoSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    void mutateContent(
-      "videoTestimonials",
-      editingVideoId ? "update" : "create",
-      videoForm,
-      editingVideoId,
-    ).then((saved) => {
-      if (saved) {
-        setVideoForm(emptyVideoTestimonial);
-        setEditingVideoId(null);
+    void (async () => {
+      try {
+        const video = await resolveMediaValue("testimonial-video", "video", videoForm.video);
+        const saved = await mutateContent(
+          "videoTestimonials",
+          editingVideoId ? "update" : "create",
+          { ...videoForm, video },
+          editingVideoId,
+        );
+
+        if (saved) {
+          setVideoForm(emptyVideoTestimonial);
+          setEditingVideoId(null);
+        }
+      } catch {
+        return;
       }
-    });
+    })();
   }
 
   function handleFacultySubmit(event: FormEvent<HTMLFormElement>) {
@@ -1165,17 +1486,85 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
           </p>
         ) : null}
 
-        {message ? (
+        {firebaseStatus === "error" && topWarning ? (
           <p
-            className={cn(
-              "rounded-2xl border px-5 py-4 text-sm font-semibold",
-              message.type === "success"
-                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                : "border-red-200 bg-red-50 text-red-800",
-            )}
+            className="rounded-xl border border-amber-200 bg-amber-50/90 px-4 py-3 text-sm font-medium text-amber-800"
           >
+            {topWarning}
+          </p>
+        ) : null}
+
+        {firebaseStatus !== "error" && topWarning ? (
+          <p
+            className="rounded-xl border border-amber-200 bg-amber-50/90 px-4 py-3 text-sm font-medium text-amber-800"
+          >
+            {topWarning}
+          </p>
+        ) : null}
+
+        {message && message.type === "success" ? (
+          <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
             {message.text}
           </p>
+        ) : null}
+
+        {showFirebaseSetupHelper ? (
+          <div className="premium-card grid gap-6 border border-amber-200 bg-amber-50/70 p-6">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-amber-700">
+                Firebase Setup Required
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold text-foreground">
+                Firebase Firestore/Storage is not set up. Create Firestore Database and Storage in
+                Firebase Console.
+              </h2>
+              <p className="mt-3 max-w-3xl text-sm leading-7 text-muted">
+                Codex can make the app detect missing Firebase setup and fail gracefully, but it
+                cannot create Firestore Database or Firebase Storage for you. Once you finish the
+                setup below, admin uploads and live content sync will start working.
+              </p>
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-2">
+              <div className="rounded-2xl border border-white/70 bg-white/80 p-5 shadow-sm">
+                <p className="text-sm font-semibold text-brand-dark">Checklist</p>
+                <ul className="mt-4 space-y-3 text-sm text-muted">
+                  <li>- Create Firestore Database</li>
+                  <li>- Create Firebase Storage</li>
+                  <li>- Enable Email/Password Authentication</li>
+                  <li>- Publish Firestore test rules</li>
+                  <li>- Publish Storage test rules</li>
+                </ul>
+              </div>
+
+              <div className="rounded-2xl border border-white/70 bg-white/80 p-5 shadow-sm">
+                <p className="text-sm font-semibold text-brand-dark">Collections Used By This App</p>
+                <ul className="mt-4 grid gap-2 text-sm text-muted sm:grid-cols-2">
+                  {adminFirebaseCollections.map((collectionName) => (
+                    <li key={collectionName} className="rounded-lg bg-slate-50 px-3 py-2 font-mono text-[12px]">
+                      {collectionName}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            <div className="grid gap-6 xl:grid-cols-2">
+              <div className="rounded-2xl border border-white/70 bg-slate-950 p-5 text-white shadow-sm">
+                <p className="text-sm font-semibold text-sky-200">Firestore Test Rules</p>
+                <pre className="mt-4 overflow-x-auto whitespace-pre-wrap text-xs leading-6 text-slate-100">
+                  {firestoreRulesText}
+                </pre>
+              </div>
+
+              <div className="rounded-2xl border border-white/70 bg-slate-950 p-5 text-white shadow-sm">
+                <p className="text-sm font-semibold text-sky-200">Storage Test Rules</p>
+                <pre className="mt-4 overflow-x-auto whitespace-pre-wrap text-xs leading-6 text-slate-100">
+                  {storageRulesText}
+                </pre>
+              </div>
+            </div>
+          </div>
         ) : null}
 
         {activeTab === "overview" ? (
@@ -1198,6 +1587,14 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
                 Use the tabs to update courses, publish events, organize gallery folders, add
                 testimonials, review enquiries, and create faculty accounts.
               </p>
+              <div className="mt-6">
+                <Link
+                  href="/admin/firebase-health"
+                  className="inline-flex rounded-full border border-sky-100 px-4 py-2 text-sm font-semibold text-brand-dark transition hover:bg-sky-50"
+                >
+                  Open Firebase health checks
+                </Link>
+              </div>
             </div>
           </div>
         ) : null}
@@ -1223,20 +1620,14 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
               <MediaField
                 label="Photo"
                 required
-                placeholder="/course-cabin-crew.jpg or image URL"
                 value={courseForm.image}
-                onChange={(image) => setCourseForm((current) => ({ ...current, image }))}
-                onUpload={(file) =>
-                  uploadMedia({
-                    file,
-                    kind: "image",
-                    fieldKey: "course-image",
-                    onUploaded: (image) => setCourseForm((current) => ({ ...current, image })),
-                  })
-                }
+                onSelectFile={(file) => selectPendingMedia("course-image", "image", file)}
+                onClearSelectedFile={() => clearPendingMedia("course-image")}
+                selectedFile={pendingMedia["course-image"]}
                 accept={imageAccept}
                 mediaKind="image"
                 isUploading={uploadingField === "course-image"}
+                uploadProgress={uploadProgress["course-image"] ?? null}
               />
               <Field
                 label="Reach us now button/link"
@@ -1245,6 +1636,22 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
                   setCourseForm((current) => ({ ...current, reachUsLink }))
                 }
               />
+              <label className="grid gap-2 text-sm font-semibold text-foreground">
+                Status
+                <select
+                  className={inputClass}
+                  value={courseForm.status}
+                  onChange={(event) =>
+                    setCourseForm((current) => ({
+                      ...current,
+                      status: event.target.value as "active" | "inactive",
+                    }))
+                  }
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </label>
               <TextArea
                 label="Short description"
                 required
@@ -1263,7 +1670,7 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
                 <AdminListItem
                   key={course.id}
                   title={course.title}
-                  meta={course.duration ?? "No duration"}
+                  meta={`${course.duration ?? "No duration"} • ${course.status ?? "active"}`}
                   description={course.description}
                   mediaSrc={course.image}
                   onEdit={() => {
@@ -1274,6 +1681,7 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
                       image: course.image,
                       reachUsLink: course.reachUsLink ?? "/enquiry",
                       description: course.description,
+                      status: course.status ?? "active",
                     });
                   }}
                   onDelete={() => mutateContent("courses", "delete", undefined, course.id)}
@@ -1297,26 +1705,46 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
               />
               <MediaField
                 label="Photo"
-                placeholder="/home-students.jpg or image URL"
                 value={eventForm.image}
-                onChange={(image) => setEventForm((current) => ({ ...current, image }))}
-                onUpload={(file) =>
-                  uploadMedia({
-                    file,
-                    kind: "image",
-                    fieldKey: "event-image",
-                    onUploaded: (image) => setEventForm((current) => ({ ...current, image })),
-                  })
-                }
+                onSelectFile={(file) => selectPendingMedia("event-image", "image", file)}
+                onClearSelectedFile={() => clearPendingMedia("event-image")}
+                selectedFile={pendingMedia["event-image"]}
                 accept={imageAccept}
                 mediaKind="image"
                 isUploading={uploadingField === "event-image"}
+                uploadProgress={uploadProgress["event-image"] ?? null}
+              />
+              <Field
+                label="Date"
+                value={eventForm.date}
+                onChange={(date) => setEventForm((current) => ({ ...current, date }))}
+              />
+              <Field
+                label="Location"
+                value={eventForm.location}
+                onChange={(location) => setEventForm((current) => ({ ...current, location }))}
               />
               <Field
                 label="Apply button/link"
                 value={eventForm.applyLink}
                 onChange={(applyLink) => setEventForm((current) => ({ ...current, applyLink }))}
               />
+              <label className="grid gap-2 text-sm font-semibold text-foreground">
+                Status
+                <select
+                  className={inputClass}
+                  value={eventForm.status}
+                  onChange={(event) =>
+                    setEventForm((current) => ({
+                      ...current,
+                      status: event.target.value as "active" | "inactive",
+                    }))
+                  }
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </label>
               <TextArea
                 label="Short description"
                 required
@@ -1333,7 +1761,7 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
                 <AdminListItem
                   key={event.id}
                   title={event.title}
-                  meta={formatDate(event.createdAt)}
+                  meta={`${event.date ?? formatDate(event.createdAt)}${event.location ? ` • ${event.location}` : ""} • ${event.status ?? "active"}`}
                   description={event.description}
                   mediaSrc={event.image}
                   onEdit={() => {
@@ -1343,6 +1771,9 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
                       image: event.image ?? "",
                       applyLink: event.applyLink ?? "/enquiry",
                       description: event.description,
+                      date: event.date ?? "",
+                      location: event.location ?? "",
+                      status: event.status ?? "active",
                     });
                   }}
                   onDelete={() => mutateContent("events", "delete", undefined, event.id)}
@@ -1386,26 +1817,66 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
               </div>
             </AdminSection>
 
-            <AdminSection title="Gallery Photos" description="Add and organize academy photos.">
+            <AdminSection title="Gallery Media" description="Add and organize academy photos and videos.">
               <form onSubmit={handlePhotoSubmit} className="grid gap-4 md:grid-cols-2">
+                <label className="grid gap-2 text-sm font-semibold text-foreground">
+                  Media type
+                  <select
+                    className={inputClass}
+                    value={photoForm.mediaType}
+                    onChange={(event) =>
+                      setPhotoForm((current) => ({
+                        ...current,
+                        mediaType: event.target.value as "image" | "video",
+                      }))
+                    }
+                  >
+                    <option value="image">Image</option>
+                    <option value="video">Video</option>
+                  </select>
+                </label>
                 <MediaField
-                  label="Photo"
+                  label={photoForm.mediaType === "video" ? "Video" : "Photo"}
                   required
-                  placeholder="/home-students.jpg or image URL"
                   value={photoForm.image}
-                  onChange={(image) => setPhotoForm((current) => ({ ...current, image }))}
-                  onUpload={(file) =>
-                    uploadMedia({
+                  onSelectFile={(file) =>
+                    selectPendingMedia(
+                      photoForm.mediaType === "video" ? "gallery-video" : "gallery-image",
+                      photoForm.mediaType,
                       file,
-                      kind: "image",
-                      fieldKey: "gallery-image",
-                      onUploaded: (image) => setPhotoForm((current) => ({ ...current, image })),
-                    })
+                    )
                   }
-                  accept={imageAccept}
-                  mediaKind="image"
-                  isUploading={uploadingField === "gallery-image"}
+                  onClearSelectedFile={() =>
+                    clearPendingMedia(photoForm.mediaType === "video" ? "gallery-video" : "gallery-image")
+                  }
+                  selectedFile={
+                    pendingMedia[photoForm.mediaType === "video" ? "gallery-video" : "gallery-image"]
+                  }
+                  accept={photoForm.mediaType === "video" ? videoAccept : imageAccept}
+                  mediaKind={photoForm.mediaType}
+                  isUploading={
+                    uploadingField ===
+                    (photoForm.mediaType === "video" ? "gallery-video" : "gallery-image")
+                  }
+                  uploadProgress={
+                    uploadProgress[
+                      photoForm.mediaType === "video" ? "gallery-video" : "gallery-image"
+                    ] ?? null
+                  }
                 />
+                {photoForm.mediaType === "video" ? (
+                  <MediaField
+                    label="Thumbnail (Optional)"
+                    value={photoForm.thumbnailUrl}
+                    onSelectFile={(file) => selectPendingMedia("gallery-thumbnail", "image", file)}
+                    onClearSelectedFile={() => clearPendingMedia("gallery-thumbnail")}
+                    selectedFile={pendingMedia["gallery-thumbnail"]}
+                    accept={imageAccept}
+                    mediaKind="image"
+                    isUploading={uploadingField === "gallery-thumbnail"}
+                    uploadProgress={uploadProgress["gallery-thumbnail"] ?? null}
+                  />
+                ) : null}
                 <label className="grid gap-2 text-sm font-semibold text-foreground">
                   Folder/category
                   <select
@@ -1424,29 +1895,58 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
                   </select>
                 </label>
                 <Field
-                  label="Optional caption"
-                  value={photoForm.caption}
-                  onChange={(caption) => setPhotoForm((current) => ({ ...current, caption }))}
+                  label="Title"
+                  value={photoForm.title}
+                  onChange={(title) => setPhotoForm((current) => ({ ...current, title, caption: title }))}
+                />
+                <label className="grid gap-2 text-sm font-semibold text-foreground">
+                  Status
+                  <select
+                    className={inputClass}
+                    value={photoForm.status}
+                    onChange={(event) =>
+                      setPhotoForm((current) => ({
+                        ...current,
+                        status: event.target.value as "active" | "inactive",
+                      }))
+                    }
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </label>
+                <TextArea
+                  label="Description"
+                  value={photoForm.description}
+                  onChange={(description) =>
+                    setPhotoForm((current) => ({ ...current, description }))
+                  }
                 />
                 <SubmitButton
                   isSaving={isSaving || Boolean(uploadingField)}
-                  label={editingPhotoId ? "Update Photo" : "Add Photo"}
+                  label={editingPhotoId ? "Update Media" : "Add Media"}
                 />
               </form>
               <div className="mt-8 grid gap-3">
                 {data.galleryPhotos.map((photo) => (
                   <AdminListItem
                     key={photo.id}
-                    title={photo.caption || photo.image}
-                    meta={photo.folderName ?? "No folder"}
-                    description={photo.image}
-                    mediaSrc={photo.image}
+                    title={photo.title || photo.caption || photo.image}
+                    meta={`${photo.mediaType ?? "image"} • ${photo.folderName ?? "No folder"} • ${photo.status ?? "active"}`}
+                    description={photo.description ?? photo.image}
+                    mediaSrc={photo.mediaUrl ?? photo.image}
+                    mediaType={photo.mediaType ?? "image"}
                     onEdit={() => {
                       setEditingPhotoId(photo.id);
                       setPhotoForm({
-                        image: photo.image,
+                        image: photo.mediaUrl ?? photo.image,
+                        title: photo.title ?? photo.caption ?? "",
+                        mediaType: photo.mediaType ?? "image",
+                        thumbnailUrl: photo.thumbnailUrl ?? "",
+                        description: photo.description ?? "",
                         folderId: photo.folderId ?? "",
-                        caption: photo.caption ?? "",
+                        caption: photo.caption ?? photo.title ?? "",
+                        status: photo.status ?? "active",
                       });
                     }}
                     onDelete={() => mutateContent("galleryPhotos", "delete", undefined, photo.id)}
@@ -1478,20 +1978,14 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
                 />
                 <MediaField
                   label="Photo"
-                  placeholder="Optional photo path or URL"
                   value={writtenForm.photo}
-                  onChange={(photo) => setWrittenForm((current) => ({ ...current, photo }))}
-                  onUpload={(file) =>
-                    uploadMedia({
-                      file,
-                      kind: "image",
-                      fieldKey: "testimonial-image",
-                      onUploaded: (photo) => setWrittenForm((current) => ({ ...current, photo })),
-                    })
-                  }
+                  onSelectFile={(file) => selectPendingMedia("testimonial-image", "image", file)}
+                  onClearSelectedFile={() => clearPendingMedia("testimonial-image")}
+                  selectedFile={pendingMedia["testimonial-image"]}
                   accept={imageAccept}
                   mediaKind="image"
                   isUploading={uploadingField === "testimonial-image"}
+                  uploadProgress={uploadProgress["testimonial-image"] ?? null}
                 />
                 <TextArea
                   label="Description"
@@ -1501,6 +1995,22 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
                     setWrittenForm((current) => ({ ...current, description }))
                   }
                 />
+                <label className="grid gap-2 text-sm font-semibold text-foreground">
+                  Status
+                  <select
+                    className={inputClass}
+                    value={writtenForm.status}
+                    onChange={(event) =>
+                      setWrittenForm((current) => ({
+                        ...current,
+                        status: event.target.value as "active" | "inactive",
+                      }))
+                    }
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </label>
                 <SubmitButton
                   isSaving={isSaving || Boolean(uploadingField)}
                   label={editingWrittenId ? "Update Testimonial" : "Add Testimonial"}
@@ -1511,7 +2021,7 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
                   <AdminListItem
                     key={testimonial.id}
                     title={testimonial.name}
-                    meta={testimonial.position}
+                    meta={`${testimonial.position} • ${testimonial.status ?? "active"}`}
                     description={testimonial.description}
                     mediaSrc={testimonial.photo}
                     onEdit={() => {
@@ -1521,6 +2031,7 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
                         position: testimonial.position,
                         description: testimonial.description,
                         photo: testimonial.photo ?? "",
+                        status: testimonial.status ?? "active",
                       });
                     }}
                     onDelete={() =>
@@ -1539,20 +2050,14 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
                 <MediaField
                   label="Video"
                   required
-                  placeholder="Video URL or uploaded file path"
                   value={videoForm.video}
-                  onChange={(video) => setVideoForm((current) => ({ ...current, video }))}
-                  onUpload={(file) =>
-                    uploadMedia({
-                      file,
-                      kind: "video",
-                      fieldKey: "testimonial-video",
-                      onUploaded: (video) => setVideoForm((current) => ({ ...current, video })),
-                    })
-                  }
+                  onSelectFile={(file) => selectPendingMedia("testimonial-video", "video", file)}
+                  onClearSelectedFile={() => clearPendingMedia("testimonial-video")}
+                  selectedFile={pendingMedia["testimonial-video"]}
                   accept={videoAccept}
                   mediaKind="video"
                   isUploading={uploadingField === "testimonial-video"}
+                  uploadProgress={uploadProgress["testimonial-video"] ?? null}
                 />
                 <Field
                   label="Name"
@@ -1574,6 +2079,22 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
                     setVideoForm((current) => ({ ...current, description }))
                   }
                 />
+                <label className="grid gap-2 text-sm font-semibold text-foreground">
+                  Status
+                  <select
+                    className={inputClass}
+                    value={videoForm.status}
+                    onChange={(event) =>
+                      setVideoForm((current) => ({
+                        ...current,
+                        status: event.target.value as "active" | "inactive",
+                      }))
+                    }
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </label>
                 <SubmitButton
                   isSaving={isSaving || Boolean(uploadingField)}
                   label={editingVideoId ? "Update Video" : "Add Video"}
@@ -1584,7 +2105,7 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
                   <AdminListItem
                     key={testimonial.id}
                     title={testimonial.name}
-                    meta={testimonial.position}
+                    meta={`${testimonial.position} • ${testimonial.status ?? "active"}`}
                     description={testimonial.video}
                     mediaSrc={testimonial.video}
                     mediaType="video"
@@ -1595,6 +2116,7 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
                         name: testimonial.name,
                         position: testimonial.position,
                         description: testimonial.description,
+                        status: testimonial.status ?? "active",
                       });
                     }}
                     onDelete={() =>
@@ -1714,6 +2236,7 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
                       <div className="mt-3 grid gap-1">
                         <p><span className="font-semibold">Qualification:</span> {enquiry.qualification || "-"}</p>
                         <p><span className="font-semibold">School / College:</span> {enquiry.schoolCollege || "-"}</p>
+                        <p><span className="font-semibold">Date of Birth:</span> {enquiry.dateOfBirth ? formatDate(enquiry.dateOfBirth) : "-"}</p>
                         <p><span className="font-semibold">Landline:</span> {enquiry.landline || "-"}</p>
                         <p><span className="font-semibold">Sources:</span> {enquiry.enquirySources?.join(", ") || "-"}</p>
                         <p><span className="font-semibold">Present Address:</span> {enquiry.presentAddress || "-"}</p>
@@ -2023,6 +2546,34 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
                 </span>
               </label>
               <Field
+                label="Phone"
+                value={facultyForm.phone}
+                onChange={(phone) => setFacultyForm((current) => ({ ...current, phone }))}
+              />
+              <Field
+                label="Department / Role"
+                value={facultyForm.department}
+                onChange={(department) =>
+                  setFacultyForm((current) => ({ ...current, department }))
+                }
+              />
+              <label className="grid gap-2 text-sm font-semibold text-foreground">
+                Status
+                <select
+                  className={inputClass}
+                  value={facultyForm.status}
+                  onChange={(event) =>
+                    setFacultyForm((current) => ({
+                      ...current,
+                      status: event.target.value as "active" | "inactive",
+                    }))
+                  }
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </label>
+              <Field
                 label="Password"
                 required
                 type="password"
@@ -2039,8 +2590,8 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
                 <AdminListItem
                   key={faculty.id}
                   title={faculty.name}
-                  meta={`${faculty.email} • ${faculty.role}`}
-                  description={`Created ${formatDate(faculty.createdAt)}`}
+                  meta={`${faculty.facultyId ?? "Faculty ID pending"} • ${faculty.email} • ${faculty.department ?? faculty.role} • ${faculty.status ?? "active"}`}
+                  description={`Phone: ${faculty.phone || "-"} • Created ${formatDate(faculty.createdAt)}`}
                   onDelete={() => mutateContent("facultyUsers", "delete", undefined, faculty.id)}
                 />
               ))}
@@ -2297,9 +2848,10 @@ function AdminListItem({
             ) : (
               <div className="relative aspect-video h-full w-full">
                 <Image
-                  src={mediaSrc}
+                  src={getSafeImageSrc(mediaSrc)}
                   alt=""
                   fill
+                  unoptimized
                   sizes="7rem"
                   className="object-cover"
                 />

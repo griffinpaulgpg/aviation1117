@@ -73,15 +73,17 @@ export default function AboutPage() {
   return (
     <>
       <main className="site-sky">
-        <section className="page-hero py-20 text-center text-white">
+        <section className="observe-section page-hero py-20 text-center text-white">
           <div className="hero-orbit md:block" aria-hidden="true" />
           <div className="hero-cloud hero-cloud-one lg:block" aria-hidden="true" />
           <Container>
-            <h1 className="text-4xl font-semibold tracking-normal sm:text-6xl">About Us</h1>
+            <div className="page-hero-panel mx-auto max-w-3xl rounded-[2rem] border border-white/16 bg-white/10 p-6 shadow-[0_24px_60px_rgba(11,19,32,0.18)] backdrop-blur-xl sm:p-8 lg:p-10">
+              <h1 className="text-4xl font-semibold tracking-normal sm:text-6xl">About Us</h1>
+            </div>
           </Container>
         </section>
 
-        <section className="aviation-section bg-white/50 py-20">
+        <section className="observe-section aviation-section bg-white/50 py-20">
           <Container>
             <div className="text-center">
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand">
@@ -117,7 +119,7 @@ export default function AboutPage() {
           </Container>
         </section>
 
-        <section className="aviation-section border-t border-white/70 bg-white/70 py-20">
+        <section className="observe-section aviation-section border-t border-white/70 bg-white/70 py-20">
           <Container>
             <h2 className="text-center text-3xl font-semibold tracking-normal text-foreground sm:text-5xl">
               Why Choose Us
@@ -150,7 +152,7 @@ export default function AboutPage() {
           </Container>
         </section>
 
-        <section className="aviation-section py-20">
+        <section className="observe-section aviation-section py-20">
           <Container>
             <div className="text-center">
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand">

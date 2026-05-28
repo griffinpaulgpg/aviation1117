@@ -12,7 +12,6 @@ export const enquirySchema = z
   .object({
     fullName: requiredText("Full name").max(120),
     enquiryDate: optionalText,
-    enquiryFormNumber: optionalText,
     qualification: requiredText("Qualification").max(120),
     schoolCollege: requiredText("School/College").max(180),
     selectedCourse: requiredText("Course").max(160),

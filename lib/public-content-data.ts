@@ -27,6 +27,8 @@ export type PublicCourse = {
   duration?: string | null;
   image: string;
   reachUsLink?: string | null;
+  status?: "active" | "inactive";
+  order?: number;
 };
 
 export type PublicEvent = {
@@ -35,7 +37,10 @@ export type PublicEvent = {
   description: string;
   image?: string | null;
   applyLink?: string | null;
-  date?: string;
+  date?: string | null;
+  location?: string | null;
+  status?: "active" | "inactive";
+  order?: number;
 };
 
 export type PublicGalleryFolder = {
@@ -46,11 +51,17 @@ export type PublicGalleryFolder = {
 export type PublicGalleryPhoto = {
   id?: string;
   image: string;
+  mediaType?: "image" | "video";
+  mediaUrl?: string;
+  thumbnailUrl?: string | null;
+  description?: string | null;
   caption?: string | null;
   folderId?: string | null;
   folderName?: string | null;
-  title?: string;
+  title?: string | null;
   alt?: string;
+  status?: "active" | "inactive";
+  order?: number;
 };
 
 export type PublicGalleryData = {
@@ -64,6 +75,16 @@ export type PublicWrittenTestimonial = {
   position: string;
   description: string;
   photo?: string | null;
+  status?: "active" | "inactive";
+};
+
+export type PublicVideoTestimonial = {
+  id?: string;
+  video: string;
+  name: string;
+  position: string;
+  description: string;
+  status?: "active" | "inactive";
 };
 
 export type PublicEnquirySource = {
@@ -83,6 +104,8 @@ function fallbackCourses() {
     duration: course.duration,
     image: optimizedMediaPath(course.image) ?? course.image,
     reachUsLink: `/enquiry?course=${encodeURIComponent(course.title)}`,
+    status: "active" as const,
+    order: index,
     createdAt: new Date(0).toISOString(),
   }));
 }
@@ -99,65 +122,176 @@ function fallbackEnquirySources(): PublicEnquirySource[] {
   ].map((name, index) => ({ id: `fallback-source-${index}`, name }));
 }
 
-function fallbackEvents() {
-  return siteContent.events.map((event, index) => ({
-    id: `fallback-event-${index}`,
-    title: event.title,
-    description: event.description,
-    image: "/home-students.webp",
-    applyLink: "/enquiry",
-    date: event.date,
-    createdAt: new Date(index).toISOString(),
-  }));
-}
-
 function fallbackGalleryPhotos(): PublicGalleryPhoto[] {
-  return siteContent.gallery.map((photo) => ({
+  return siteContent.gallery.map((photo, index) => ({
     image: optimizedMediaPath(photo.image) ?? photo.image,
+    mediaType: "image",
+    mediaUrl: optimizedMediaPath(photo.image) ?? photo.image,
+    thumbnailUrl: null,
+    description: null,
     caption: photo.title,
     folderId: null,
     folderName: null,
     title: photo.title,
     alt: photo.alt,
+    status: "active",
+    order: index,
+    createdAt: new Date(index).toISOString(),
   }));
 }
 
-function fallbackWrittenTestimonials(): PublicWrittenTestimonial[] {
-  return siteContent.testimonials.map((testimonial) => ({
-    name: testimonial.name,
-    position: testimonial.role,
-    description: testimonial.quote,
-    photo: null,
-  }));
+function sortByOrder<T extends { order?: number; createdAt?: string }>(items: T[]) {
+  return [...items].sort((a, b) => {
+    const orderA = typeof a.order === "number" ? a.order : Number.MAX_SAFE_INTEGER;
+    const orderB = typeof b.order === "number" ? b.order : Number.MAX_SAFE_INTEGER;
+
+    if (orderA !== orderB) {
+      return orderA - orderB;
+    }
+
+    return String(a.createdAt ?? "").localeCompare(String(b.createdAt ?? ""));
+  });
 }
 
 async function loadPublicCourses(): Promise<PublicCourse[]> {
-  return fallbackCourses();
+  try {
+    const { getPublicFirebaseCoursesRest } = await import("@/lib/firebase-rest-public");
+    const courses = await getPublicFirebaseCoursesRest();
+
+    if (courses.length === 0) {
+      return fallbackCourses();
+    }
+
+    return sortByOrder(courses)
+      .map((course) => ({
+        id: course.id,
+        title: course.title,
+        description: course.description,
+        duration: course.duration ?? null,
+        image: optimizedMediaPath(course.image) ?? course.image,
+        reachUsLink: course.reachUsLink ?? `/enquiry?course=${encodeURIComponent(course.title)}`,
+        status: course.status ?? "active",
+        order: course.order,
+      }));
+  } catch {
+    return fallbackCourses();
+  }
 }
 
 async function loadPublicEnquirySources(): Promise<PublicEnquirySource[]> {
-  return fallbackEnquirySources();
+  try {
+    const { getPublicFirebaseEnquirySourcesRest } = await import("@/lib/firebase-rest-public");
+    const sources = await getPublicFirebaseEnquirySourcesRest();
+
+    if (sources.length === 0) {
+      return fallbackEnquirySources();
+    }
+
+    return sources;
+  } catch {
+    return fallbackEnquirySources();
+  }
 }
 
 async function loadPublicEvents(): Promise<PublicEvent[]> {
-  return fallbackEvents();
+  try {
+    const { getPublicFirebaseEventsRest } = await import("@/lib/firebase-rest-public");
+    const events = await getPublicFirebaseEventsRest();
+
+    if (events.length === 0) {
+      return [];
+    }
+
+    return events.map((event) => ({
+      id: event.id,
+      title: event.title,
+      description: event.description,
+      image: optimizedMediaPath(event.image) ?? event.image,
+      applyLink: event.applyLink ?? "/enquiry",
+      date: event.date ?? undefined,
+      location: event.location ?? null,
+      status: event.status ?? "active",
+      order: event.order,
+    }));
+  } catch {
+    return [];
+  }
 }
 
 async function loadPublicGallery(): Promise<PublicGalleryData> {
-  return {
-    folders: [],
-    photos: fallbackGalleryPhotos(),
-  };
+  try {
+    const { getPublicFirebaseGalleryPhotosRest } = await import("@/lib/firebase-rest-public");
+    const photos = await getPublicFirebaseGalleryPhotosRest();
+
+    const usablePhotos: Array<{ order?: number; createdAt?: string } & PublicGalleryPhoto> =
+      photos.length > 0 ? photos : fallbackGalleryPhotos();
+
+    return {
+      folders: [],
+      photos: sortByOrder(usablePhotos)
+        .filter((photo) => (photo.status ?? "active") === "active")
+        .map((photo) => ({
+          id: photo.id,
+          image: optimizedMediaPath(photo.mediaUrl ?? photo.image) ?? photo.mediaUrl ?? photo.image,
+          mediaType: photo.mediaType ?? "image",
+          mediaUrl: optimizedMediaPath(photo.mediaUrl ?? photo.image) ?? photo.mediaUrl ?? photo.image,
+          thumbnailUrl: optimizedMediaPath(photo.thumbnailUrl) ?? photo.thumbnailUrl ?? null,
+          description: photo.description ?? null,
+          caption: photo.caption ?? photo.title ?? null,
+          folderId: photo.folderId ?? null,
+          folderName: photo.folderName ?? null,
+          title: photo.title ?? photo.caption ?? undefined,
+          alt: photo.title ?? photo.caption ?? "Academy gallery media",
+          status: photo.status ?? "active",
+          order: photo.order,
+        })),
+    };
+  } catch {
+    return {
+      folders: [],
+      photos: fallbackGalleryPhotos(),
+    };
+  }
 }
 
-async function loadPublicTestimonials() {
-  return {
-    written: fallbackWrittenTestimonials(),
-    video: [],
-  };
+async function loadPublicTestimonials(): Promise<{
+  written: PublicWrittenTestimonial[];
+  video: PublicVideoTestimonial[];
+}> {
+  try {
+    const {
+      getPublicFirebaseVideoTestimonialsRest,
+      getPublicFirebaseWrittenTestimonialsRest,
+    } = await import("@/lib/firebase-rest-public");
+
+    const [written, video] = await Promise.all([
+      getPublicFirebaseWrittenTestimonialsRest(),
+      getPublicFirebaseVideoTestimonialsRest(),
+    ]);
+
+    return {
+      written: written.map((testimonial) => ({
+        id: testimonial.id,
+        name: testimonial.name,
+        position: testimonial.position,
+        description: testimonial.description,
+        photo: optimizedMediaPath(testimonial.photo) ?? testimonial.photo ?? null,
+        status: testimonial.status ?? "active",
+      })),
+      video,
+    };
+  } catch {
+    return {
+      written: [],
+      video: [],
+    };
+  }
 }
 
-export const getPublicCourses = loadPublicCourses;
+export const getPublicCourses = unstable_cache(loadPublicCourses, ["public-courses"], {
+  revalidate: 300,
+  tags: [PUBLIC_CONTENT_CACHE_TAG],
+});
 export const getPublicEnquirySources = loadPublicEnquirySources;
 
 export const getPublicEvents = unstable_cache(loadPublicEvents, ["public-events"], {

@@ -4,6 +4,17 @@ const nextConfig: NextConfig = {
   compress: true,
   reactStrictMode: true,
   poweredByHeader: false,
+  webpack(config) {
+    config.ignoreWarnings = [
+      ...(config.ignoreWarnings ?? []),
+      {
+        module: /@protobufjs\/inquire/,
+        message: /Critical dependency: the request of a dependency is an expression/,
+      },
+    ];
+
+    return config;
+  },
   async headers() {
     return [
       {

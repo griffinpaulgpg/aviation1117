@@ -1,19 +1,35 @@
 import { NextResponse } from "next/server";
-import { randomUUID } from "node:crypto";
 import { ZodError } from "zod";
 
 import { enquirySchema } from "@/lib/validations/enquiry";
-import { createFirebaseEnquiry } from "@/src/lib/firebase-services";
+import { getLocalFallbackEnquiries, nextLocalEnquirySequence, saveLocalFallbackEnquiry, seedLocalEnquirySequence } from "@/lib/runtime-fallback-store";
+import { createFirebaseEnquiry, getLatestEnquirySequenceForDate } from "@/src/lib/firebase-services";
 
 const recentSubmissions = new Map<string, number>();
 const minimumSubmitIntervalMs = 60_000;
 
-function createEnquiryNumber() {
-  const date = new Date();
-  const datePart = date.toISOString().slice(0, 10).replaceAll("-", "");
-  const uniquePart = randomUUID().slice(0, 6).toUpperCase();
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string) {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
-  return `ENQ-${datePart}-${uniquePart}`;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error(`${label} timed out.`)), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
+}
+
+function createEnquiryNumber() {
+  const datePart = new Date().toISOString().slice(0, 10).replaceAll("-", "");
+  const sequence = nextLocalEnquirySequence(datePart);
+
+  return `AAI-ENQ-${datePart}-${String(sequence).padStart(3, "0")}`;
 }
 
 export async function POST(request: Request) {
@@ -45,20 +61,53 @@ export async function POST(request: Request) {
       );
     }
 
+    const datePart = new Date().toISOString().slice(0, 10).replaceAll("-", "");
+    const latestFirebaseSequence = await withTimeout(
+      getLatestEnquirySequenceForDate(datePart),
+      2500,
+      "Loading latest enquiry sequence",
+    ).catch(() => 0);
+    const latestLocalSequence = getLocalFallbackEnquiries()
+      .map((item) => item.enquiryNumber)
+      .map((value) => value.match(/^AAI-ENQ-(\d{8})-(\d{3,})$/))
+      .filter((match) => match?.[1] === datePart)
+      .reduce((highest, match) => Math.max(highest, Number(match?.[2] ?? 0)), 0);
+    seedLocalEnquirySequence(datePart, Math.max(latestFirebaseSequence, latestLocalSequence));
+
     const enquiryNumber = createEnquiryNumber();
     const createdAt = new Date().toISOString();
 
-    const savedId = await createFirebaseEnquiry({
-      ...enquiry,
-      enquiryNumber,
-      dateOfBirth: new Date(enquiry.dateOfBirth).toISOString(),
-    });
+    let savedId = "";
+    let saveWarning: string | null = null;
+
+    try {
+      savedId = await withTimeout(
+        createFirebaseEnquiry({
+          ...enquiry,
+          enquiryNumber,
+          dateOfBirth: new Date(enquiry.dateOfBirth).toISOString(),
+        }),
+        3500,
+        "Saving enquiry to Firebase",
+      );
+    } catch {
+      const localRecord = saveLocalFallbackEnquiry({
+        ...enquiry,
+        enquiryNumber,
+        dateOfBirth: new Date(enquiry.dateOfBirth).toISOString(),
+        status: "New",
+        notes: "",
+      });
+      savedId = localRecord.id;
+      saveWarning = "Enquiry saved locally because the database is unavailable right now.";
+    }
+
     recentSubmissions.set(spamKey, now);
 
     return NextResponse.json(
       {
         success: true,
-        message: "Enquiry submitted successfully.",
+        message: saveWarning ?? "Enquiry submitted successfully.",
         enquiry: {
           id: savedId,
           enquiryNumber,

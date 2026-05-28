@@ -2,10 +2,10 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
-import { addDoc, collection, doc, getDoc, serverTimestamp } from "firebase/firestore";
 
 import { cn } from "@/lib/cn";
-import { db } from "@/src/lib/firebase";
+import { loadClientSettings } from "@/src/lib/firebase-client-loaders";
+import { createFirebaseChatbotChat } from "@/src/lib/firebase-services";
 
 const welcomeMessage =
   "Hi! Welcome to Arunand's Aviation Institute. How can we help you?";
@@ -139,19 +139,10 @@ export function FloatingChatbot() {
     let cancelled = false;
 
     async function loadChatbotSetting() {
-      try {
-        const settingsSnapshot = await getDoc(doc(db, "settings", "global"));
-        const settings = settingsSnapshot.exists() ? settingsSnapshot.data() : null;
+      const { settings } = await loadClientSettings();
 
-        if (!cancelled) {
-          setIsEnabled(
-            typeof settings?.chatbotEnabled === "boolean" ? settings.chatbotEnabled : true,
-          );
-        }
-      } catch {
-        if (!cancelled) {
-          setIsEnabled(true);
-        }
+      if (!cancelled) {
+        setIsEnabled(settings.chatbotEnabled);
       }
     }
 
@@ -229,9 +220,10 @@ export function FloatingChatbot() {
 
     try {
       await withTimeout(
-        addDoc(collection(db, "chatbotChats"), {
+        createFirebaseChatbotChat({
           userMessage,
-          botReply: finalBotReply,
+          pageUrl: window.location.href,
+          sessionId,
           guidedSelections,
           conversation: [
             ...nextConversation,
@@ -241,9 +233,6 @@ export function FloatingChatbot() {
               time: new Date().toISOString(),
             },
           ],
-          timestamp: serverTimestamp(),
-          pageUrl: window.location.href,
-          sessionId,
         }),
       );
 
@@ -253,8 +242,8 @@ export function FloatingChatbot() {
       }, 650);
     } catch {
       setNotice({
-        type: "error",
-        text: "Message is shown here, but Firebase could not save it right now. Please check the connection.",
+        type: "success",
+        text: "Your message was received locally. Please contact us on WhatsApp if urgent.",
       });
       window.setTimeout(() => {
         appendBotMessage(finalBotReply);
@@ -265,7 +254,7 @@ export function FloatingChatbot() {
     }
   }
 
-  if (isEnabled !== true || pathname.startsWith("/admin")) {
+  if (isEnabled !== true || pathname?.startsWith("/admin")) {
     return null;
   }
 

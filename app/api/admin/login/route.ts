@@ -1,14 +1,71 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { createAdminToken, getPrimaryAdminId, isAdminCredential, setAdminCookie } from "@/lib/admin-auth";
-import { signInFirebaseAuthUser } from "@/src/lib/firebase-auth-rest";
-import { getFirebaseLoginAccount } from "@/src/lib/firebase-services";
+import {
+  createAdminToken,
+  getPrimaryAdminId,
+  isAdminCredential,
+  isPrimaryAdminId,
+  setAdminCookie,
+} from "@/lib/admin-auth";
+import {
+  createFirebaseAuthUser,
+  signInFirebaseAuthUser,
+  verifyFirebaseIdToken,
+} from "@/src/lib/firebase-auth-rest";
+import {
+  ensureFirebasePrimaryAdmin,
+  getFirebaseLoginAccount,
+  saveFirebaseLoginAccountProfile,
+} from "@/src/lib/firebase-services";
 
-const loginSchema = z.object({
+const credentialLoginSchema = z.object({
   email: z.string().trim().min(1),
   password: z.string().min(1),
 });
+
+const tokenLoginSchema = z.object({
+  idToken: z.string().min(1),
+});
+
+const loginSchema = z.union([credentialLoginSchema, tokenLoginSchema]);
+
+async function bootstrapPrimaryAdminFirebaseAccess(email: string, password: string) {
+  let authUser:
+    | {
+        uid: string;
+        email: string;
+      }
+    | undefined;
+
+  try {
+    authUser = await createFirebaseAuthUser(email, password);
+  } catch (error) {
+    if (!(error instanceof Error) || !error.message.includes("already has a login account")) {
+      throw error;
+    }
+  }
+
+  if (!authUser) {
+    authUser = await signInFirebaseAuthUser(email, password);
+  }
+
+  await saveFirebaseLoginAccountProfile({
+    uid: authUser.uid,
+    name: "Primary Admin",
+    email: authUser.email,
+    role: "Admin",
+    status: "active",
+  });
+
+  await ensureFirebasePrimaryAdmin({
+    email: authUser.email,
+    name: "Primary Admin",
+    role: "admin",
+  });
+
+  return authUser;
+}
 
 export async function POST(request: Request) {
   const parsed = loginSchema.safeParse(await request.json());
@@ -23,24 +80,62 @@ export async function POST(request: Request) {
     );
   }
 
-  if (await isAdminCredential(parsed.data.email, parsed.data.password)) {
-    await setAdminCookie(
-      createAdminToken({
-        role: "admin",
-        email: getPrimaryAdminId().trim().toLowerCase(),
-        name: "Primary Admin",
-      }),
-    );
-
-    return NextResponse.json({
-      success: true,
-      message: "Admin login successful.",
-    });
-  }
-
   try {
-    const authUser = await signInFirebaseAuthUser(parsed.data.email, parsed.data.password);
-    const profile = await getFirebaseLoginAccount(authUser.uid);
+    const authUser = "idToken" in parsed.data
+      ? await verifyFirebaseIdToken(parsed.data.idToken)
+      : await signInFirebaseAuthUser(parsed.data.email, parsed.data.password);
+
+    if (
+      !("idToken" in parsed.data) &&
+      await isAdminCredential(parsed.data.email, parsed.data.password)
+    ) {
+      await setAdminCookie(
+        createAdminToken({
+          role: "admin",
+          uid: authUser.uid,
+          email: getPrimaryAdminId().trim().toLowerCase(),
+          name: "Primary Admin",
+        }),
+      );
+
+      return NextResponse.json({
+        success: true,
+        message: "Admin login successful.",
+      });
+    }
+
+    if (isPrimaryAdminId(authUser.email)) {
+      await setAdminCookie(
+        createAdminToken({
+          role: "admin",
+          uid: authUser.uid,
+          email: getPrimaryAdminId().trim().toLowerCase(),
+          name: "Primary Admin",
+        }),
+      );
+
+      return NextResponse.json({
+        success: true,
+        message: "Admin login successful.",
+      });
+    }
+
+    let profile = null;
+
+    try {
+      profile = await getFirebaseLoginAccount(authUser.uid);
+    } catch (error) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            error instanceof Error
+              ? error.message
+              : "Unable to load the login account profile.",
+        },
+        { status: 401 },
+      );
+    }
 
     if (!profile) {
       return NextResponse.json(
@@ -81,6 +176,43 @@ export async function POST(request: Request) {
       message: "Admin login successful.",
     });
   } catch (error) {
+    if (
+      !("idToken" in parsed.data) &&
+      await isAdminCredential(parsed.data.email, parsed.data.password)
+    ) {
+      try {
+        const authUser = await bootstrapPrimaryAdminFirebaseAccess(
+          parsed.data.email.trim().toLowerCase(),
+          parsed.data.password,
+        );
+
+        await setAdminCookie(
+          createAdminToken({
+            role: "admin",
+            uid: authUser.uid,
+            email: authUser.email,
+            name: "Primary Admin",
+          }),
+        );
+
+        return NextResponse.json({
+          success: true,
+          message: "Admin login successful.",
+        });
+      } catch (bootstrapError) {
+        return NextResponse.json(
+          {
+            success: false,
+            message:
+              bootstrapError instanceof Error
+                ? bootstrapError.message
+                : "Unable to prepare the primary admin login.",
+          },
+          { status: 401 },
+        );
+      }
+    }
+
     return NextResponse.json(
       {
         success: false,

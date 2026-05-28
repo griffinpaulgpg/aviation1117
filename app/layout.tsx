@@ -4,6 +4,8 @@ import "./globals.css";
 import { FloatingWidgetsClient } from "@/components/floating-widgets-client";
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
+import { PageTransitionShell } from "@/components/page-transition-shell";
+import { SectionObserver } from "@/components/section-observer";
 import { siteContent } from "@/lib/site-content";
 
 export const metadata: Metadata = {
@@ -43,7 +45,8 @@ export default function RootLayout({ children }: RootLayoutProps) {
     <html lang="en">
       <body className="font-sans antialiased">
         <Header />
-        {children}
+        <SectionObserver />
+        <PageTransitionShell>{children}</PageTransitionShell>
         <Footer />
         <FloatingWidgetsClient />
       </body>

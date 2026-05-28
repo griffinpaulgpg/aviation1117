@@ -3,10 +3,15 @@ import { z } from "zod";
 
 import { getAdminSession } from "@/lib/admin-auth";
 import {
+  clearLocalFallbackChatbotChats,
+  deleteLocalFallbackChatbotChat,
+  getLocalFallbackChatbotChats,
+} from "@/lib/runtime-fallback-store";
+import {
   clearFirebaseChatbotChats,
   deleteFirebaseChatbotChat,
   getFirebaseChatbotChats,
-  getFirebaseSettings,
+  getFirebaseSettingsSafe,
   updateFirebaseSettings,
 } from "@/src/lib/firebase-services";
 
@@ -52,12 +57,24 @@ async function ensureAdmin() {
 }
 
 async function getChatbotPayload() {
-  const [chatbotChats, settings] = await Promise.all([
-    getFirebaseChatbotChats(),
-    getFirebaseSettings(),
+  const [{ settings, error }, firebaseChatsResult] = await Promise.all([
+    getFirebaseSettingsSafe(),
+    getFirebaseChatbotChats()
+      .then((chatbotChats) => ({ chatbotChats, error: null as string | null }))
+      .catch((firebaseError) => ({
+        chatbotChats: getLocalFallbackChatbotChats(),
+        error:
+          firebaseError instanceof Error
+            ? firebaseError.message
+            : "Unable to load chatbot chats from Firebase.",
+      })),
   ]);
 
-  return { chatbotChats, settings };
+  return {
+    chatbotChats: firebaseChatsResult.chatbotChats,
+    settings,
+    warning: firebaseChatsResult.error ?? error,
+  };
 }
 
 export async function GET() {
@@ -104,7 +121,7 @@ export async function POST(request: Request) {
         );
       }
 
-      const current = await getFirebaseSettings();
+      const { settings: current, error } = await getFirebaseSettingsSafe();
 
       await updateFirebaseSettings({
         whatsappEnabled: payload.data.whatsappEnabled ?? current.whatsappEnabled,
@@ -112,10 +129,22 @@ export async function POST(request: Request) {
         instagramEnabled: payload.data.instagramEnabled ?? current.instagramEnabled ?? true,
         youtubeEnabled: payload.data.youtubeEnabled ?? current.youtubeEnabled ?? true,
       });
+
+      if (error) {
+        return NextResponse.json({
+          success: true,
+          message: `Settings updated with defaults. ${error}`,
+          data: await getChatbotPayload(),
+        });
+      }
     }
 
     if (payload.action === "deleteChat") {
-      await deleteFirebaseChatbotChat(payload.id);
+      try {
+        await deleteFirebaseChatbotChat(payload.id);
+      } catch {
+        deleteLocalFallbackChatbotChat(payload.id);
+      }
     }
 
     if (payload.action === "clearChats") {
@@ -129,7 +158,11 @@ export async function POST(request: Request) {
         );
       }
 
-      await clearFirebaseChatbotChats();
+      try {
+        await clearFirebaseChatbotChats();
+      } finally {
+        clearLocalFallbackChatbotChats();
+      }
     }
 
     return NextResponse.json({

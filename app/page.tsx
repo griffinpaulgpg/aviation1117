@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { Container } from "@/components/container";
+import { ImageWithFallback } from "@/components/image-with-fallback";
 import { PlacementLogoMarquee, type PlacementLogo } from "@/components/placement-logo-marquee";
 import { SectionHeading } from "@/components/section-heading";
 import { StatCard } from "@/components/stat-card";
@@ -136,7 +137,7 @@ export default function HomePage() {
   return (
     <>
       <main className="home-canvas">
-        <section className="home-hero relative overflow-hidden bg-brand-dark text-white">
+        <section className="observe-section home-hero relative overflow-hidden bg-brand-dark text-white">
           <div className="hero-orbit md:block" aria-hidden="true" />
           <div className="hero-cloud hero-cloud-one lg:block" aria-hidden="true" />
           <div className="hero-cloud hero-cloud-two lg:block" aria-hidden="true" />
@@ -186,17 +187,18 @@ export default function HomePage() {
           </Container>
         </section>
 
-        <section className="home-about-section aviation-section py-20 sm:py-24">
+        <section className="observe-section home-about-section aviation-section py-20 sm:py-24">
           <Container className="home-panel grid gap-10 p-6 sm:p-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
             <div className="home-photo-contain home-photo-lift relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-xl p-3">
-              <Image
-                src="/aassc-affiliation.webp"
-                alt="Arunand's Aviation Academy affiliated training partner with AASSC"
+              <ImageWithFallback
+                src="/images/home-group-photo.jpg"
+                fallbackSrc="/home-students.webp"
+                alt="Arunand's Aviation Academy students and faculty group photo"
                 width={1324}
                 height={990}
                 loading="lazy"
-                quality={72}
-                className="h-full w-full rounded-lg object-contain"
+                quality={82}
+                className="h-full w-full rounded-lg object-cover object-center"
                 sizes="(min-width: 1024px) 42vw, 100vw"
               />
             </div>
@@ -213,7 +215,7 @@ export default function HomePage() {
           </Container>
         </section>
 
-        <section className="home-courses-section aviation-section py-20 sm:py-24">
+        <section className="observe-section home-courses-section aviation-section py-20 sm:py-24">
           <Container className="home-panel grid gap-12 bg-white/70 p-6 sm:p-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
             <div>
               <div className="home-color-strip mb-7 h-2 w-28 rounded-full" />
@@ -245,7 +247,7 @@ export default function HomePage() {
           </Container>
         </section>
 
-        <section className="home-affiliation-section aviation-section py-20 sm:py-24">
+        <section className="observe-section home-affiliation-section aviation-section py-20 sm:py-24">
           <Container className="grid gap-12">
             <div className="home-logo-band rounded-2xl p-5 sm:p-8">
               <div className="grid gap-4 rounded-xl bg-white p-5 text-center sm:grid-cols-3 sm:items-stretch sm:p-8">
@@ -333,7 +335,7 @@ export default function HomePage() {
           </Container>
         </section>
 
-        <section className="home-services-section aviation-section py-20 sm:py-24">
+        <section className="observe-section home-services-section aviation-section py-20 sm:py-24">
           <Container>
             <SectionHeading
               eyebrow="Services"

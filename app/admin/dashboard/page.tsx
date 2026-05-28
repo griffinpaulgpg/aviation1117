@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { AdminConsole } from "@/components/admin-console";
+import { AdminDashboardShell } from "@/components/admin-dashboard-shell";
 import { Container } from "@/components/container";
 import { PageHero } from "@/components/page-hero";
 import { getAdminSession } from "@/lib/admin-auth";
 import { getEmptyAdminDashboardData } from "@/lib/admin-dashboard-empty";
-
-export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Admin Dashboard",
@@ -22,12 +20,12 @@ export default async function AdminDashboardPage() {
   const session = await getAdminSession();
 
   if (!session) {
-    redirect("/admin");
+    redirect("/login");
   }
 
   return (
     <>
-      <main className="site-sky">
+      <main className="site-sky min-h-screen">
         <PageHero
           eyebrow="Admin Dashboard"
           title="Website control center."
@@ -35,7 +33,10 @@ export default async function AdminDashboardPage() {
         />
         <section className="aviation-section py-14 sm:py-20">
           <Container>
-            <AdminConsole initialData={getEmptyAdminDashboardData()} currentSession={session} />
+            <AdminDashboardShell
+              initialData={getEmptyAdminDashboardData()}
+              currentSession={session}
+            />
           </Container>
         </section>
       </main>

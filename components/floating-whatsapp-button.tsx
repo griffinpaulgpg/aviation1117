@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { doc, getDoc } from "firebase/firestore";
 
-import { db } from "@/src/lib/firebase";
+import { loadClientSettings } from "@/src/lib/firebase-client-loaders";
 
 const whatsappUrl =
   "https://wa.me/919036960521?text=Hello%20Arunand%27s%20Aviation%20Institute%2C%20I%20want%20to%20enquire%20about%20your%20courses";
@@ -17,17 +16,10 @@ export function FloatingWhatsAppButton() {
     let cancelled = false;
 
     async function loadWhatsAppSetting() {
-      try {
-        const settingsSnapshot = await getDoc(doc(db, "settings", "global"));
-        const settings = settingsSnapshot.exists() ? settingsSnapshot.data() : null;
+      const { settings } = await loadClientSettings();
 
-        if (!cancelled && typeof settings?.whatsappEnabled === "boolean") {
-          setIsEnabled(settings.whatsappEnabled);
-        }
-      } catch {
-        if (!cancelled) {
-          setIsEnabled(true);
-        }
+      if (!cancelled) {
+        setIsEnabled(settings.whatsappEnabled);
       }
     }
 
@@ -38,7 +30,7 @@ export function FloatingWhatsAppButton() {
     };
   }, []);
 
-  if (!isEnabled || pathname.startsWith("/admin")) {
+  if (!isEnabled || pathname?.startsWith("/admin")) {
     return null;
   }
 

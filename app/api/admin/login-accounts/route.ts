@@ -8,7 +8,7 @@ import {
 } from "@/src/lib/firebase-auth-rest";
 import {
   deleteFirebaseLoginAccountProfile,
-  getFirebaseLoginAccounts,
+  getFirebaseLoginAccountsSafe,
   saveFirebaseLoginAccountProfile,
   updateFirebaseLoginAccountStatus,
 } from "@/src/lib/firebase-services";
@@ -88,11 +88,14 @@ export async function GET() {
   }
 
   try {
+    const { loginAccounts, error } = await getFirebaseLoginAccountsSafe();
+
     return NextResponse.json({
       success: true,
       data: {
-        loginAccounts: await getFirebaseLoginAccounts(),
+        loginAccounts,
       },
+      ...(error ? { message: error } : {}),
     });
   } catch (error) {
     return NextResponse.json(
@@ -121,12 +124,34 @@ export async function POST(request: Request) {
         payload.data.password,
       );
 
-      await saveFirebaseLoginAccountProfile({
-        uid: authUser.uid,
-        name: payload.data.name,
-        email: authUser.email.toLowerCase(),
-        role: payload.data.role,
-        status: "active",
+      let profileWarning: string | null = null;
+
+      try {
+        await saveFirebaseLoginAccountProfile({
+          uid: authUser.uid,
+          name: payload.data.name,
+          email: authUser.email.toLowerCase(),
+          role: payload.data.role,
+          status: "active",
+        });
+      } catch (error) {
+        profileWarning =
+          error instanceof Error
+            ? `Auth user created, but Firestore profile save failed: ${error.message}`
+            : "Auth user created, but Firestore profile save failed.";
+      }
+
+      const { loginAccounts, error } = await getFirebaseLoginAccountsSafe();
+
+      return NextResponse.json({
+        success: true,
+        message:
+          profileWarning ??
+          error ??
+          "Login accounts updated successfully.",
+        data: {
+          loginAccounts,
+        },
       });
     }
 
@@ -142,11 +167,13 @@ export async function POST(request: Request) {
       await sendFirebasePasswordReset(payload.email);
     }
 
+    const { loginAccounts, error } = await getFirebaseLoginAccountsSafe();
+
     return NextResponse.json({
       success: true,
-      message: "Login accounts updated successfully.",
+      message: error ?? "Login accounts updated successfully.",
       data: {
-        loginAccounts: await getFirebaseLoginAccounts(),
+        loginAccounts,
       },
     });
   } catch (error) {

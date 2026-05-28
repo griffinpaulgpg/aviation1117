@@ -18,6 +18,14 @@ import {
 } from "firebase/firestore";
 
 import { db } from "@/src/lib/firebase";
+import {
+  safeAddDoc,
+  safeDeleteDoc,
+  safeGetCollection,
+  safeGetDocument,
+  safeSetDoc,
+  safeUpdateDoc,
+} from "@/src/lib/firebase-safe";
 import type {
   FirebaseChatbotChat,
   FirebaseAdminUser,
@@ -71,8 +79,47 @@ export const defaultEnquirySources = [
   "Other",
 ];
 
+const firebaseUnavailableMessage = "Database connection unavailable. Changes may not sync.";
+
 function isBuildPhase() {
   return process.env.NEXT_PHASE === "phase-production-build";
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
+function cleanFirestoreData<T>(data: T): T {
+  if (Array.isArray(data)) {
+    return data
+      .filter((item) => item !== undefined)
+      .map((item) =>
+        isPlainObject(item) || Array.isArray(item) ? cleanFirestoreData(item) : item,
+      ) as T;
+  }
+
+  if (!isPlainObject(data)) {
+    return data;
+  }
+
+  const entries = Object.entries(data).flatMap(([key, value]) => {
+    if (value === undefined) {
+      return [];
+    }
+
+    if (Array.isArray(value) || isPlainObject(value)) {
+      return [[key, cleanFirestoreData(value)]];
+    }
+
+    return [[key, value]];
+  });
+
+  return Object.fromEntries(entries) as T;
 }
 
 function toIso(value: unknown) {
@@ -124,8 +171,44 @@ async function runFirestore<T>(label: string, operation: () => Promise<T>) {
   } catch (error) {
     const detail = error instanceof Error ? error.message : "Unknown Firebase error";
 
+    if (process.env.NODE_ENV === "development") {
+      console.error(`[firebase] ${label}`, error);
+    }
+
     throw new Error(`${label} failed: ${detail}`);
   }
+}
+
+export async function safeGetFirebaseCollection<T>(
+  label: string,
+  operation: () => Promise<T>,
+  fallback: T,
+) {
+  return safeGetCollection(label, operation, fallback);
+}
+
+export async function safeAddFirebaseDoc<T>(label: string, operation: () => Promise<T>, fallback: T) {
+  return safeAddDoc(label, operation, fallback);
+}
+
+export async function safeUpdateFirebaseDoc<T>(
+  label: string,
+  operation: () => Promise<T>,
+  fallback: T,
+) {
+  return safeUpdateDoc(label, operation, fallback);
+}
+
+export async function safeDeleteFirebaseDoc<T>(
+  label: string,
+  operation: () => Promise<T>,
+  fallback: T,
+) {
+  return safeDeleteDoc(label, operation, fallback);
+}
+
+export async function safeSetFirebaseDoc<T>(label: string, operation: () => Promise<T>, fallback: T) {
+  return safeSetDoc(label, operation, fallback);
 }
 
 export async function getFirebaseSettings(): Promise<FirebaseSettings> {
@@ -165,6 +248,22 @@ export async function getFirebaseSettings(): Promise<FirebaseSettings> {
   });
 }
 
+export async function getFirebaseSettingsSafe(): Promise<{
+  settings: FirebaseSettings;
+  error: string | null;
+}> {
+  const result = await safeGetDocument(
+    "Loading Firebase settings",
+    () => getFirebaseSettings(),
+    defaultSettings,
+  );
+
+  return {
+    settings: result.data,
+    error: result.ok ? null : result.error,
+  };
+}
+
 export async function ensureFirebaseCollectionsSeeded() {
   if (isBuildPhase()) {
     return;
@@ -172,7 +271,11 @@ export async function ensureFirebaseCollectionsSeeded() {
 
   await getFirebaseSettings();
 
-  const [courses, events] = await Promise.all([getFirebaseCourses(), getFirebaseEvents()]);
+  const [courses, events, galleryPhotos] = await Promise.all([
+    getFirebaseCourses(),
+    getFirebaseEvents(),
+    getFirebaseGalleryPhotos(),
+  ]);
   const enquirySources = await getFirebaseEnquirySources();
 
   if (courses.length === 0) {
@@ -194,9 +297,32 @@ export async function ensureFirebaseCollectionsSeeded() {
       siteContent.events.map((event) =>
         createFirebaseEvent({
           title: event.title,
-          description: `${event.date}: ${event.description}`,
+          description: event.description,
           image: "/home-students.webp",
           applyLink: "/enquiry",
+          date: event.date,
+          location: null,
+          status: "active",
+          order: siteContent.events.indexOf(event),
+        }),
+      ),
+    );
+  }
+
+  if (galleryPhotos.length === 0) {
+    await Promise.all(
+      siteContent.gallery.map((photo, index) =>
+        createFirebaseGalleryPhoto({
+          title: photo.title,
+          image: photo.image,
+          mediaUrl: photo.image,
+          mediaType: "image",
+          thumbnailUrl: null,
+          description: null,
+          folderId: null,
+          caption: photo.title,
+          status: "active",
+          order: index,
         }),
       ),
     );
@@ -211,13 +337,13 @@ export async function updateFirebaseSettings(settings: FirebaseSettings) {
   await runFirestore("Updating Firebase settings", () =>
     setDoc(
       doc(db, firebaseCollections.settings, settingsDocumentId),
-      {
+      cleanFirestoreData({
         whatsappEnabled: settings.whatsappEnabled,
         chatbotEnabled: settings.chatbotEnabled,
         instagramEnabled: settings.instagramEnabled ?? true,
         youtubeEnabled: settings.youtubeEnabled ?? true,
         updatedAt: serverTimestamp(),
-      },
+      }),
       { merge: true },
     ),
   );
@@ -232,7 +358,8 @@ export async function getFirebaseCourses(): Promise<FirebaseCourse[]> {
     getDocs(query(collection(db, firebaseCollections.courses), orderBy("createdAt", "asc"))),
   );
 
-  return snapshot.docs.map((item) => {
+  return snapshot.docs
+    .map((item) => {
     const data = docWithDates(item);
 
     return {
@@ -240,32 +367,58 @@ export async function getFirebaseCourses(): Promise<FirebaseCourse[]> {
       title: String(data.title ?? ""),
       description: String(data.description ?? ""),
       duration: data.duration ? String(data.duration) : null,
-      image: String(data.image ?? ""),
+      image: String(data.imageUrl ?? data.image ?? ""),
       reachUsLink: data.reachUsLink ? String(data.reachUsLink) : "/enquiry",
+      status: (data.status === "inactive" ? "inactive" : "active") as "active" | "inactive",
+      order: typeof data.order === "number" ? data.order : undefined,
       createdAt: data.createdAt,
       updatedAt: data.updatedAt,
     };
-  });
+  })
+    .sort((a, b) => {
+      const orderA = typeof a.order === "number" ? a.order : Number.MAX_SAFE_INTEGER;
+      const orderB = typeof b.order === "number" ? b.order : Number.MAX_SAFE_INTEGER;
+      if (orderA !== orderB) return orderA - orderB;
+      return a.createdAt.localeCompare(b.createdAt);
+    });
 }
 
 export async function createFirebaseCourse(course: Omit<FirebaseCourse, "id" | "createdAt" | "updatedAt">) {
+  const courseData = cleanFirestoreData({
+    title: course.title || "",
+    description: course.description || "",
+    duration: course.duration || "",
+    image: course.image || "",
+    imageUrl: course.image || "",
+    reachUsLink: course.reachUsLink || "/enquiry",
+    status: course.status || "active",
+    order: typeof course.order === "number" ? course.order : 0,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+
   const saved = await runFirestore("Creating Firebase course", () =>
-    addDoc(collection(db, firebaseCollections.courses), {
-      ...course,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    }),
+    addDoc(collection(db, firebaseCollections.courses), courseData),
   );
 
   return saved.id;
 }
 
 export async function updateFirebaseCourse(id: string, course: Omit<FirebaseCourse, "id" | "createdAt" | "updatedAt">) {
+  const courseData = cleanFirestoreData({
+    title: course.title || "",
+    description: course.description || "",
+    duration: course.duration || "",
+    image: course.image || "",
+    imageUrl: course.image || "",
+    reachUsLink: course.reachUsLink || "/enquiry",
+    status: course.status || "active",
+    order: typeof course.order === "number" ? course.order : 0,
+    updatedAt: serverTimestamp(),
+  });
+
   await runFirestore("Updating Firebase course", () =>
-    updateDoc(doc(db, firebaseCollections.courses, id), {
-      ...course,
-      updatedAt: serverTimestamp(),
-    }),
+    updateDoc(doc(db, firebaseCollections.courses, id), courseData),
   );
 }
 
@@ -298,11 +451,11 @@ export async function getFirebaseEnquirySources(): Promise<FirebaseEnquirySource
 
 export async function createFirebaseEnquirySource(source: { name: string }) {
   const saved = await runFirestore("Creating Firebase enquiry source", () =>
-    addDoc(collection(db, firebaseCollections.enquirySources), {
+    addDoc(collection(db, firebaseCollections.enquirySources), cleanFirestoreData({
       name: source.name.trim(),
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-    }),
+    })),
   );
 
   return saved.id;
@@ -310,10 +463,10 @@ export async function createFirebaseEnquirySource(source: { name: string }) {
 
 export async function updateFirebaseEnquirySource(id: string, source: { name: string }) {
   await runFirestore("Updating Firebase enquiry source", () =>
-    updateDoc(doc(db, firebaseCollections.enquirySources, id), {
+    updateDoc(doc(db, firebaseCollections.enquirySources, id), cleanFirestoreData({
       name: source.name.trim(),
       updatedAt: serverTimestamp(),
-    }),
+    })),
   );
 }
 
@@ -332,39 +485,70 @@ export async function getFirebaseEvents(): Promise<FirebaseEvent[]> {
     getDocs(query(collection(db, firebaseCollections.events), orderBy("createdAt", "desc"))),
   );
 
-  return snapshot.docs.map((item) => {
+  return snapshot.docs
+    .map((item) => {
     const data = docWithDates(item);
 
     return {
       id: data.id,
       title: String(data.title ?? ""),
       description: String(data.description ?? ""),
-      image: data.image ? String(data.image) : null,
+      image: data.imageUrl ? String(data.imageUrl) : data.image ? String(data.image) : null,
       applyLink: data.applyLink ? String(data.applyLink) : "/enquiry",
+      date: data.date ? String(data.date) : null,
+      location: data.location ? String(data.location) : null,
+      status: (data.status === "inactive" ? "inactive" : "active") as "active" | "inactive",
+      order: typeof data.order === "number" ? data.order : undefined,
       createdAt: data.createdAt,
       updatedAt: data.updatedAt,
     };
-  });
+  })
+    .sort((a, b) => {
+      const orderA = typeof a.order === "number" ? a.order : Number.MAX_SAFE_INTEGER;
+      const orderB = typeof b.order === "number" ? b.order : Number.MAX_SAFE_INTEGER;
+      if (orderA !== orderB) return orderA - orderB;
+      return a.createdAt.localeCompare(b.createdAt);
+    });
 }
 
 export async function createFirebaseEvent(event: Omit<FirebaseEvent, "id" | "createdAt" | "updatedAt">) {
+  const eventData = cleanFirestoreData({
+    title: event.title || "",
+    description: event.description || "",
+    image: event.image ?? null,
+    imageUrl: event.image ?? null,
+    applyLink: event.applyLink || "/enquiry",
+    date: event.date ?? null,
+    location: event.location ?? null,
+    status: event.status || "active",
+    order: typeof event.order === "number" ? event.order : 0,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+
   const saved = await runFirestore("Creating Firebase event", () =>
-    addDoc(collection(db, firebaseCollections.events), {
-      ...event,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    }),
+    addDoc(collection(db, firebaseCollections.events), eventData),
   );
 
   return saved.id;
 }
 
 export async function updateFirebaseEvent(id: string, event: Omit<FirebaseEvent, "id" | "createdAt" | "updatedAt">) {
+  const eventData = cleanFirestoreData({
+    title: event.title || "",
+    description: event.description || "",
+    image: event.image ?? null,
+    imageUrl: event.image ?? null,
+    applyLink: event.applyLink || "/enquiry",
+    date: event.date ?? null,
+    location: event.location ?? null,
+    status: event.status || "active",
+    order: typeof event.order === "number" ? event.order : 0,
+    updatedAt: serverTimestamp(),
+  });
+
   await runFirestore("Updating Firebase event", () =>
-    updateDoc(doc(db, firebaseCollections.events, id), {
-      ...event,
-      updatedAt: serverTimestamp(),
-    }),
+    updateDoc(doc(db, firebaseCollections.events, id), eventData),
   );
 }
 
@@ -375,17 +559,49 @@ export async function deleteFirebaseEvent(id: string) {
 }
 
 export async function createFirebaseEnquiry(enquiry: Record<string, unknown>) {
+  const enquiryData = cleanFirestoreData({
+    ...enquiry,
+    status: "New",
+    notes: "",
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+
   const saved = await runFirestore("Creating Firebase enquiry", () =>
-    addDoc(collection(db, firebaseCollections.enquiries), {
-      ...enquiry,
-      status: "New",
-      notes: "",
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    }),
+    addDoc(collection(db, firebaseCollections.enquiries), enquiryData),
   );
 
   return saved.id;
+}
+
+export async function getLatestEnquirySequenceForDate(datePart: string) {
+  if (isBuildPhase()) {
+    return 0;
+  }
+
+  const result = await safeGetCollection(
+    "Loading latest enquiry sequence",
+    async () =>
+      getDocs(query(collection(db, firebaseCollections.enquiries), orderBy("createdAt", "desc"), limit(50))),
+    null,
+  );
+
+  if (!result.ok || !result.data) {
+    return 0;
+  }
+
+  let latest = 0;
+
+  for (const item of result.data.docs) {
+    const value = String(item.data().enquiryNumber ?? "");
+    const match = value.match(/^AAI-ENQ-(\d{8})-(\d{3,})$/);
+
+    if (match?.[1] === datePart) {
+      latest = Math.max(latest, Number(match[2] ?? 0));
+    }
+  }
+
+  return latest;
 }
 
 export async function getFirebaseEnquiries(): Promise<FirebaseEnquiry[]> {
@@ -404,6 +620,7 @@ export async function getFirebaseEnquiries(): Promise<FirebaseEnquiry[]> {
       id: data.id,
       enquiryNumber: String(data.enquiryNumber ?? data.id),
       fullName: String(data.fullName ?? ""),
+      dateOfBirth: data.dateOfBirth ? String(data.dateOfBirth) : undefined,
       qualification: data.qualification ? String(data.qualification) : undefined,
       schoolCollege: data.schoolCollege ? String(data.schoolCollege) : undefined,
       email: String(data.email ?? ""),
@@ -437,10 +654,10 @@ export async function updateFirebaseEnquiry(
   enquiry: { status?: FirebaseEnquiry["status"]; notes?: string },
 ) {
   await runFirestore("Updating Firebase enquiry", () =>
-    updateDoc(doc(db, firebaseCollections.enquiries, id), {
+    updateDoc(doc(db, firebaseCollections.enquiries, id), cleanFirestoreData({
       ...enquiry,
       updatedAt: serverTimestamp(),
-    }),
+    })),
   );
 }
 
@@ -469,7 +686,7 @@ export async function createFirebaseChatbotChat(chat: {
   }
 
   const saved = await runFirestore("Creating Firebase chatbot chat", () =>
-    addDoc(collection(db, firebaseCollections.chatbotChats), {
+    addDoc(collection(db, firebaseCollections.chatbotChats), cleanFirestoreData({
       userMessage: chat.userMessage,
       botReply: chat.botReply ?? defaultBotReply,
       guidedSelections: chat.guidedSelections ?? [],
@@ -479,7 +696,7 @@ export async function createFirebaseChatbotChat(chat: {
       timestamp: serverTimestamp(),
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-    }),
+    })),
   );
 
   return saved.id;
@@ -574,7 +791,7 @@ export async function ensureFirebasePrimaryAdmin(admin: {
   await runFirestore("Saving primary Firebase admin", () =>
     setDoc(
       primaryRef,
-      {
+      cleanFirestoreData({
         email: admin.email,
         name: admin.name,
         role: admin.role ?? "admin",
@@ -582,7 +799,7 @@ export async function ensureFirebasePrimaryAdmin(admin: {
         ...(admin.passwordHash ? { passwordHash: admin.passwordHash } : {}),
         createdAt: snapshot.exists() ? (snapshot.data().createdAt ?? serverTimestamp()) : serverTimestamp(),
         updatedAt: serverTimestamp(),
-      },
+      }),
       { merge: true },
     ),
   );
@@ -613,6 +830,22 @@ export async function getFirebaseAdminUsers(): Promise<FirebaseAdminUser[]> {
   });
 }
 
+export async function getFirebaseAdminUsersSafe(): Promise<{
+  accounts: FirebaseAdminUser[];
+  error: string | null;
+}> {
+  const result = await safeGetCollection(
+    "Loading Firebase admin users",
+    () => getFirebaseAdminUsers(),
+    [] as FirebaseAdminUser[],
+  );
+
+  return {
+    accounts: result.data,
+    error: result.ok ? null : "Database unavailable. Admin accounts could not be loaded.",
+  };
+}
+
 export async function getFirebaseAdminByEmail(email: string): Promise<FirebaseAdminUser | null> {
   const admins = await getFirebaseAdminUsers();
   const normalizedEmail = email.trim().toLowerCase();
@@ -627,7 +860,7 @@ export async function createFirebaseAdminUser(
   },
 ) {
   await runFirestore("Creating Firebase admin user", () =>
-    addDoc(collection(db, firebaseCollections.adminUsers), {
+    addDoc(collection(db, firebaseCollections.adminUsers), cleanFirestoreData({
       name: admin.name,
       email: admin.email,
       passwordHash: admin.passwordHash,
@@ -635,7 +868,7 @@ export async function createFirebaseAdminUser(
       isPrimary: Boolean(admin.isPrimary),
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-    }),
+    })),
   );
 }
 
@@ -647,14 +880,14 @@ export async function updateFirebaseAdminUser(
   },
 ) {
   await runFirestore("Updating Firebase admin user", () =>
-    updateDoc(doc(db, firebaseCollections.adminUsers, id), {
+    updateDoc(doc(db, firebaseCollections.adminUsers, id), cleanFirestoreData({
       name: admin.name,
       email: admin.email,
       passwordHash: admin.passwordHash,
       role: admin.role ?? "admin",
       isPrimary: Boolean(admin.isPrimary),
       updatedAt: serverTimestamp(),
-    }),
+    })),
   );
 }
 
@@ -678,10 +911,14 @@ export async function getFirebaseFacultyUsers(): Promise<FirebaseFacultyUser[]> 
 
     return {
       id: data.id,
+      facultyId: data.facultyId ? String(data.facultyId) : undefined,
       name: String(data.name ?? ""),
       email: String(data.email ?? ""),
+      phone: data.phone ? String(data.phone) : undefined,
       passwordHash: data.passwordHash ? String(data.passwordHash) : undefined,
       role: String(data.role ?? "faculty"),
+      department: data.department ? String(data.department) : undefined,
+      status: (data.status === "inactive" ? "inactive" : "active") as "active" | "inactive",
       createdAt: data.createdAt,
       updatedAt: data.updatedAt,
     };
@@ -693,15 +930,26 @@ export async function createFirebaseFacultyUser(
     role?: string;
   },
 ) {
+  const facultyId =
+    faculty.facultyId ??
+    `FAC-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${Math.random()
+      .toString(36)
+      .slice(2, 6)
+      .toUpperCase()}`;
+
   await runFirestore("Creating Firebase faculty user", () =>
-    addDoc(collection(db, firebaseCollections.facultyUsers), {
+    addDoc(collection(db, firebaseCollections.facultyUsers), cleanFirestoreData({
+      facultyId,
       name: faculty.name,
       email: faculty.email,
+      phone: faculty.phone ?? "",
       passwordHash: faculty.passwordHash,
       role: faculty.role ?? "faculty",
+      department: faculty.department ?? "",
+      status: faculty.status ?? "active",
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-    }),
+    })),
   );
 }
 
@@ -712,14 +960,34 @@ export async function updateFirebaseFacultyUser(
   },
 ) {
   await runFirestore("Updating Firebase faculty user", () =>
-    updateDoc(doc(db, firebaseCollections.facultyUsers, id), {
+    updateDoc(doc(db, firebaseCollections.facultyUsers, id), cleanFirestoreData({
+      facultyId: faculty.facultyId,
       name: faculty.name,
       email: faculty.email,
+      phone: faculty.phone ?? "",
       passwordHash: faculty.passwordHash,
       role: faculty.role ?? "faculty",
+      department: faculty.department ?? "",
+      status: faculty.status ?? "active",
       updatedAt: serverTimestamp(),
-    }),
+    })),
   );
+}
+
+export async function getFirebaseFacultyUsersSafe(): Promise<{
+  facultyUsers: FirebaseFacultyUser[];
+  error: string | null;
+}> {
+  const result = await safeGetCollection(
+    "Loading Firebase faculty users",
+    () => getFirebaseFacultyUsers(),
+    [] as FirebaseFacultyUser[],
+  );
+
+  return {
+    facultyUsers: result.data,
+    error: result.ok ? null : firebaseUnavailableMessage,
+  };
 }
 
 export async function deleteFirebaseFacultyUser(id: string) {
@@ -746,11 +1014,27 @@ export async function getFirebaseLoginAccounts(): Promise<FirebaseLoginAccount[]
       name: String(data.name ?? ""),
       email: String(data.email ?? ""),
       role: normalizeLoginRole(data.role),
-      status: data.status === "inactive" ? "inactive" : "active",
+      status: (data.status === "inactive" ? "inactive" : "active") as "active" | "inactive",
       createdAt: data.createdAt,
       updatedAt: data.updatedAt,
     };
   });
+}
+
+export async function getFirebaseLoginAccountsSafe(): Promise<{
+  loginAccounts: FirebaseLoginAccount[];
+  error: string | null;
+}> {
+  const result = await safeGetCollection(
+    "Loading Firebase login accounts",
+    () => getFirebaseLoginAccounts(),
+    [] as FirebaseLoginAccount[],
+  );
+
+  return {
+    loginAccounts: result.data,
+    error: result.ok ? null : firebaseUnavailableMessage,
+  };
 }
 
 export async function getFirebaseLoginAccount(uid: string): Promise<FirebaseLoginAccount | null> {
@@ -786,7 +1070,7 @@ export async function saveFirebaseLoginAccountProfile(
   await runFirestore("Saving Firebase login account", () =>
     setDoc(
       doc(db, firebaseCollections.loginAccounts, account.uid),
-      {
+      cleanFirestoreData({
         uid: account.uid,
         name: account.name,
         email: account.email,
@@ -794,7 +1078,7 @@ export async function saveFirebaseLoginAccountProfile(
         status: account.status,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-      },
+      }),
       { merge: true },
     ),
   );
@@ -805,10 +1089,10 @@ export async function updateFirebaseLoginAccountStatus(
   status: FirebaseLoginAccount["status"],
 ) {
   await runFirestore("Updating Firebase login account status", () =>
-    updateDoc(doc(db, firebaseCollections.loginAccounts, uid), {
+    updateDoc(doc(db, firebaseCollections.loginAccounts, uid), cleanFirestoreData({
       status,
       updatedAt: serverTimestamp(),
-    }),
+    })),
   );
 }
 
@@ -841,20 +1125,20 @@ export async function getFirebaseGalleryFolders(): Promise<FirebaseGalleryFolder
 
 export async function createFirebaseGalleryFolder(folder: { name: string }) {
   await runFirestore("Creating Firebase gallery folder", () =>
-    addDoc(collection(db, firebaseCollections.galleryFolders), {
+    addDoc(collection(db, firebaseCollections.galleryFolders), cleanFirestoreData({
       name: folder.name,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-    }),
+    })),
   );
 }
 
 export async function updateFirebaseGalleryFolder(id: string, folder: { name: string }) {
   await runFirestore("Updating Firebase gallery folder", () =>
-    updateDoc(doc(db, firebaseCollections.galleryFolders, id), {
+    updateDoc(doc(db, firebaseCollections.galleryFolders, id), cleanFirestoreData({
       name: folder.name,
       updatedAt: serverTimestamp(),
-    }),
+    })),
   );
 }
 
@@ -877,49 +1161,106 @@ export async function getFirebaseGalleryPhotos(): Promise<FirebaseGalleryPhoto[]
   ]);
   const folderNames = new Map(folders.map((folder) => [folder.id, folder.name]));
 
-  return snapshot.docs.map((item) => {
+  return snapshot.docs
+    .map((item) => {
     const data = docWithDates(item);
     const folderId = data.folderId ? String(data.folderId) : null;
+    const mediaUrl = String(data.mediaUrl ?? data.image ?? "");
+    const mediaType: "image" | "video" =
+      data.mediaType === "video"
+        ? "video"
+        : /\.(mp4|webm|mov)$/i.test(mediaUrl)
+          ? "video"
+          : "image";
 
     return {
       id: data.id,
-      image: String(data.image ?? ""),
+      image: mediaUrl,
+      title: data.title ? String(data.title) : null,
+      mediaType,
+      mediaUrl,
+      thumbnailUrl: data.thumbnailUrl ? String(data.thumbnailUrl) : null,
+      description: data.description ? String(data.description) : null,
       caption: data.caption ? String(data.caption) : null,
       folderId,
       folderName: folderId ? (folderNames.get(folderId) ?? null) : null,
+      status: (data.status === "inactive" ? "inactive" : "active") as "active" | "inactive",
+      order: typeof data.order === "number" ? data.order : undefined,
       createdAt: data.createdAt,
       updatedAt: data.updatedAt,
     };
-  });
+  })
+    .sort((a, b) => {
+      const orderA = typeof a.order === "number" ? a.order : Number.MAX_SAFE_INTEGER;
+      const orderB = typeof b.order === "number" ? b.order : Number.MAX_SAFE_INTEGER;
+      if (orderA !== orderB) return orderA - orderB;
+      return a.createdAt.localeCompare(b.createdAt);
+    });
 }
 
 export async function createFirebaseGalleryPhoto(photo: {
   image: string;
+  title?: string | null;
+  mediaType?: "image" | "video";
+  mediaUrl?: string;
+  thumbnailUrl?: string | null;
+  description?: string | null;
   folderId?: string | null;
   caption?: string | null;
+  status?: "active" | "inactive";
+  order?: number;
 }) {
+  const photoData = cleanFirestoreData({
+    image: photo.mediaUrl ?? photo.image ?? "",
+    title: photo.title ?? null,
+    mediaType: photo.mediaType ?? "image",
+    mediaUrl: photo.mediaUrl ?? photo.image ?? "",
+    thumbnailUrl: photo.thumbnailUrl ?? null,
+    description: photo.description ?? null,
+    folderId: photo.folderId ?? null,
+    caption: photo.caption ?? null,
+    status: photo.status ?? "active",
+    order: typeof photo.order === "number" ? photo.order : 0,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+
   await runFirestore("Creating Firebase gallery photo", () =>
-    addDoc(collection(db, firebaseCollections.galleryPhotos), {
-      image: photo.image,
-      folderId: photo.folderId ?? null,
-      caption: photo.caption ?? null,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    }),
+    addDoc(collection(db, firebaseCollections.galleryPhotos), photoData),
   );
 }
 
 export async function updateFirebaseGalleryPhoto(
   id: string,
-  photo: { image: string; folderId?: string | null; caption?: string | null },
+  photo: {
+    image: string;
+    title?: string | null;
+    mediaType?: "image" | "video";
+    mediaUrl?: string;
+    thumbnailUrl?: string | null;
+    description?: string | null;
+    folderId?: string | null;
+    caption?: string | null;
+    status?: "active" | "inactive";
+    order?: number;
+  },
 ) {
+  const photoData = cleanFirestoreData({
+    image: photo.mediaUrl ?? photo.image ?? "",
+    title: photo.title ?? null,
+    mediaType: photo.mediaType ?? "image",
+    mediaUrl: photo.mediaUrl ?? photo.image ?? "",
+    thumbnailUrl: photo.thumbnailUrl ?? null,
+    description: photo.description ?? null,
+    folderId: photo.folderId ?? null,
+    caption: photo.caption ?? null,
+    status: photo.status ?? "active",
+    order: typeof photo.order === "number" ? photo.order : 0,
+    updatedAt: serverTimestamp(),
+  });
+
   await runFirestore("Updating Firebase gallery photo", () =>
-    updateDoc(doc(db, firebaseCollections.galleryPhotos, id), {
-      image: photo.image,
-      folderId: photo.folderId ?? null,
-      caption: photo.caption ?? null,
-      updatedAt: serverTimestamp(),
-    }),
+    updateDoc(doc(db, firebaseCollections.galleryPhotos, id), photoData),
   );
 }
 
@@ -947,6 +1288,7 @@ export async function getFirebaseWrittenTestimonials(): Promise<FirebaseWrittenT
       position: String(data.position ?? ""),
       description: String(data.description ?? ""),
       photo: data.photo ? String(data.photo) : null,
+      status: (data.status === "inactive" ? "inactive" : "active") as "active" | "inactive",
       createdAt: data.createdAt,
       updatedAt: data.updatedAt,
     };
@@ -958,27 +1300,36 @@ export async function createFirebaseWrittenTestimonial(testimonial: {
   position: string;
   description: string;
   photo?: string | null;
+  status?: "active" | "inactive";
 }) {
   await runFirestore("Creating Firebase written testimonial", () =>
-    addDoc(collection(db, firebaseCollections.writtenTestimonials), {
+    addDoc(collection(db, firebaseCollections.writtenTestimonials), cleanFirestoreData({
       ...testimonial,
       photo: testimonial.photo ?? null,
+      status: testimonial.status ?? "active",
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-    }),
+    })),
   );
 }
 
 export async function updateFirebaseWrittenTestimonial(
   id: string,
-  testimonial: { name: string; position: string; description: string; photo?: string | null },
+  testimonial: {
+    name: string;
+    position: string;
+    description: string;
+    photo?: string | null;
+    status?: "active" | "inactive";
+  },
 ) {
   await runFirestore("Updating Firebase written testimonial", () =>
-    updateDoc(doc(db, firebaseCollections.writtenTestimonials, id), {
+    updateDoc(doc(db, firebaseCollections.writtenTestimonials, id), cleanFirestoreData({
       ...testimonial,
       photo: testimonial.photo ?? null,
+      status: testimonial.status ?? "active",
       updatedAt: serverTimestamp(),
-    }),
+    })),
   );
 }
 
@@ -1006,6 +1357,7 @@ export async function getFirebaseVideoTestimonials(): Promise<FirebaseVideoTesti
       name: String(data.name ?? ""),
       position: String(data.position ?? ""),
       description: String(data.description ?? ""),
+      status: (data.status === "inactive" ? "inactive" : "active") as "active" | "inactive",
       createdAt: data.createdAt,
       updatedAt: data.updatedAt,
     };
@@ -1017,25 +1369,34 @@ export async function createFirebaseVideoTestimonial(testimonial: {
   name: string;
   position: string;
   description: string;
+  status?: "active" | "inactive";
 }) {
   await runFirestore("Creating Firebase video testimonial", () =>
-    addDoc(collection(db, firebaseCollections.videoTestimonials), {
+    addDoc(collection(db, firebaseCollections.videoTestimonials), cleanFirestoreData({
       ...testimonial,
+      status: testimonial.status ?? "active",
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-    }),
+    })),
   );
 }
 
 export async function updateFirebaseVideoTestimonial(
   id: string,
-  testimonial: { video: string; name: string; position: string; description: string },
+  testimonial: {
+    video: string;
+    name: string;
+    position: string;
+    description: string;
+    status?: "active" | "inactive";
+  },
 ) {
   await runFirestore("Updating Firebase video testimonial", () =>
-    updateDoc(doc(db, firebaseCollections.videoTestimonials, id), {
+    updateDoc(doc(db, firebaseCollections.videoTestimonials, id), cleanFirestoreData({
       ...testimonial,
+      status: testimonial.status ?? "active",
       updatedAt: serverTimestamp(),
-    }),
+    })),
   );
 }
 
@@ -1053,6 +1414,8 @@ export function fallbackFirebaseCourses(): FirebaseCourse[] {
     duration: course.duration,
     image: course.image,
     reachUsLink: `/enquiry?course=${encodeURIComponent(course.title)}`,
+    status: "active",
+    order: index,
     createdAt: new Date(0).toISOString(),
   }));
 }
@@ -1064,6 +1427,28 @@ export function fallbackFirebaseEvents(): FirebaseEvent[] {
     description: event.description,
     image: "/home-students.webp",
     applyLink: "/enquiry",
+    date: event.date,
+    location: null,
+    status: "active",
+    order: index,
     createdAt: new Date(0 + index).toISOString(),
+  }));
+}
+
+export function fallbackFirebaseGalleryPhotos(): FirebaseGalleryPhoto[] {
+  return siteContent.gallery.map((photo, index) => ({
+    id: `fallback-gallery-${index}`,
+    image: photo.image,
+    title: photo.title,
+    mediaType: "image",
+    mediaUrl: photo.image,
+    thumbnailUrl: null,
+    description: null,
+    caption: photo.title,
+    folderId: null,
+    folderName: null,
+    status: "active",
+    order: index,
+    createdAt: new Date(index).toISOString(),
   }));
 }

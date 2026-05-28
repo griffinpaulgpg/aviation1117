@@ -14,7 +14,7 @@ export type AdminSession = {
 };
 
 export function getPrimaryAdminId() {
-  return process.env.ADMIN_EMAIL ?? process.env.ADMIN_ID ?? "arunand@avation";
+  return process.env.ADMIN_EMAIL ?? process.env.ADMIN_ID ?? "arunand@aviation.com";
 }
 
 export function getPrimaryAdminPassword() {

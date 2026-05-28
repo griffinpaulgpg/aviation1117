@@ -4,21 +4,7 @@ import { useEffect, useState } from "react";
 
 import { CourseCard } from "@/components/course-card";
 import type { PublicCourse } from "@/lib/public-content-data";
-
-function withTimeout<T>(promise: Promise<T>, timeoutMs = 4500) {
-  let timeoutId: ReturnType<typeof setTimeout> | undefined;
-
-  return Promise.race([
-    promise,
-    new Promise<T>((_, reject) => {
-      timeoutId = setTimeout(() => reject(new Error("Firebase course request timed out.")), timeoutMs);
-    }),
-  ]).finally(() => {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-    }
-  });
-}
+import { loadClientCourses } from "@/src/lib/firebase-client-loaders";
 
 export function CourseGridClient({ initialCourses }: { initialCourses: PublicCourse[] }) {
   const [courses, setCourses] = useState(initialCourses);
@@ -29,12 +15,11 @@ export function CourseGridClient({ initialCourses }: { initialCourses: PublicCou
 
     async function loadFirebaseCourses() {
       try {
-        const { getPublicFirebaseCoursesRest } = await import("@/lib/firebase-rest-public");
-        const firebaseCourses = await withTimeout(getPublicFirebaseCoursesRest());
+        const { courses: firebaseCourses, warning } = await loadClientCourses();
 
-        if (!cancelled && firebaseCourses.length > 0) {
+        if (!cancelled) {
           setCourses(firebaseCourses);
-          setDatabaseWarning(null);
+          setDatabaseWarning(warning);
         }
       } catch (error) {
         if (process.env.NODE_ENV === "development") {
@@ -42,7 +27,7 @@ export function CourseGridClient({ initialCourses }: { initialCourses: PublicCou
         }
 
         if (!cancelled) {
-          setDatabaseWarning("Database connection unavailable. Showing default courses.");
+          setDatabaseWarning("Live data is temporarily unavailable. Showing saved website content.");
         }
       }
     }

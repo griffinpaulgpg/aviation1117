@@ -52,6 +52,8 @@ const courseSchema = z.object({
   image: z.string().trim().min(1, "Photo is required"),
   reachUsLink: optionalText.default("/enquiry"),
   description: z.string().trim().min(1, "Short description is required"),
+  status: z.enum(["active", "inactive"]).default("active"),
+  order: z.coerce.number().int().optional(),
 });
 
 const eventSchema = z.object({
@@ -59,6 +61,10 @@ const eventSchema = z.object({
   image: optionalText,
   applyLink: optionalText.default("/enquiry"),
   description: z.string().trim().min(1, "Short description is required"),
+  date: optionalText,
+  location: optionalText,
+  status: z.enum(["active", "inactive"]).default("active"),
+  order: z.coerce.number().int().optional(),
 });
 
 const folderSchema = z.object({
@@ -67,8 +73,14 @@ const folderSchema = z.object({
 
 const photoSchema = z.object({
   image: z.string().trim().min(1, "Photo is required"),
+  title: optionalText,
+  mediaType: z.enum(["image", "video"]).default("image"),
+  thumbnailUrl: optionalText,
+  description: optionalText,
   folderId: optionalText,
   caption: optionalText,
+  status: z.enum(["active", "inactive"]).default("active"),
+  order: z.coerce.number().int().optional(),
 });
 
 const writtenTestimonialSchema = z.object({
@@ -76,6 +88,7 @@ const writtenTestimonialSchema = z.object({
   position: z.string().trim().min(1, "Position is required"),
   description: z.string().trim().min(1, "Description is required"),
   photo: optionalText,
+  status: z.enum(["active", "inactive"]).default("active"),
 });
 
 const videoTestimonialSchema = z.object({
@@ -83,6 +96,7 @@ const videoTestimonialSchema = z.object({
   name: z.string().trim().min(1, "Name is required"),
   position: z.string().trim().min(1, "Position is required"),
   description: z.string().trim().min(1, "Description is required"),
+  status: z.enum(["active", "inactive"]).default("active"),
 });
 
 const facultySchema = z.object({
@@ -95,6 +109,9 @@ const facultySchema = z.object({
     .refine((email) => email.endsWith(`@${facultyEmailDomain}`), {
       message: `Use the faculty name with @${facultyEmailDomain}`,
     }),
+  phone: optionalText,
+  department: optionalText,
+  status: z.enum(["active", "inactive"]).default("active"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
@@ -310,8 +327,11 @@ export async function POST(request: Request) {
         const data = {
           name: faculty.name,
           email: faculty.email,
+          phone: faculty.phone,
           passwordHash: hashPassword(faculty.password),
           role: "faculty",
+          department: faculty.department,
+          status: faculty.status,
         };
 
         if (payload.action === "create") {

@@ -3,22 +3,23 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { shouldBypassImageOptimizer } from "@/lib/media";
+import { getSafeImageSrc, shouldBypassImageOptimizer } from "@/lib/media";
 import type { PublicCourse } from "@/lib/public-content-data";
 
 export function CourseCard({ course }: { course: PublicCourse }) {
   const enquiryHref = course.reachUsLink || `/enquiry?course=${encodeURIComponent(course.title)}`;
+  const safeImage = getSafeImageSrc(course.image);
 
   return (
     <article className="premium-card flex h-full flex-col">
       <div className="relative aspect-[16/10] overflow-hidden bg-slate-100">
         <Image
-          src={course.image}
+          src={safeImage}
           alt={`${course.title} course training`}
           fill
           loading="lazy"
           quality={72}
-          unoptimized={shouldBypassImageOptimizer(course.image)}
+          unoptimized={shouldBypassImageOptimizer(safeImage)}
           className="object-cover"
           sizes="(min-width: 1280px) 33vw, (min-width: 768px) 50vw, 100vw"
         />

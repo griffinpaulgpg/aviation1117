@@ -1,6 +1,8 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { createFirebaseEnquiry, getLatestEnquirySequenceForDate } from "@/src/lib/firebase-services";
+import { loadClientEnquiryOptions } from "@/src/lib/firebase-client-loaders";
 
 function Field({
   id,
@@ -104,7 +106,6 @@ export function EnquiryForm({ initialCourse, courses, enquirySources }: EnquiryF
   const [courseOptions, setCourseOptions] = useState(courses.filter(Boolean));
   const [sourceOptions, setSourceOptions] = useState(enquirySources.filter(Boolean));
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
-  const enquiryFormNumber = useMemo(() => `AAA-${Date.now().toString().slice(-6)}`, []);
   const [showOtherSource, setShowOtherSource] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(
     initialCourse && courseOptions.includes(initialCourse) ? initialCourse : "",
@@ -123,24 +124,22 @@ export function EnquiryForm({ initialCourse, courses, enquirySources }: EnquiryF
 
     async function loadFirebaseOptions() {
       try {
-        const { getPublicFirebaseCoursesRest, getPublicFirebaseEnquirySourcesRest } = await import(
-          "@/lib/firebase-rest-public"
-        );
         const timeout = new Promise<never>((_, reject) => {
           timeoutId = setTimeout(() => reject(new Error("Firebase options timed out.")), 4500);
         });
-        const [firebaseCourses, firebaseSources] = await Promise.race([
-          Promise.all([getPublicFirebaseCoursesRest(), getPublicFirebaseEnquirySourcesRest()]),
-          timeout,
-        ]);
+        const result = await Promise.race([loadClientEnquiryOptions(), timeout]);
 
         if (!cancelled) {
-          if (firebaseCourses.length > 0) {
-            setCourseOptions(firebaseCourses.map((course) => course.title).filter(Boolean));
+          if (result.courses.length > 0) {
+            setCourseOptions(result.courses.filter(Boolean));
           }
 
-          if (firebaseSources.length > 0) {
-            setSourceOptions(firebaseSources.map((source) => source.name).filter(Boolean));
+          if (result.enquirySources.length > 0) {
+            setSourceOptions(result.enquirySources.filter(Boolean));
+          }
+
+          if (result.warning) {
+            setSubmitStatus({ type: "error", message: result.warning });
           }
         }
       } catch (error) {
@@ -203,52 +202,33 @@ export function EnquiryForm({ initialCourse, courses, enquirySources }: EnquiryF
     setSubmitStatus(null);
 
     try {
-      const response = await fetch("/api/enquiry", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          fullName: getValue("fullName"),
-          enquiryDate: getValue("enquiryDate"),
-          enquiryFormNumber: getValue("enquiryFormNumber"),
-          qualification: getValue("qualification"),
-          schoolCollege: getValue("schoolCollege"),
-          selectedCourse: getValue("selectedCourse"),
-          presentAddress: getValue("presentAddress"),
-          permanentAddress: getValue("permanentAddress"),
-          email: getValue("email"),
-          mobile: getValue("mobile"),
-          landline: getValue("landline"),
-          dateOfBirth: getValue("dateOfBirth"),
-          gender: getValue("gender"),
-          guardianName: getValue("guardianName"),
-          guardianOccupation: getValue("guardianOccupation"),
-          enquirySources: formData.getAll("enquirySource").map(String),
-          otherEnquirySource: getValue("otherEnquirySource"),
-          referenceName: getValue("referenceName"),
-          remarks: getValue("remarks"),
-          counselorName: getValue("counselorName"),
-          declarationAccepted,
-          website: getValue("website"),
-        }),
+      const datePart = today.replaceAll("-", "");
+      const latestSequence = await getLatestEnquirySequenceForDate(datePart);
+      const enquiryNumber = `AAI-ENQ-${datePart}-${String(latestSequence + 1).padStart(3, "0")}`;
+
+      await createFirebaseEnquiry({
+        enquiryNumber,
+        fullName: getValue("fullName"),
+        enquiryDate: getValue("enquiryDate"),
+        qualification: getValue("qualification"),
+        schoolCollege: getValue("schoolCollege"),
+        selectedCourse: getValue("selectedCourse"),
+        presentAddress: getValue("presentAddress"),
+        permanentAddress: getValue("permanentAddress"),
+        email: getValue("email"),
+        mobile: getValue("mobile"),
+        landline: getValue("landline"),
+        dateOfBirth: getValue("dateOfBirth"),
+        gender: getValue("gender"),
+        guardianName: getValue("guardianName"),
+        guardianOccupation: getValue("guardianOccupation"),
+        enquirySources: formData.getAll("enquirySource").map(String),
+        otherEnquirySource: getValue("otherEnquirySource"),
+        referenceName: getValue("referenceName"),
+        remarks: getValue("remarks"),
+        counselorName: getValue("counselorName"),
+        declarationAccepted,
       });
-
-      const result = (await response.json()) as {
-        errors?: Record<string, string[] | undefined>;
-        message?: string;
-        success?: boolean;
-      };
-
-      if (!response.ok || !result.success) {
-        const firstFieldError = result.errors
-          ? Object.values(result.errors)
-              .flatMap((messages) => messages ?? [])
-              .find(Boolean)
-          : undefined;
-
-        throw new Error(firstFieldError ?? result.message ?? "Unable to submit enquiry right now.");
-      }
 
       form.reset();
       setSelectedCourse("");
@@ -256,13 +236,16 @@ export function EnquiryForm({ initialCourse, courses, enquirySources }: EnquiryF
       setDeclarationAccepted(false);
       setSubmitStatus({
         type: "success",
-        message: result.message ?? "Enquiry submitted successfully.",
+        message: "Enquiry submitted successfully.",
       });
       setShowSuccessDialog(true);
     } catch (error) {
       setSubmitStatus({
         type: "error",
-        message: error instanceof Error ? error.message : "Unable to submit enquiry right now.",
+        message:
+          error instanceof Error && error.message
+            ? error.message
+            : "We couldn't sync your enquiry right now. Please try again or contact us on WhatsApp.",
       });
     } finally {
       setIsSubmitting(false);
@@ -303,13 +286,6 @@ export function EnquiryForm({ initialCourse, courses, enquirySources }: EnquiryF
       />
       <FormSection title="Student Details">
         <Field id="enquiryDate" label="Date" type="date" required defaultValue={today} />
-        <Field
-          id="enquiryFormNumber"
-          label="Enquiry Form Number"
-          required
-          defaultValue={enquiryFormNumber}
-          readOnly
-        />
         <Field id="fullName" label="Name in Full" required autoComplete="name" />
         <Field id="qualification" label="Qualification" required />
         <Field id="schoolCollege" label="School/College" required />
