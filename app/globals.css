@@ -868,41 +868,31 @@ a {
 
 .observe-section {
   position: relative;
-  transform: translate3d(0, 0.75rem, 0) scale(0.985);
-  opacity: 0.9;
-  filter: saturate(0.97);
+  transform: scale(1) translateZ(0);
+  opacity: 0.96;
   transition:
-    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 0.5s ease,
-    box-shadow 0.5s ease,
-    filter 0.5s ease;
-  transform-origin: center top;
-  will-change: transform, opacity, filter;
+    transform 0.4s ease-out,
+    opacity 0.4s ease-out;
+  transform-origin: center;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
 }
 
-.observe-section.section-in-view {
-  transform: translate3d(0, 0, 0) scale(1.035);
+.observe-section.section-active {
+  transform: scale(1.05) translateZ(0);
   opacity: 1;
   z-index: 2;
-  filter: saturate(1);
-}
-
-@media (max-width: 767px) {
-  .observe-section.section-in-view {
-    transform: translate3d(0, 0, 0) scale(1.018);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .route-stage,
   .route-stage-active,
   .observe-section,
-  .observe-section.section-in-view {
+  .observe-section.section-active {
     transform: none;
     transition: none;
     opacity: 1;
     will-change: auto;
-    filter: none;
   }
 }
 

@@ -1,12 +1,22 @@
 "use client";
 
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 
 const SECTION_SELECTOR = ".observe-section";
 
 export function SectionObserver() {
+  const pathname = usePathname();
+
   useEffect(() => {
     if (typeof window === "undefined" || typeof IntersectionObserver === "undefined") {
+      return;
+    }
+
+    if (pathname?.startsWith("/admin") || pathname === "/login") {
+      document.querySelectorAll<HTMLElement>(SECTION_SELECTOR).forEach((section) => {
+        section.classList.remove("section-active");
+      });
       return;
     }
 
@@ -22,31 +32,40 @@ export function SectionObserver() {
       return;
     }
 
-    const visibility = new Map<HTMLElement, number>();
+    const centerCandidates = new Set<HTMLElement>();
     let frameId = 0;
 
     const updateActiveSection = () => {
+      const viewportCenter = window.innerHeight / 2;
       let activeSection: HTMLElement | null = null;
-      let highestRatio = 0;
+      let closestDistance = Number.POSITIVE_INFINITY;
 
-      sections.forEach((section) => {
-        const ratio = visibility.get(section) ?? 0;
+      centerCandidates.forEach((section) => {
+        const rect = section.getBoundingClientRect();
+        const sectionCenter = rect.top + rect.height / 2;
+        const distance = Math.abs(sectionCenter - viewportCenter);
 
-        if (ratio > highestRatio) {
-          highestRatio = ratio;
+        if (distance < closestDistance) {
+          closestDistance = distance;
           activeSection = section;
         }
       });
 
       sections.forEach((section) => {
-        section.classList.toggle("section-in-view", section === activeSection && highestRatio >= 0.32);
+        section.classList.toggle("section-active", section === activeSection);
       });
     };
 
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          visibility.set(entry.target as HTMLElement, entry.isIntersecting ? entry.intersectionRatio : 0);
+          const section = entry.target as HTMLElement;
+
+          if (entry.isIntersecting) {
+            centerCandidates.add(section);
+          } else {
+            centerCandidates.delete(section);
+          }
         });
 
         if (frameId) {
@@ -56,13 +75,12 @@ export function SectionObserver() {
         frameId = window.requestAnimationFrame(updateActiveSection);
       },
       {
-        threshold: [0, 0.12, 0.24, 0.35, 0.5, 0.7, 0.85, 1],
-        rootMargin: "-4% 0px -18% 0px",
+        threshold: [0, 0.01, 0.1, 0.2],
+        rootMargin: "-35% 0px -35% 0px",
       },
     );
 
     sections.forEach((section) => {
-      visibility.set(section, 0);
       observer.observe(section);
     });
 
@@ -76,10 +94,10 @@ export function SectionObserver() {
       }
 
       sections.forEach((section) => {
-        section.classList.remove("section-in-view");
+        section.classList.remove("section-active");
       });
     };
-  }, []);
+  }, [pathname]);
 
   return null;
 }
