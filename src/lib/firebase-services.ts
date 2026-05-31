@@ -38,6 +38,7 @@ import type {
   FirebaseGalleryPhoto,
   FirebaseLoginAccount,
   FirebaseSettings,
+  FirebaseTestimonialReview,
   FirebaseVideoTestimonial,
   FirebaseWrittenTestimonial,
 } from "@/src/lib/firebase-types";
@@ -54,6 +55,7 @@ export const firebaseCollections = {
   galleryPhotos: "galleryPhotos",
   writtenTestimonials: "writtenTestimonials",
   videoTestimonials: "videoTestimonials",
+  testimonialsReviews: "testimonialsReviews",
   facultyUsers: "facultyUsers",
   adminUsers: "adminUsers",
   loginAccounts: "loginAccounts",
@@ -1362,6 +1364,59 @@ export async function getFirebaseVideoTestimonials(): Promise<FirebaseVideoTesti
       updatedAt: data.updatedAt,
     };
   });
+}
+
+export async function getFirebaseTestimonialReviews(): Promise<FirebaseTestimonialReview[]> {
+  if (isBuildPhase()) {
+    return [];
+  }
+
+  const snapshot = await runFirestore("Loading Firebase testimonial reviews", () =>
+    getDocs(
+      query(collection(db, firebaseCollections.testimonialsReviews), orderBy("createdAt", "desc")),
+    ),
+  );
+
+  return snapshot.docs.map((item) => {
+    const data = item.data();
+
+    return {
+      id: item.id,
+      name: data.name ?? "",
+      course: data.course ?? null,
+      review: data.review ?? "",
+      rating: Number(data.rating ?? 0),
+      createdAt: toIso(data.createdAt),
+      updatedAt: data.updatedAt ? toIso(data.updatedAt) : undefined,
+    };
+  });
+}
+
+export async function createFirebaseTestimonialReview(review: {
+  name: string;
+  course?: string | null;
+  review: string;
+  rating: number;
+}) {
+  await runFirestore("Creating Firebase testimonial review", () =>
+    addDoc(
+      collection(db, firebaseCollections.testimonialsReviews),
+      cleanFirestoreData({
+        name: review.name || "",
+        course: review.course || "",
+        review: review.review || "",
+        rating: Number(review.rating) || 0,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }),
+    ),
+  );
+}
+
+export async function deleteFirebaseTestimonialReview(id: string) {
+  await runFirestore("Deleting Firebase testimonial review", () =>
+    deleteDoc(doc(db, firebaseCollections.testimonialsReviews, id)),
+  );
 }
 
 export async function createFirebaseVideoTestimonial(testimonial: {

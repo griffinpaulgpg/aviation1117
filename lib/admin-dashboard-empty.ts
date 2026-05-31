@@ -10,6 +10,7 @@ export function getEmptyAdminDashboardData(): AdminDashboardData {
     galleryPhotos: [],
     writtenTestimonials: [],
     videoTestimonials: [],
+    testimonialReviews: [],
     enquiries: [],
     enquirySources: [],
     facultyUsers: [],

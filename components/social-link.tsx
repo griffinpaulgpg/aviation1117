@@ -31,13 +31,18 @@ function SocialIcon({ label }: { label: string }) {
 }
 
 export function SocialLink({ href, label, variant = "dark" }: SocialLinkProps) {
-  const textClass = variant === "light" ? "text-white/76 hover:text-white" : "text-white";
+  const textClass =
+    variant === "light" ? "text-white/76 hover:text-white" : "text-brand-dark hover:text-brand-dark";
+  const chromeClass =
+    variant === "light"
+      ? "border-white/15 bg-white/10 hover:border-sky-200/60 hover:bg-white/15"
+      : "border-[rgba(114,221,247,0.25)] bg-white/55 hover:border-[rgba(114,221,247,0.45)] hover:bg-white/75";
 
   return (
     <a
       href={href}
       rel="noreferrer"
-      className={`inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 py-2 pl-2 pr-4 text-sm font-semibold ${textClass} transition hover:border-sky-200/60 hover:bg-white/15`}
+      className={`inline-flex items-center gap-2 rounded-full border py-2 pl-2 pr-4 text-sm font-semibold ${textClass} ${chromeClass} transition`}
     >
       <SocialIcon label={label} />
       <span>{label}</span>

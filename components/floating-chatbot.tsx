@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 
 import { cn } from "@/lib/cn";
+import { scheduleBrowserIdleTask } from "@/src/lib/browser-idle";
 import { loadClientSettings } from "@/src/lib/firebase-client-loaders";
 import { createFirebaseChatbotChat } from "@/src/lib/firebase-services";
 
@@ -146,10 +147,13 @@ export function FloatingChatbot() {
       }
     }
 
-    void loadChatbotSetting();
+    const cancelIdleTask = scheduleBrowserIdleTask(() => {
+      void loadChatbotSetting();
+    }, 500, 1800);
 
     return () => {
       cancelled = true;
+      cancelIdleTask();
     };
   }, []);
 
@@ -262,16 +266,16 @@ export function FloatingChatbot() {
     <div className="fixed bottom-24 right-5 z-50 md:bottom-28 md:right-7">
       {isOpen ? (
         <section className="mb-4 w-[min(22rem,calc(100vw-2.5rem))] overflow-hidden rounded-3xl border border-sky-100 bg-white/95 shadow-[0_24px_70px_rgba(11,19,32,0.22)] backdrop-blur-xl">
-          <div className="flex items-center gap-3 bg-gradient-to-r from-brand-dark via-slate-800 to-brand px-4 py-4 text-white">
+          <div className="flex items-center gap-3 bg-[linear-gradient(135deg,#F0FDFF,#EEFCFF,#72DDF7)] px-4 py-4 text-brand-dark">
             <MaleCabinCrewAvatar compact />
             <div className="min-w-0">
               <p className="text-sm font-semibold">Admissions Assistant</p>
-              <p className="text-xs text-white/76">Arunand&apos;s Aviation Academy</p>
+              <p className="text-xs text-[#16324F]/72">Arunand&apos;s Aviation Academy</p>
             </div>
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="ml-auto rounded-full border border-white/15 px-3 py-1 text-xs font-semibold text-white/80 transition hover:bg-white/10 hover:text-white"
+              className="ml-auto rounded-full border border-[rgba(114,221,247,0.25)] bg-white/45 px-3 py-1 text-xs font-semibold text-brand-dark transition hover:bg-white/70"
             >
               Close
             </button>

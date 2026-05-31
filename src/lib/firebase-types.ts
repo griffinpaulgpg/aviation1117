@@ -130,6 +130,16 @@ export type FirebaseVideoTestimonial = {
   updatedAt?: string;
 };
 
+export type FirebaseTestimonialReview = {
+  id: string;
+  name: string;
+  course?: string | null;
+  review: string;
+  rating: number;
+  createdAt: string;
+  updatedAt?: string;
+};
+
 export type FirebaseFacultyUser = {
   id: string;
   facultyId?: string;

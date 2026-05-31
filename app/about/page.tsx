@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 
+import {
+  CertificateMarquee,
+  type CertificateAchievement,
+} from "@/components/certificate-marquee";
 import { Container } from "@/components/container";
 
 export const metadata: Metadata = {
@@ -69,15 +73,102 @@ const leaders = [
   },
 ];
 
+const certificateAchievements: CertificateAchievement[] = [
+  {
+    image: "/images/certificates/achievement-01.png",
+    title: "Leadership Recognition 01",
+    description:
+      "Recognition highlighting our leadership presence and continued contribution to aviation training and professional development.",
+  },
+  {
+    image: "/images/certificates/achievement-02.png",
+    title: "Leadership Recognition 02",
+    description:
+      "Documented achievement reflecting institutional credibility, training quality, and industry-facing academy participation.",
+  },
+  {
+    image: "/images/certificates/achievement-03.png",
+    title: "Training Credential 03",
+    description:
+      "A professional certification and achievement milestone that supports our academy's focus on practical aviation readiness.",
+  },
+  {
+    image: "/images/certificates/achievement-04.png",
+    title: "Industry Achievement 04",
+    description:
+      "Recognition representing professional engagement, academic standards, and aviation-sector visibility for our leadership team.",
+  },
+  {
+    image: "/images/certificates/achievement-05.png",
+    title: "Professional Recognition 05",
+    description:
+      "A documented award and achievement that reinforces our commitment to industry-aligned aviation training and mentoring.",
+  },
+  {
+    image: "/images/certificates/achievement-06.png",
+    title: "Professional Recognition 06",
+    description:
+      "Certification and recognition supporting the academy's emphasis on quality instruction, grooming, and career preparation.",
+  },
+  {
+    image: "/images/certificates/achievement-07.png",
+    title: "Achievement Record 07",
+    description:
+      "An academy leadership achievement showcasing continued participation in professional events and training-focused recognition.",
+  },
+  {
+    image: "/images/certificates/achievement-08.png",
+    title: "Achievement Record 08",
+    description:
+      "Recognition that reflects our leadership's exposure to institutional programs, certifications, and industry development forums.",
+  },
+  {
+    image: "/images/certificates/achievement-09.png",
+    title: "Certification Highlight 09",
+    description:
+      "A documented training and recognition milestone underscoring our standards in aviation instruction and student readiness.",
+  },
+  {
+    image: "/images/certificates/achievement-10.png",
+    title: "Certification Highlight 10",
+    description:
+      "Industry recognition supporting our academy's reputation for structured training, professional conduct, and aviation-focused learning.",
+  },
+  {
+    image: "/images/certificates/achievement-11.png",
+    title: "Recognition Archive 11",
+    description:
+      "An achievement record representing our leadership's continued involvement in credentialed, professional aviation initiatives.",
+  },
+  {
+    image: "/images/certificates/achievement-12.png",
+    title: "Recognition Archive 12",
+    description:
+      "A professional certificate image from our academy archive that reflects leadership development and training credibility.",
+  },
+  {
+    image: "/images/certificates/achievement-13.png",
+    title: "Recognition Archive 13",
+    description:
+      "Recognition from our documented academy achievements, reinforcing quality standards and visible professional engagement.",
+  },
+  {
+    image: "/images/certificates/achievement-14.png",
+    title: "Recognition Archive 14",
+    description:
+      "A final achievement highlight from our certificate archive, representing continued recognition across training and leadership activity.",
+  },
+];
+
 export default function AboutPage() {
   return (
     <>
       <main className="site-sky">
-        <section className="observe-section page-hero py-20 text-center text-white">
+        <section className="observe-section page-hero py-20 text-center text-brand-dark">
           <div className="hero-orbit md:block" aria-hidden="true" />
           <div className="hero-cloud hero-cloud-one lg:block" aria-hidden="true" />
           <Container>
-            <div className="page-hero-panel mx-auto max-w-3xl rounded-[2rem] border border-white/16 bg-white/10 p-6 shadow-[0_24px_60px_rgba(11,19,32,0.18)] backdrop-blur-xl sm:p-8 lg:p-10">
+            <div className="page-hero-panel mx-auto max-w-3xl rounded-[2rem] border border-[rgba(114,221,247,0.25)] bg-[rgba(255,255,255,0.55)] p-6 shadow-[0_10px_30px_rgba(114,221,247,0.12)] backdrop-blur-[12px] sm:p-8 lg:p-10">
               <h1 className="text-4xl font-semibold tracking-normal sm:text-6xl">About Us</h1>
             </div>
           </Container>
@@ -103,15 +194,15 @@ export default function AboutPage() {
               </div>
 
               <div className="premium-card p-4">
-                <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-background">
+                <div className="relative mx-auto aspect-[3/5] max-w-[26rem] overflow-hidden rounded-lg bg-background">
                   <Image
-                    src="/aassc-affiliation.webp"
-                    alt="Arunand's Aviation Academy AASSC affiliation certificate"
+                    src="/images/about-award.jpg"
+                    alt="Arunand's Aviation Academy Karnataka Business Udyog Ratna Awards recognition"
                     fill
                     loading="lazy"
                     quality={72}
-                    className="object-contain"
-                    sizes="(min-width: 1024px) 45vw, 100vw"
+                    className="object-contain object-center"
+                    sizes="(min-width: 1024px) 26rem, 100vw"
                   />
                 </div>
               </div>
@@ -192,6 +283,25 @@ export default function AboutPage() {
                 </article>
               ))}
             </div>
+          </Container>
+        </section>
+
+        <section className="observe-section aviation-section py-20">
+          <Container>
+            <div className="text-center">
+              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand">
+                Certificates &amp; Achievements
+              </p>
+              <h2 className="mt-3 text-3xl font-semibold tracking-normal text-foreground sm:text-4xl">
+                Certificates &amp; Achievements
+              </h2>
+              <p className="mx-auto mt-4 max-w-3xl text-base leading-7 text-muted">
+                Professional aviation certifications, recognitions, and training credentials that
+                reflect our leadership and industry experience.
+              </p>
+            </div>
+
+            <CertificateMarquee certificates={certificateAchievements} />
           </Container>
         </section>
       </main>

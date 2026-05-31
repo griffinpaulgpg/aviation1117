@@ -5,6 +5,7 @@ import Image from "next/image";
 
 import { getSafeImageSrc, isValidImageSrc, shouldBypassImageOptimizer } from "@/lib/media";
 import type { PublicGalleryData } from "@/lib/public-content-data";
+import { scheduleBrowserIdleTask } from "@/src/lib/browser-idle";
 import { loadClientGallery } from "@/src/lib/firebase-client-loaders";
 
 export function GalleryGridClient({ initialGallery }: { initialGallery: PublicGalleryData }) {
@@ -29,10 +30,13 @@ export function GalleryGridClient({ initialGallery }: { initialGallery: PublicGa
       }
     }
 
-    void loadGallery();
+    const cancelIdleTask = scheduleBrowserIdleTask(() => {
+      void loadGallery();
+    });
 
     return () => {
       cancelled = true;
+      cancelIdleTask();
     };
   }, []);
 

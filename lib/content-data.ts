@@ -93,6 +93,15 @@ export type PublicVideoTestimonial = {
   status?: "active" | "inactive";
 };
 
+export type PublicTestimonialReview = {
+  id?: string;
+  name: string;
+  course?: string | null;
+  review: string;
+  rating: number;
+  createdAt: string;
+};
+
 export type AdminDashboardData = {
   databaseReady: boolean;
   firebaseError?: string | null;
@@ -102,6 +111,7 @@ export type AdminDashboardData = {
   galleryPhotos: Array<PublicGalleryPhoto & { id: string; createdAt: string }>;
   writtenTestimonials: Array<PublicWrittenTestimonial & { id: string; createdAt: string }>;
   videoTestimonials: Array<PublicVideoTestimonial & { id: string; createdAt: string }>;
+  testimonialReviews: Array<PublicTestimonialReview & { id: string }>;
   enquiries: Array<{
     id: string;
     enquiryNumber: string;
@@ -301,6 +311,7 @@ function fallbackAdminContent(): AdminDashboardData {
     })),
     writtenTestimonials: [],
     videoTestimonials: [],
+    testimonialReviews: [],
     enquiries: fallbackEnquiries,
     enquirySources: [
       "Newspaper Ads",
@@ -346,6 +357,7 @@ export function getEmptyAdminDashboardData(): AdminDashboardData {
     galleryPhotos: [],
     writtenTestimonials: [],
     videoTestimonials: [],
+    testimonialReviews: [],
     enquiries: [],
     enquirySources: [],
     facultyUsers: [],
@@ -379,6 +391,7 @@ async function loadFirebaseAdminContent(): Promise<AdminDashboardData> {
       getFirebaseGalleryPhotos,
       getFirebaseLoginAccounts,
       getFirebaseSettings,
+      getFirebaseTestimonialReviews,
       getFirebaseVideoTestimonials,
       getFirebaseWrittenTestimonials,
     } = await import("@/src/lib/firebase-services");
@@ -401,6 +414,7 @@ async function loadFirebaseAdminContent(): Promise<AdminDashboardData> {
       galleryPhotos,
       writtenTestimonials,
       videoTestimonials,
+      testimonialReviews,
       facultyUsers,
       adminUsers,
       loginAccounts,
@@ -414,6 +428,7 @@ async function loadFirebaseAdminContent(): Promise<AdminDashboardData> {
       getFirebaseGalleryPhotos(),
       getFirebaseWrittenTestimonials(),
       getFirebaseVideoTestimonials(),
+      getFirebaseTestimonialReviews(),
       getFirebaseFacultyUsers(),
       getFirebaseAdminUsers(),
       getFirebaseLoginAccounts(),
@@ -440,6 +455,7 @@ async function loadFirebaseAdminContent(): Promise<AdminDashboardData> {
         photo: optimizedMediaPath(testimonial.photo),
       })),
       videoTestimonials,
+      testimonialReviews,
       enquiries,
       enquirySources,
       facultyUsers,

@@ -5,8 +5,10 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { SectionHeading } from "@/components/section-heading";
+import { TestimonialReviewsSection } from "@/components/testimonial-reviews-section";
 import { getSafeImageSrc, isValidImageSrc, shouldBypassImageOptimizer } from "@/lib/media";
 import type { PublicVideoTestimonial, PublicWrittenTestimonial } from "@/lib/public-content-data";
+import { scheduleBrowserIdleTask } from "@/src/lib/browser-idle";
 import { loadClientTestimonials } from "@/src/lib/firebase-client-loaders";
 
 function getYouTubeEmbedUrl(value: string) {
@@ -61,10 +63,13 @@ export function TestimonialsClient({
       }
     }
 
-    void loadTestimonials();
+    const cancelIdleTask = scheduleBrowserIdleTask(() => {
+      void loadTestimonials();
+    });
 
     return () => {
       cancelled = true;
+      cancelIdleTask();
     };
   }, []);
 
@@ -131,7 +136,7 @@ export function TestimonialsClient({
           <div className="mt-10 grid gap-5 md:grid-cols-2">
             {video.map((item) => (
               <article key={item.id ?? item.name} className="premium-card">
-                <div className="relative aspect-video bg-brand-dark">
+                <div className="relative aspect-video bg-[linear-gradient(135deg,#F0FDFF,#EEFCFF,#F7FBFF)]">
                   {item.video ? (
                     getYouTubeEmbedUrl(item.video) ? (
                       <iframe
@@ -171,17 +176,19 @@ export function TestimonialsClient({
         </section>
       ) : null}
 
+      <TestimonialReviewsSection />
+
       <section className="observe-section aviation-section py-20">
-        <div className="relative overflow-hidden rounded-3xl bg-brand-dark px-6 py-12 text-center text-white shadow-[0_28px_90px_rgb(14_116_144_/_0.20)] sm:px-10">
+        <div className="relative overflow-hidden rounded-3xl border border-[rgba(114,221,247,0.25)] bg-[linear-gradient(135deg,#F0FDFF,#EEFCFF,#72DDF7)] px-6 py-12 text-center text-brand-dark shadow-[0_10px_30px_rgba(114,221,247,0.12)] sm:px-10">
           <div
-            className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(56,189,248,0.28),transparent_16rem),linear-gradient(135deg,rgba(255,255,255,0.12),transparent_42%)]"
+            className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(114,221,247,0.22),transparent_16rem),linear-gradient(135deg,rgba(255,255,255,0.32),transparent_42%)]"
             aria-hidden="true"
           />
           <h2 className="text-3xl font-semibold tracking-normal">Want to be our next success story?</h2>
           <Link
             href="/enquiry"
             prefetch={true}
-            className="premium-button relative mt-8 inline-flex rounded-full bg-sky-200 px-8 py-3 text-sm font-semibold text-brand-dark transition hover:bg-white"
+            className="premium-button relative mt-8 inline-flex rounded-full bg-brand px-8 py-3 text-sm font-semibold text-white transition hover:bg-brand-dark"
           >
             Enquire Now
           </Link>

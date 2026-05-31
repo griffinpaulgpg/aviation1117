@@ -18,9 +18,9 @@ const footerLinks = [
 
 export function Footer() {
   return (
-    <footer className="relative overflow-hidden bg-brand-dark py-14 text-white">
+    <footer className="relative overflow-hidden bg-[linear-gradient(180deg,#F0FDFF,#EEFCFF)] py-14 text-brand-dark">
       <div
-        className="absolute inset-0 bg-[radial-gradient(circle_at_12%_20%,rgba(56,189,248,0.24),transparent_18rem),linear-gradient(135deg,rgba(255,255,255,0.08),transparent_42%)]"
+        className="absolute inset-0 bg-[radial-gradient(circle_at_12%_20%,rgba(114,221,247,0.22),transparent_18rem),linear-gradient(135deg,rgba(255,255,255,0.38),transparent_42%)]"
         aria-hidden="true"
       />
       <div
@@ -44,7 +44,7 @@ export function Footer() {
               className="h-32 w-32 rounded-3xl object-contain shadow-lg shadow-sky-950/20 sm:h-40 sm:w-40"
             />
           </Link>
-          <div className="text-white/72 mt-4 max-w-xl space-y-4 text-sm leading-6">
+          <div className="mt-4 max-w-xl space-y-4 text-sm leading-6 text-[#16324F]/76">
             <p>
               Arunand&apos;s Aviation Academy is a Bangalore-based aviation training academy
               offering aviation and air cargo certificate courses. The academy is an affiliated
@@ -59,20 +59,20 @@ export function Footer() {
               presentation.
             </p>
             <p>
-              <span className="font-semibold text-white">Address:</span>{" "}
+              <span className="font-semibold text-brand-dark">Address:</span>{" "}
               {siteContent.contact.address}
             </p>
           </div>
         </div>
         <div className="footer-glass p-6">
           <p className="font-semibold">Quick Links</p>
-          <div className="text-white/72 mt-4 flex flex-wrap gap-3 text-sm">
+          <div className="mt-4 flex flex-wrap gap-3 text-sm text-[#16324F]/76">
             {footerLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 prefetch={true}
-                className="rounded-full border border-white/10 px-3 py-2 transition hover:border-sky-200/50 hover:bg-white/10 hover:text-white"
+                className="rounded-full border border-[rgba(114,221,247,0.25)] px-3 py-2 transition hover:border-[rgba(114,221,247,0.45)] hover:bg-white/50 hover:text-brand-dark"
               >
                 {link.label}
               </Link>
@@ -81,12 +81,12 @@ export function Footer() {
           <p className="mt-6 font-semibold">Follow Us</p>
           <div className="mt-4 flex flex-wrap gap-3 text-sm">
             {siteContent.contact.socialLinks.map((link) => (
-              <SocialLink key={link.href} href={link.href} label={link.label} variant="light" />
+              <SocialLink key={link.href} href={link.href} label={link.label} variant="dark" />
             ))}
           </div>
         </div>
       </Container>
-      <Container className="relative mt-10 border-t border-white/10 pt-6 text-sm text-white/60">
+      <Container className="relative mt-10 border-t border-[rgba(114,221,247,0.22)] pt-6 text-sm text-[#16324F]/60">
         © Arunand&apos;s Aviation Academy. All rights reserved.
       </Container>
     </footer>

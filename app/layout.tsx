@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
-import { FloatingWidgetsClient } from "@/components/floating-widgets-client";
-import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 import { PageTransitionShell } from "@/components/page-transition-shell";
-import { SectionObserver } from "@/components/section-observer";
+import { Footer } from "@/components/footer";
+import { RootClientEnhancements } from "@/components/root-client-enhancements";
 import { siteContent } from "@/lib/site-content";
 
 export const metadata: Metadata = {
@@ -45,10 +44,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
     <html lang="en">
       <body className="font-sans antialiased">
         <Header />
-        <SectionObserver />
+        <RootClientEnhancements />
         <PageTransitionShell>{children}</PageTransitionShell>
         <Footer />
-        <FloatingWidgetsClient />
       </body>
     </html>
   );

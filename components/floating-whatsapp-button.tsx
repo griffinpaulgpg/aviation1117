@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
+import { scheduleBrowserIdleTask } from "@/src/lib/browser-idle";
 import { loadClientSettings } from "@/src/lib/firebase-client-loaders";
 
 const whatsappUrl =
@@ -23,10 +24,13 @@ export function FloatingWhatsAppButton() {
       }
     }
 
-    void loadWhatsAppSetting();
+    const cancelIdleTask = scheduleBrowserIdleTask(() => {
+      void loadWhatsAppSetting();
+    }, 500, 1800);
 
     return () => {
       cancelled = true;
+      cancelIdleTask();
     };
   }, []);
 

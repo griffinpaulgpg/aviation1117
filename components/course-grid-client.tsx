@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { CourseCard } from "@/components/course-card";
 import type { PublicCourse } from "@/lib/public-content-data";
+import { scheduleBrowserIdleTask } from "@/src/lib/browser-idle";
 import { loadClientCourses } from "@/src/lib/firebase-client-loaders";
 
 export function CourseGridClient({ initialCourses }: { initialCourses: PublicCourse[] }) {
@@ -32,10 +33,13 @@ export function CourseGridClient({ initialCourses }: { initialCourses: PublicCou
       }
     }
 
-    void loadFirebaseCourses();
+    const cancelIdleTask = scheduleBrowserIdleTask(() => {
+      void loadFirebaseCourses();
+    });
 
     return () => {
       cancelled = true;
+      cancelIdleTask();
     };
   }, []);
 

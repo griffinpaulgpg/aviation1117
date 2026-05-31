@@ -7,6 +7,7 @@ import type {
   PublicEvent,
   PublicGalleryData,
   PublicGalleryPhoto,
+  PublicTestimonialReview,
   PublicVideoTestimonial,
   PublicWrittenTestimonial,
 } from "@/lib/content-data";
@@ -27,6 +28,7 @@ import {
   getFirebaseGalleryPhotos,
   getFirebaseLoginAccountsSafe,
   getFirebaseSettingsSafe,
+  getFirebaseTestimonialReviews,
   getFirebaseVideoTestimonials,
   getFirebaseWrittenTestimonials,
 } from "@/src/lib/firebase-services";
@@ -42,10 +44,20 @@ const defaultSettings = {
 } as const;
 const clientCache = new Map<string, { expiresAt: number; value: unknown }>();
 const cacheDurations = {
-  content: 20_000,
-  settings: 15_000,
+  content: 60_000,
+  settings: 60_000,
   admin: 10_000,
 } as const;
+const persistentCachePrefix = "aviation1117:firebase-cache:";
+const persistentCacheKeys = new Set([
+  "courses",
+  "events",
+  "gallery",
+  "testimonials",
+  "testimonial-reviews",
+  "enquiry-options",
+  "settings",
+]);
 
 function optimizedMediaPath(value?: string | null) {
   const staticMediaAliases: Record<string, string> = {
@@ -201,26 +213,83 @@ function collectWarnings(values: Array<string | null | undefined>) {
   return unique.length > 0 ? unique.join(" ") : null;
 }
 
+function canUseSessionStorage() {
+  return typeof window !== "undefined" && typeof window.sessionStorage !== "undefined";
+}
+
+function shouldPersistCacheKey(key: string) {
+  return persistentCacheKeys.has(key);
+}
+
+function readPersistentCache<T>(key: string) {
+  if (!canUseSessionStorage() || !shouldPersistCacheKey(key)) {
+    return null;
+  }
+
+  try {
+    const rawValue = window.sessionStorage.getItem(`${persistentCachePrefix}${key}`);
+
+    if (!rawValue) {
+      return null;
+    }
+
+    const cached = JSON.parse(rawValue) as { expiresAt: number; value: T };
+
+    if (cached.expiresAt <= Date.now()) {
+      window.sessionStorage.removeItem(`${persistentCachePrefix}${key}`);
+      return null;
+    }
+
+    return cached;
+  } catch {
+    return null;
+  }
+}
+
+function writePersistentCache<T>(key: string, value: T, expiresAt: number) {
+  if (!canUseSessionStorage() || !shouldPersistCacheKey(key)) {
+    return;
+  }
+
+  try {
+    window.sessionStorage.setItem(
+      `${persistentCachePrefix}${key}`,
+      JSON.stringify({ value, expiresAt }),
+    );
+  } catch {
+    // Ignore storage quota or serialization failures; memory cache is enough.
+  }
+}
+
 function getCachedValue<T>(key: string) {
   const cached = clientCache.get(key);
 
-  if (!cached) {
+  if (cached) {
+    if (cached.expiresAt <= Date.now()) {
+      clientCache.delete(key);
+    } else {
+      return cached.value as T;
+    }
+  }
+
+  const persistentCached = readPersistentCache<T>(key);
+
+  if (!persistentCached) {
     return null;
   }
 
-  if (cached.expiresAt <= Date.now()) {
-    clientCache.delete(key);
-    return null;
-  }
+  clientCache.set(key, persistentCached);
 
-  return cached.value as T;
+  return persistentCached.value;
 }
 
 function setCachedValue<T>(key: string, value: T, ttlMs: number) {
+  const expiresAt = Date.now() + ttlMs;
   clientCache.set(key, {
     value,
-    expiresAt: Date.now() + ttlMs,
+    expiresAt,
   });
+  writePersistentCache(key, value, expiresAt);
 
   return value;
 }
@@ -228,12 +297,44 @@ function setCachedValue<T>(key: string, value: T, ttlMs: number) {
 export function invalidateClientFirebaseCache(prefix?: string) {
   if (!prefix) {
     clientCache.clear();
+  } else {
+    for (const key of clientCache.keys()) {
+      if (key === prefix || key.startsWith(`${prefix}:`)) {
+        clientCache.delete(key);
+      }
+    }
+  }
+
+  if (!canUseSessionStorage()) {
     return;
   }
 
-  for (const key of clientCache.keys()) {
-    if (key === prefix || key.startsWith(`${prefix}:`)) {
-      clientCache.delete(key);
+  if (!prefix) {
+    for (let index = window.sessionStorage.length - 1; index >= 0; index -= 1) {
+      const key = window.sessionStorage.key(index);
+
+      if (key?.startsWith(persistentCachePrefix)) {
+        window.sessionStorage.removeItem(key);
+      }
+    }
+
+    return;
+  }
+
+  const storagePrefix = `${persistentCachePrefix}${prefix}`;
+
+  for (let index = window.sessionStorage.length - 1; index >= 0; index -= 1) {
+    const key = window.sessionStorage.key(index);
+
+    if (!key) {
+      continue;
+    }
+
+    if (
+      key === `${persistentCachePrefix}${prefix}` ||
+      key.startsWith(`${storagePrefix}:`)
+    ) {
+      window.sessionStorage.removeItem(key);
     }
   }
 }
@@ -414,6 +515,49 @@ export async function loadClientTestimonials(): Promise<{
   }
 }
 
+export async function loadClientTestimonialReviews(): Promise<{
+  reviews: PublicTestimonialReview[];
+  warning: string | null;
+}> {
+  const cached = getCachedValue<{
+    reviews: PublicTestimonialReview[];
+    warning: string | null;
+  }>("testimonial-reviews");
+
+  if (cached) {
+    return cached;
+  }
+
+  try {
+    const reviews = await withClientTimeout(getFirebaseTestimonialReviews());
+
+    return setCachedValue(
+      "testimonial-reviews",
+      {
+        reviews: reviews.map((review) => ({
+          id: review.id,
+          name: review.name,
+          course: review.course ?? null,
+          review: review.review,
+          rating: review.rating,
+          createdAt: review.createdAt,
+        })),
+        warning: null,
+      },
+      cacheDurations.content,
+    );
+  } catch (error) {
+    return setCachedValue(
+      "testimonial-reviews",
+      {
+        reviews: [],
+        warning: toClientErrorMessage(error, publicFallbackNotice),
+      },
+      cacheDurations.content,
+    );
+  }
+}
+
 export async function loadClientEnquiryOptions(): Promise<{
   courses: string[];
   enquirySources: string[];
@@ -523,6 +667,7 @@ export async function loadClientAdminDashboardData(
     })),
     writtenTestimonials: [],
     videoTestimonials: [],
+    testimonialReviews: [],
     enquiries: [],
     enquirySources: fallbackEnquirySources().map((name, index) => ({
       id: `fallback-source-${index}`,
@@ -568,6 +713,7 @@ export async function loadClientAdminDashboardData(
       withClientTimeout(getFirebaseGalleryPhotos(), 6000),
       withClientTimeout(getFirebaseWrittenTestimonials(), 6000),
       withClientTimeout(getFirebaseVideoTestimonials(), 6000),
+      withClientTimeout(getFirebaseTestimonialReviews(), 6000),
       withClientTimeout(getFirebaseFacultyUsersSafe(), 6000),
       withClientTimeout(getFirebaseAdminUsersSafe(), 6000),
       withClientTimeout(getFirebaseLoginAccountsSafe(), 6000),
@@ -583,6 +729,7 @@ export async function loadClientAdminDashboardData(
       galleryPhotosResult,
       writtenTestimonialsResult,
       videoTestimonialsResult,
+      testimonialReviewsResult,
       facultyUsersResultRaw,
       adminUsersResultRaw,
       loginAccountsResultRaw,
@@ -618,6 +765,8 @@ export async function loadClientAdminDashboardData(
       writtenTestimonialsResult.status === "fulfilled" ? writtenTestimonialsResult.value : [];
     const videoTestimonials =
       videoTestimonialsResult.status === "fulfilled" ? videoTestimonialsResult.value : [];
+    const testimonialReviews =
+      testimonialReviewsResult.status === "fulfilled" ? testimonialReviewsResult.value : [];
     const facultyUsersResult =
       facultyUsersResultRaw.status === "fulfilled"
         ? facultyUsersResultRaw.value
@@ -650,6 +799,7 @@ export async function loadClientAdminDashboardData(
       ["galleryPhotos", galleryPhotosResult],
       ["writtenTestimonials", writtenTestimonialsResult],
       ["videoTestimonials", videoTestimonialsResult],
+      ["testimonialReviews", testimonialReviewsResult],
       ["facultyUsers", facultyUsersResultRaw],
       ["adminUsers", adminUsersResultRaw],
       ["loginAccounts", loginAccountsResultRaw],
@@ -688,6 +838,9 @@ export async function loadClientAdminDashboardData(
       videoTestimonialsResult.status === "rejected"
         ? toClientErrorMessage(videoTestimonialsResult.reason, adminFallbackNotice)
         : null,
+      testimonialReviewsResult.status === "rejected"
+        ? toClientErrorMessage(testimonialReviewsResult.reason, adminFallbackNotice)
+        : null,
     ]);
 
     return setCachedValue(`admin-dashboard:${currentSession.email ?? "anon"}`, {
@@ -714,6 +867,7 @@ export async function loadClientAdminDashboardData(
         photo: optimizedMediaPath(testimonial.photo) ?? testimonial.photo,
       })),
       videoTestimonials,
+      testimonialReviews,
       enquiries,
       enquirySources,
       facultyUsers: facultyUsersResult.facultyUsers,

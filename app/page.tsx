@@ -137,7 +137,7 @@ export default function HomePage() {
   return (
     <>
       <main className="home-canvas">
-        <section className="observe-section home-hero relative overflow-hidden bg-brand-dark text-white">
+        <section className="observe-section home-hero relative overflow-hidden text-brand-dark">
           <div className="hero-orbit md:block" aria-hidden="true" />
           <div className="hero-cloud hero-cloud-one lg:block" aria-hidden="true" />
           <div className="hero-cloud hero-cloud-two lg:block" aria-hidden="true" />
@@ -150,7 +150,7 @@ export default function HomePage() {
             className="object-cover object-center opacity-95"
             sizes="100vw"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-brand-dark/90 via-brand-dark/50 to-sky-100/10" />
+          <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(240,253,255,0.84),rgba(238,252,255,0.72),rgba(114,221,247,0.38))]" />
           <Container className="relative flex min-h-[calc(100vh-5rem)] flex-col justify-center gap-8 py-20">
             <div className="home-glass max-w-4xl p-6 sm:p-8 lg:p-10">
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">
@@ -159,21 +159,21 @@ export default function HomePage() {
               <h1 className="mt-5 max-w-5xl text-4xl font-semibold tracking-normal sm:text-6xl lg:text-7xl">
                 {siteContent.home.headline}
               </h1>
-              <p className="text-white/78 mt-6 max-w-3xl text-lg leading-8">
+              <p className="mt-6 max-w-3xl text-lg leading-8 text-[#16324F]/78">
                 {siteContent.home.intro}
               </p>
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
                 <Link
                   href="/enquiry"
                   prefetch={true}
-                  className="premium-button rounded-full bg-sky-200 px-6 py-3 text-center text-sm font-semibold text-brand-dark transition hover:bg-white"
+                  className="premium-button rounded-full bg-brand px-6 py-3 text-center text-sm font-semibold text-white transition hover:bg-brand-dark"
                 >
                   {siteContent.home.primaryCta}
                 </Link>
                 <Link
                   href="/courses"
                   prefetch={true}
-                  className="premium-button border-white/24 rounded-full border px-6 py-3 text-center text-sm font-semibold text-white transition hover:border-white hover:bg-white/10"
+                  className="premium-button rounded-full border border-[rgba(114,221,247,0.28)] bg-white/75 px-6 py-3 text-center text-sm font-semibold text-brand-dark transition hover:bg-white"
                 >
                   {siteContent.home.secondaryCta}
                 </Link>

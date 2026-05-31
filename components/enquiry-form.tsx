@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { scheduleBrowserIdleTask } from "@/src/lib/browser-idle";
 import { createFirebaseEnquiry, getLatestEnquirySequenceForDate } from "@/src/lib/firebase-services";
 import { loadClientEnquiryOptions } from "@/src/lib/firebase-client-loaders";
 
@@ -153,10 +154,13 @@ export function EnquiryForm({ initialCourse, courses, enquirySources }: EnquiryF
       }
     }
 
-    void loadFirebaseOptions();
+    const cancelIdleTask = scheduleBrowserIdleTask(() => {
+      void loadFirebaseOptions();
+    });
 
     return () => {
       cancelled = true;
+      cancelIdleTask();
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
@@ -437,15 +441,15 @@ export function EnquiryForm({ initialCourse, courses, enquirySources }: EnquiryF
         </label>
       </FormSection>
 
-      <div className="flex flex-col justify-between gap-4 rounded-3xl bg-brand-dark p-5 text-white shadow-[0_24px_70px_rgb(14_116_144_/_0.18)] sm:flex-row sm:items-center">
-        <p className="text-white/72 text-sm leading-6">
+      <div className="flex flex-col justify-between gap-4 rounded-3xl border border-[rgba(114,221,247,0.25)] bg-[linear-gradient(135deg,#F0FDFF,#EEFCFF,#F7FBFF)] p-5 text-brand-dark shadow-[0_10px_30px_rgba(114,221,247,0.12)] sm:flex-row sm:items-center">
+        <p className="text-sm leading-6 text-[#16324F]/72">
           Fields marked with <span className="text-accent">*</span> are ready for required-field
           validation.
         </p>
         <button
           type="submit"
           disabled={isSubmitting}
-          className="premium-button rounded-full bg-sky-200 px-7 py-3 text-sm font-semibold text-brand-dark transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-70"
+          className="premium-button rounded-full bg-brand px-7 py-3 text-sm font-semibold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-70"
         >
           {isSubmitting ? "Submitting..." : "Submit Enquiry"}
         </button>

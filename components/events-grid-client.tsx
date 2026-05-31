@@ -6,6 +6,7 @@ import Link from "next/link";
 
 import { getSafeImageSrc, isValidImageSrc, shouldBypassImageOptimizer } from "@/lib/media";
 import type { PublicEvent } from "@/lib/public-content-data";
+import { scheduleBrowserIdleTask } from "@/src/lib/browser-idle";
 import { loadClientEvents } from "@/src/lib/firebase-client-loaders";
 
 export function EventsGridClient({ initialEvents }: { initialEvents: PublicEvent[] }) {
@@ -35,10 +36,13 @@ export function EventsGridClient({ initialEvents }: { initialEvents: PublicEvent
       }
     }
 
-    void loadEvents();
+    const cancelIdleTask = scheduleBrowserIdleTask(() => {
+      void loadEvents();
+    });
 
     return () => {
       cancelled = true;
+      cancelIdleTask();
     };
   }, []);
 

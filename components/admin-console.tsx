@@ -37,6 +37,7 @@ type ResourceName =
   | "galleryPhotos"
   | "writtenTestimonials"
   | "videoTestimonials"
+  | "testimonialReviews"
   | "facultyUsers"
   | "adminUsers"
   | "enquiries"
@@ -202,6 +203,7 @@ const adminFirebaseCollections = [
   "galleryPhotos",
   "writtenTestimonials",
   "videoTestimonials",
+  "testimonialsReviews",
   "facultyUsers",
   "adminUsers",
   "loginAccounts",
@@ -661,6 +663,7 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
   const [enquiryStatus, setEnquiryStatus] = useState("");
   const [enquiryNotes, setEnquiryNotes] = useState<Record<string, string>>({});
   const [chatSearch, setChatSearch] = useState("");
+  const [reviewSearch, setReviewSearch] = useState("");
   const topWarning = normalizeFirebaseWarning(
     data.firebaseError || (message?.type === "error" ? message.text : null),
   );
@@ -843,6 +846,23 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
       );
     });
   }, [chatSearch, data.chatbotChats]);
+
+  const filteredReviewItems = useMemo(() => {
+    const search = reviewSearch.trim().toLowerCase();
+
+    return data.testimonialReviews.filter((item) => {
+      if (!search) {
+        return true;
+      }
+
+      return (
+        item.name.toLowerCase().includes(search) ||
+        (item.course ?? "").toLowerCase().includes(search) ||
+        item.review.toLowerCase().includes(search) ||
+        String(item.rating).includes(search)
+      );
+    });
+  }, [data.testimonialReviews, reviewSearch]);
 
   useEffect(() => {
     setEnquiryNotes((current) => {
@@ -1041,6 +1061,8 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
         if (action === "update" && targetId)
           await firebase.updateFirebaseVideoTestimonial(targetId, payload as typeof videoForm);
         if (action === "delete" && targetId) await firebase.deleteFirebaseVideoTestimonial(targetId);
+      } else if (resource === "testimonialReviews") {
+        if (action === "delete" && targetId) await firebase.deleteFirebaseTestimonialReview(targetId);
       } else if (resource === "enquiries") {
         if (action === "update" && targetId)
           await firebase.updateFirebaseEnquiry(
@@ -2124,6 +2146,38 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
                     }
                   />
                 ))}
+              </div>
+            </AdminSection>
+
+            <AdminSection
+              title="Testimonials Management"
+              description="Review, search, and delete submitted student review cards."
+            >
+              <div className="grid gap-4 md:grid-cols-[minmax(0,18rem)_1fr]">
+                <Field
+                  label="Search Reviews"
+                  value={reviewSearch}
+                  onChange={setReviewSearch}
+                  placeholder="Search by name, course, review, or rating"
+                />
+              </div>
+              <div className="mt-8 grid gap-3">
+                {filteredReviewItems.map((item) => (
+                  <AdminListItem
+                    key={item.id}
+                    title={item.name}
+                    meta={`${item.course || "Course not provided"} • ${item.rating}/5 • ${formatDate(item.createdAt)}`}
+                    description={item.review}
+                    onDelete={() =>
+                      mutateContent("testimonialReviews", "delete", undefined, item.id)
+                    }
+                  />
+                ))}
+                {filteredReviewItems.length === 0 ? (
+                  <div className="rounded-2xl border border-sky-100 bg-white/75 px-5 py-4 text-sm font-semibold text-muted">
+                    No submitted reviews found.
+                  </div>
+                ) : null}
               </div>
             </AdminSection>
           </div>
