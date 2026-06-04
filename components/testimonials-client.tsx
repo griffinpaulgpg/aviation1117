@@ -9,7 +9,6 @@ import { TestimonialReviewsSection } from "@/components/testimonial-reviews-sect
 import { getSafeImageSrc, isValidImageSrc, shouldBypassImageOptimizer } from "@/lib/media";
 import type { PublicVideoTestimonial, PublicWrittenTestimonial } from "@/lib/public-content-data";
 import { scheduleBrowserIdleTask } from "@/src/lib/browser-idle";
-import { loadClientTestimonials } from "@/src/lib/firebase-client-loaders";
 
 function getYouTubeEmbedUrl(value: string) {
   try {
@@ -49,6 +48,7 @@ export function TestimonialsClient({
 
     async function loadTestimonials() {
       try {
+        const { loadClientTestimonials } = await import("@/src/lib/firebase-client-loaders");
         const result = await loadClientTestimonials();
 
         if (!cancelled) {
@@ -65,7 +65,7 @@ export function TestimonialsClient({
 
     const cancelIdleTask = scheduleBrowserIdleTask(() => {
       void loadTestimonials();
-    });
+    }, 3200, 7500);
 
     return () => {
       cancelled = true;

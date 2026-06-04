@@ -8,6 +8,7 @@ import {
   isPrimaryAdminId,
   setAdminCookie,
 } from "@/lib/admin-auth";
+import { verifyPassword } from "@/lib/passwords";
 import {
   createFirebaseAuthUser,
   signInFirebaseAuthUser,
@@ -15,6 +16,7 @@ import {
 } from "@/src/lib/firebase-auth-rest";
 import {
   ensureFirebasePrimaryAdmin,
+  getFirebaseAdminByEmail,
   getFirebaseLoginAccount,
   saveFirebaseLoginAccountProfile,
 } from "@/src/lib/firebase-services";
@@ -67,6 +69,41 @@ async function bootstrapPrimaryAdminFirebaseAccess(email: string, password: stri
   return authUser;
 }
 
+function isFirebaseAuthNetworkError(error: unknown) {
+  return (
+    error instanceof Error &&
+    /network request failed while contacting firebase authentication|fetch failed|network|econn|enotfound/i.test(
+      error.message,
+    )
+  );
+}
+
+async function createPrimaryAdminSession(uid: string) {
+  await setAdminCookie(
+    createAdminToken({
+      role: "admin",
+      uid,
+      email: getPrimaryAdminId().trim().toLowerCase(),
+      name: "Primary Admin",
+    }),
+  );
+}
+
+async function createFirestoreAdminSession(admin: {
+  id: string;
+  email: string;
+  name: string;
+}) {
+  await setAdminCookie(
+    createAdminToken({
+      role: "admin",
+      uid: admin.id,
+      email: admin.email.trim().toLowerCase(),
+      name: admin.name,
+    }),
+  );
+}
+
 export async function POST(request: Request) {
   const parsed = loginSchema.safeParse(await request.json());
 
@@ -81,6 +118,57 @@ export async function POST(request: Request) {
   }
 
   try {
+    if (
+      !("idToken" in parsed.data) &&
+      await isAdminCredential(parsed.data.email, parsed.data.password)
+    ) {
+      await createPrimaryAdminSession("primary-admin");
+
+      return NextResponse.json({
+        success: true,
+        message: "Admin login successful.",
+      });
+    }
+
+    if (!("idToken" in parsed.data)) {
+      try {
+        const admin = await getFirebaseAdminByEmail(parsed.data.email);
+
+        if (admin?.passwordHash) {
+          if (!verifyPassword(parsed.data.password, admin.passwordHash)) {
+            return NextResponse.json(
+              {
+                success: false,
+                message: "Invalid ID/password.",
+              },
+              { status: 401 },
+            );
+          }
+
+          await createFirestoreAdminSession({
+            id: admin.id,
+            email: admin.email,
+            name: admin.name,
+          });
+
+          return NextResponse.json({
+            success: true,
+            message: "Admin login successful.",
+          });
+        }
+      } catch (error) {
+        if (isFirebaseAuthNetworkError(error)) {
+          return NextResponse.json(
+            {
+              success: false,
+              message: "Unable to verify admin account right now. Please check Firebase connection.",
+            },
+            { status: 503 },
+          );
+        }
+      }
+    }
+
     const authUser = "idToken" in parsed.data
       ? await verifyFirebaseIdToken(parsed.data.idToken)
       : await signInFirebaseAuthUser(parsed.data.email, parsed.data.password);
@@ -89,14 +177,7 @@ export async function POST(request: Request) {
       !("idToken" in parsed.data) &&
       await isAdminCredential(parsed.data.email, parsed.data.password)
     ) {
-      await setAdminCookie(
-        createAdminToken({
-          role: "admin",
-          uid: authUser.uid,
-          email: getPrimaryAdminId().trim().toLowerCase(),
-          name: "Primary Admin",
-        }),
-      );
+      await createPrimaryAdminSession(authUser.uid);
 
       return NextResponse.json({
         success: true,
@@ -105,14 +186,7 @@ export async function POST(request: Request) {
     }
 
     if (isPrimaryAdminId(authUser.email)) {
-      await setAdminCookie(
-        createAdminToken({
-          role: "admin",
-          uid: authUser.uid,
-          email: getPrimaryAdminId().trim().toLowerCase(),
-          name: "Primary Admin",
-        }),
-      );
+      await createPrimaryAdminSession(authUser.uid);
 
       return NextResponse.json({
         success: true,
@@ -180,26 +254,37 @@ export async function POST(request: Request) {
       !("idToken" in parsed.data) &&
       await isAdminCredential(parsed.data.email, parsed.data.password)
     ) {
+      if (isFirebaseAuthNetworkError(error)) {
+        await createPrimaryAdminSession("primary-admin-firebase-offline");
+
+        return NextResponse.json({
+          success: true,
+          message: "Admin login successful. Firebase Authentication is temporarily unavailable.",
+        });
+      }
+
       try {
         const authUser = await bootstrapPrimaryAdminFirebaseAccess(
           parsed.data.email.trim().toLowerCase(),
           parsed.data.password,
         );
 
-        await setAdminCookie(
-          createAdminToken({
-            role: "admin",
-            uid: authUser.uid,
-            email: authUser.email,
-            name: "Primary Admin",
-          }),
-        );
+        await createPrimaryAdminSession(authUser.uid);
 
         return NextResponse.json({
           success: true,
           message: "Admin login successful.",
         });
       } catch (bootstrapError) {
+        if (isFirebaseAuthNetworkError(bootstrapError)) {
+          await createPrimaryAdminSession("primary-admin-firebase-offline");
+
+          return NextResponse.json({
+            success: true,
+            message: "Admin login successful. Firebase Authentication is temporarily unavailable.",
+          });
+        }
+
         return NextResponse.json(
           {
             success: false,

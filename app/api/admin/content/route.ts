@@ -117,7 +117,7 @@ const facultySchema = z.object({
 
 const adminUserSchema = z.object({
   name: z.string().trim().min(1, "Admin name is required"),
-  email: z.string().trim().min(1, "Admin ID / email is required"),
+  email: z.string().trim().toLowerCase().email("Enter a valid admin email"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
@@ -148,12 +148,34 @@ const contentActionSchema = z.object({
   data: z.unknown().optional(),
 });
 
+const firebaseWriteTimeoutMs = 8000;
+
 function requireId(id?: string | null) {
   if (!id) {
     throw new Error("Missing item id.");
   }
 
   return id;
+}
+
+async function withFirebaseWriteTimeout<T>(operation: Promise<T>) {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<T>((_resolve, reject) => {
+        timeoutId = setTimeout(
+          () => reject(new Error("Firebase write timed out.")),
+          firebaseWriteTimeoutMs,
+        );
+      }),
+    ]);
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
 }
 
 function getAffectedPaths(resource: z.infer<typeof contentActionSchema>["resource"]) {
@@ -189,6 +211,25 @@ function getZodMessage(error: z.ZodError) {
   }
 
   return field ? `${field}: ${issue.message}` : issue.message;
+}
+
+function getReadableContentError(error: unknown) {
+  const message =
+    error instanceof z.ZodError
+      ? getZodMessage(error)
+      : error instanceof Error
+        ? error.message
+        : "Unable to update dashboard.";
+
+  if (
+    /offline|unavailable|failed to get document|could not reach cloud firestore|network|timeout|timed out/i.test(
+      message,
+    )
+  ) {
+    return "Unable to save right now. Please check Firebase connection.";
+  }
+
+  return message;
 }
 
 async function ensureAdmin() {
@@ -240,6 +281,8 @@ export async function POST(request: Request) {
       );
     }
 
+    await withFirebaseWriteTimeout(
+      (async () => {
     if (payload.resource === "courses") {
       if (payload.action === "create") {
         await createFirebaseCourse(courseSchema.parse(payload.data));
@@ -350,6 +393,14 @@ export async function POST(request: Request) {
           throw new Error("Primary admin cannot be deleted.");
         }
 
+        if (
+          admin?.email &&
+          session.email &&
+          admin.email.trim().toLowerCase() === session.email.trim().toLowerCase()
+        ) {
+          throw new Error("You cannot delete the admin account you are currently using.");
+        }
+
         await deleteFirebaseAdminUser(requireId(payload.id));
       } else {
         const admin = adminUserSchema.parse(payload.data);
@@ -383,6 +434,8 @@ export async function POST(request: Request) {
         throw new Error("Enquiries can only be updated or deleted.");
       }
     }
+      })(),
+    );
 
     revalidateTag(PUBLIC_CONTENT_CACHE_TAG);
 
@@ -396,17 +449,10 @@ export async function POST(request: Request) {
       data: await getAdminDashboardData(),
     });
   } catch (error) {
-    const message =
-      error instanceof z.ZodError
-        ? getZodMessage(error)
-        : error instanceof Error
-          ? error.message
-          : "Unable to update dashboard.";
-
     return NextResponse.json(
       {
         success: false,
-        message,
+        message: getReadableContentError(error),
       },
       { status: 400 },
     );

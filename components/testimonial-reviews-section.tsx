@@ -5,11 +5,6 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { SectionHeading } from "@/components/section-heading";
 import type { PublicTestimonialReview } from "@/lib/content-data";
 import { scheduleBrowserIdleTask } from "@/src/lib/browser-idle";
-import { createFirebaseTestimonialReview } from "@/src/lib/firebase-services";
-import {
-  invalidateClientFirebaseCache,
-  loadClientTestimonialReviews,
-} from "@/src/lib/firebase-client-loaders";
 
 type TestimonialReviewsSectionProps = {
   initialReviews?: PublicTestimonialReview[];
@@ -74,6 +69,7 @@ export function TestimonialReviewsSection({
 
     async function loadReviews() {
       try {
+        const { loadClientTestimonialReviews } = await import("@/src/lib/firebase-client-loaders");
         const result = await loadClientTestimonialReviews();
 
         if (!cancelled) {
@@ -89,7 +85,7 @@ export function TestimonialReviewsSection({
 
     const cancelIdleTask = scheduleBrowserIdleTask(() => {
       void loadReviews();
-    });
+    }, 4200, 9000);
 
     return () => {
       cancelled = true;
@@ -126,6 +122,11 @@ export function TestimonialReviewsSection({
     setMessage(null);
 
     try {
+      const [{ createFirebaseTestimonialReview }, { invalidateClientFirebaseCache }] =
+        await Promise.all([
+          import("@/src/lib/firebase-services"),
+          import("@/src/lib/firebase-client-loaders"),
+        ]);
       const nextReview = {
         id:
           typeof crypto !== "undefined" && "randomUUID" in crypto

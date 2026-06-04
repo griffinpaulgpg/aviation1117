@@ -1,4 +1,4 @@
-export function scheduleBrowserIdleTask(task: () => void, delayMs = 250, timeoutMs = 1500) {
+export function scheduleBrowserIdleTask(task: () => void, delayMs = 1200, timeoutMs = 3500) {
   if (typeof window === "undefined") {
     return () => undefined;
   }

@@ -6,7 +6,6 @@ import Image from "next/image";
 import { getSafeImageSrc, isValidImageSrc, shouldBypassImageOptimizer } from "@/lib/media";
 import type { PublicGalleryData } from "@/lib/public-content-data";
 import { scheduleBrowserIdleTask } from "@/src/lib/browser-idle";
-import { loadClientGallery } from "@/src/lib/firebase-client-loaders";
 
 export function GalleryGridClient({ initialGallery }: { initialGallery: PublicGalleryData }) {
   const [gallery, setGallery] = useState(initialGallery);
@@ -17,6 +16,7 @@ export function GalleryGridClient({ initialGallery }: { initialGallery: PublicGa
 
     async function loadGallery() {
       try {
+        const { loadClientGallery } = await import("@/src/lib/firebase-client-loaders");
         const result = await loadClientGallery();
 
         if (!cancelled) {
@@ -32,7 +32,7 @@ export function GalleryGridClient({ initialGallery }: { initialGallery: PublicGa
 
     const cancelIdleTask = scheduleBrowserIdleTask(() => {
       void loadGallery();
-    });
+    }, 3500, 8000);
 
     return () => {
       cancelled = true;

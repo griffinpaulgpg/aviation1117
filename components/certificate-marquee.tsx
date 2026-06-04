@@ -17,15 +17,21 @@ type CertificateMarqueeProps = {
 
 export function CertificateMarquee({ certificates }: CertificateMarqueeProps) {
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
-  const marqueeCertificates = useMemo(() => [...certificates, ...certificates], [certificates]);
+  const marqueeCertificates = useMemo(
+    () =>
+      [...certificates, ...certificates].map((certificate, index) => ({
+        certificate,
+        index,
+        isDuplicate: index >= certificates.length,
+      })),
+    [certificates],
+  );
 
   return (
     <div className="certificate-marquee mt-12" aria-label="Certificates and achievements">
       <div className="certificate-marquee-track">
-        {marqueeCertificates.map((certificate, index) => {
-          const isDuplicate = index >= certificates.length;
+        {marqueeCertificates.map(({ certificate, index, isDuplicate }) => {
           const showImage = !failedImages.has(certificate.image);
-
           return (
             <article
               key={`${certificate.image}-${index}`}
@@ -39,9 +45,11 @@ export function CertificateMarquee({ certificates }: CertificateMarqueeProps) {
                     alt={isDuplicate ? "" : certificate.title}
                     fill
                     loading="lazy"
+                    fetchPriority="low"
                     quality={72}
+                    unoptimized
                     className="object-contain object-center"
-                    sizes="(min-width: 1280px) 24rem, (min-width: 768px) 20rem, 82vw"
+                    sizes="(min-width: 1280px) 384px, (min-width: 768px) 320px, 82vw"
                     onError={(error) => {
                       console.error(
                         "Handled certificate image load error:",

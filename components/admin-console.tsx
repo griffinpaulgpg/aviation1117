@@ -606,6 +606,39 @@ function logAdminFirebaseError(context: string, error: unknown) {
   }
 }
 
+function getAdminSaveErrorMessage(error: unknown) {
+  const message = getReadableErrorMessage(
+    error,
+    "Unable to save right now. Please check Firebase connection.",
+  );
+
+  if (
+    /offline|unavailable|failed to get document|could not reach cloud firestore|network|timeout|timed out/i.test(
+      message,
+    )
+  ) {
+    return "Unable to save right now. Please check Firebase connection.";
+  }
+
+  return message;
+}
+
+function getAdminMutationSuccessMessage(resource: ResourceName, action: "create" | "update" | "delete") {
+  if (resource === "facultyUsers") {
+    if (action === "create") return "Faculty account saved in Firestore.";
+    if (action === "delete") return "Faculty account deleted.";
+    return "Faculty account updated.";
+  }
+
+  if (resource === "adminUsers") {
+    if (action === "create") return "Admin account saved in Firestore.";
+    if (action === "delete") return "Admin account deleted.";
+    return "Admin account updated.";
+  }
+
+  return "Dashboard updated successfully.";
+}
+
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
     <div className="premium-card p-5">
@@ -1099,20 +1132,26 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
         }
 
         setData(result.data);
-        setMessage({ type: "success", text: result.message ?? "Dashboard updated successfully." });
+        setMessage({
+          type: "success",
+          text:
+            resource === "facultyUsers" || resource === "adminUsers"
+              ? getAdminMutationSuccessMessage(resource, action)
+              : result.message ?? getAdminMutationSuccessMessage(resource, action),
+        });
         return true;
       }
 
       invalidateClientFirebaseCache();
       const result = await loadClientAdminDashboardData(currentSession);
       setData(result);
-      setMessage({ type: "success", text: "Dashboard updated successfully." });
+      setMessage({ type: "success", text: getAdminMutationSuccessMessage(resource, action) });
       return true;
     } catch (error) {
       logAdminFirebaseError(`mutateContent:${resource}:${action}`, error);
       setMessage({
         type: "error",
-        text: error instanceof Error ? error.message : "Unable to update dashboard.",
+        text: getAdminSaveErrorMessage(error),
       });
       return false;
     } finally {
@@ -1170,7 +1209,7 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
       logAdminFirebaseError(`mutateFirebase:${String((payload as { action?: string }).action)}`, error);
       setMessage({
         type: "error",
-        text: error instanceof Error ? error.message : "Unable to update Firebase data.",
+        text: getAdminSaveErrorMessage(error),
       });
       return false;
     } finally {
@@ -1239,7 +1278,7 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
       );
       setMessage({
         type: "error",
-        text: error instanceof Error ? error.message : "Unable to update login accounts.",
+        text: getAdminSaveErrorMessage(error),
       });
       return false;
     } finally {
@@ -2568,7 +2607,7 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
         {activeTab === "faculty" ? (
           <AdminSection
             title="Faculty Email ID Creation"
-            description="Create faculty accounts. Passwords are stored securely and never displayed."
+            description="Create faculty account records in Firestore. Passwords are hashed and never displayed."
           >
             <form onSubmit={handleFacultySubmit} className="grid gap-4 md:grid-cols-3">
               <Field
@@ -2583,7 +2622,7 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
                   className={inputClass}
                   placeholder={`faculty.name@${facultyEmailDomain}`}
                   required
-                  type="text"
+                  type="email"
                   value={facultyForm.email}
                   onBlur={() =>
                     setFacultyForm((current) => ({
@@ -2640,6 +2679,11 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
               />
             </form>
             <div className="mt-8 grid gap-3">
+              {data.facultyUsers.length === 0 ? (
+                <p className="rounded-2xl border border-sky-100 bg-white/75 px-5 py-4 text-sm font-semibold text-muted">
+                  No faculty accounts have been created yet.
+                </p>
+              ) : null}
               {data.facultyUsers.map((faculty) => (
                 <AdminListItem
                   key={faculty.id}
@@ -2656,7 +2700,7 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
         {activeTab === "admins" ? (
           <AdminSection
             title="Admin Accounts"
-            description="Create and delete admin accounts. The primary admin is protected and cannot be deleted."
+            description="Create Firestore-based admin account records. Firebase Authentication login accounts are managed separately in the Login Accounts tab."
           >
             <form onSubmit={handleAdminSubmit} className="grid gap-4 md:grid-cols-3">
               <Field
@@ -2666,8 +2710,9 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
                 onChange={(name) => setAdminForm((current) => ({ ...current, name }))}
               />
               <Field
-                label="Admin ID / email"
+                label="Admin email"
                 required
+                type="email"
                 value={adminForm.email}
                 onChange={(email) => setAdminForm((current) => ({ ...current, email }))}
               />
@@ -2681,6 +2726,11 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
               <SubmitButton isSaving={isSaving || Boolean(uploadingField)} label="Create Admin" />
             </form>
             <div className="mt-8 grid gap-3">
+              {data.adminUsers.length === 0 ? (
+                <p className="rounded-2xl border border-sky-100 bg-white/75 px-5 py-4 text-sm font-semibold text-muted">
+                  No admin account records have been created yet.
+                </p>
+              ) : null}
               {data.adminUsers.map((admin) => (
                 <AdminListItem
                   key={admin.id}
@@ -2688,7 +2738,9 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
                   meta={`${admin.email} • ${admin.isPrimary ? "Primary admin" : "Admin"}`}
                   description={`Created ${formatDate(admin.createdAt)}`}
                   onDelete={
-                    admin.isPrimary
+                    admin.isPrimary ||
+                    (currentSession.email?.trim().toLowerCase() ===
+                      admin.email.trim().toLowerCase())
                       ? undefined
                       : () => mutateContent("adminUsers", "delete", undefined, admin.id)
                   }

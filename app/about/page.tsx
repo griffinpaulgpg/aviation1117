@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 
-import {
-  CertificateMarquee,
-  type CertificateAchievement,
-} from "@/components/certificate-marquee";
+import type { CertificateAchievement } from "@/components/certificate-marquee";
 import { Container } from "@/components/container";
+import { LazyCertificateMarquee } from "@/components/lazy-certificate-marquee";
 
 export const metadata: Metadata = {
   title: "About Us",
@@ -75,85 +73,85 @@ const leaders = [
 
 const certificateAchievements: CertificateAchievement[] = [
   {
-    image: "/images/certificates/achievement-01.png",
+    image: "/images/certificates-optimized-webp/achievement-01.webp",
     title: "Leadership Recognition 01",
     description:
       "Recognition highlighting our leadership presence and continued contribution to aviation training and professional development.",
   },
   {
-    image: "/images/certificates/achievement-02.png",
+    image: "/images/certificates-optimized-webp/achievement-02.webp",
     title: "Leadership Recognition 02",
     description:
       "Documented achievement reflecting institutional credibility, training quality, and industry-facing academy participation.",
   },
   {
-    image: "/images/certificates/achievement-03.png",
+    image: "/images/certificates-optimized-webp/achievement-03.webp",
     title: "Training Credential 03",
     description:
       "A professional certification and achievement milestone that supports our academy's focus on practical aviation readiness.",
   },
   {
-    image: "/images/certificates/achievement-04.png",
+    image: "/images/certificates-optimized-webp/achievement-04.webp",
     title: "Industry Achievement 04",
     description:
       "Recognition representing professional engagement, academic standards, and aviation-sector visibility for our leadership team.",
   },
   {
-    image: "/images/certificates/achievement-05.png",
+    image: "/images/certificates-optimized-webp/achievement-05.webp",
     title: "Professional Recognition 05",
     description:
       "A documented award and achievement that reinforces our commitment to industry-aligned aviation training and mentoring.",
   },
   {
-    image: "/images/certificates/achievement-06.png",
+    image: "/images/certificates-optimized-webp/achievement-06.webp",
     title: "Professional Recognition 06",
     description:
       "Certification and recognition supporting the academy's emphasis on quality instruction, grooming, and career preparation.",
   },
   {
-    image: "/images/certificates/achievement-07.png",
+    image: "/images/certificates-optimized-webp/achievement-07.webp",
     title: "Achievement Record 07",
     description:
       "An academy leadership achievement showcasing continued participation in professional events and training-focused recognition.",
   },
   {
-    image: "/images/certificates/achievement-08.png",
+    image: "/images/certificates-optimized-webp/achievement-08.webp",
     title: "Achievement Record 08",
     description:
       "Recognition that reflects our leadership's exposure to institutional programs, certifications, and industry development forums.",
   },
   {
-    image: "/images/certificates/achievement-09.png",
+    image: "/images/certificates-optimized-webp/achievement-09.webp",
     title: "Certification Highlight 09",
     description:
       "A documented training and recognition milestone underscoring our standards in aviation instruction and student readiness.",
   },
   {
-    image: "/images/certificates/achievement-10.png",
+    image: "/images/certificates-optimized-webp/achievement-10.webp",
     title: "Certification Highlight 10",
     description:
       "Industry recognition supporting our academy's reputation for structured training, professional conduct, and aviation-focused learning.",
   },
   {
-    image: "/images/certificates/achievement-11.png",
+    image: "/images/certificates-optimized-webp/achievement-11.webp",
     title: "Recognition Archive 11",
     description:
       "An achievement record representing our leadership's continued involvement in credentialed, professional aviation initiatives.",
   },
   {
-    image: "/images/certificates/achievement-12.png",
+    image: "/images/certificates-optimized-webp/achievement-12.webp",
     title: "Recognition Archive 12",
     description:
       "A professional certificate image from our academy archive that reflects leadership development and training credibility.",
   },
   {
-    image: "/images/certificates/achievement-13.png",
+    image: "/images/certificates-optimized-webp/achievement-13.webp",
     title: "Recognition Archive 13",
     description:
       "Recognition from our documented academy achievements, reinforcing quality standards and visible professional engagement.",
   },
   {
-    image: "/images/certificates/achievement-14.png",
+    image: "/images/certificates-optimized-webp/achievement-14.webp",
     title: "Recognition Archive 14",
     description:
       "A final achievement highlight from our certificate archive, representing continued recognition across training and leadership activity.",
@@ -196,11 +194,12 @@ export default function AboutPage() {
               <div className="premium-card p-4">
                 <div className="relative mx-auto aspect-[3/5] max-w-[26rem] overflow-hidden rounded-lg bg-background">
                   <Image
-                    src="/images/about-award.jpg"
+                    src="/images/optimized/about-award.webp"
                     alt="Arunand's Aviation Academy Karnataka Business Udyog Ratna Awards recognition"
                     fill
                     loading="lazy"
                     quality={72}
+                    unoptimized
                     className="object-contain object-center"
                     sizes="(min-width: 1024px) 26rem, 100vw"
                   />
@@ -234,6 +233,7 @@ export default function AboutPage() {
                     fill
                     loading="lazy"
                     quality={72}
+                    unoptimized
                     className="object-contain"
                     sizes="(min-width: 1024px) 52vw, 100vw"
                   />
@@ -264,6 +264,7 @@ export default function AboutPage() {
                         fill
                         loading="lazy"
                         quality={72}
+                        unoptimized
                         className="object-cover"
                         sizes="10rem"
                       />
@@ -301,7 +302,7 @@ export default function AboutPage() {
               </p>
             </div>
 
-            <CertificateMarquee certificates={certificateAchievements} />
+            <LazyCertificateMarquee certificates={certificateAchievements} />
           </Container>
         </section>
       </main>

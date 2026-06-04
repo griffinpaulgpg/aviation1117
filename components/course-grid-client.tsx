@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { CourseCard } from "@/components/course-card";
 import type { PublicCourse } from "@/lib/public-content-data";
 import { scheduleBrowserIdleTask } from "@/src/lib/browser-idle";
-import { loadClientCourses } from "@/src/lib/firebase-client-loaders";
 
 export function CourseGridClient({ initialCourses }: { initialCourses: PublicCourse[] }) {
   const [courses, setCourses] = useState(initialCourses);
@@ -16,6 +15,7 @@ export function CourseGridClient({ initialCourses }: { initialCourses: PublicCou
 
     async function loadFirebaseCourses() {
       try {
+        const { loadClientCourses } = await import("@/src/lib/firebase-client-loaders");
         const { courses: firebaseCourses, warning } = await loadClientCourses();
 
         if (!cancelled) {
@@ -35,7 +35,7 @@ export function CourseGridClient({ initialCourses }: { initialCourses: PublicCou
 
     const cancelIdleTask = scheduleBrowserIdleTask(() => {
       void loadFirebaseCourses();
-    });
+    }, 1800, 5000);
 
     return () => {
       cancelled = true;

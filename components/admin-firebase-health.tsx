@@ -69,6 +69,28 @@ service firebase.storage {
   }
 }`;
 
+const healthCheckTimeoutMs = 8000;
+
+async function withHealthTimeout<T>(operation: Promise<T>, label: string) {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<T>((_resolve, reject) => {
+        timeoutId = setTimeout(
+          () => reject(new Error(`${label} timed out.`)),
+          healthCheckTimeoutMs,
+        );
+      }),
+    ]);
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
+}
+
 function mapFirebaseError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error ?? "Unknown error");
 
@@ -84,7 +106,15 @@ function mapFirebaseError(error: unknown) {
     return "Firebase Storage not created.";
   }
 
-  if (/offline|unavailable|network-request-failed|timed out|fetch failed/i.test(message)) {
+  if (/storage check.*timed out/i.test(message)) {
+    return "Firebase Storage is not responding.";
+  }
+
+  if (/authentication check.*timed out/i.test(message)) {
+    return "Firebase Authentication is not responding.";
+  }
+
+  if (/offline|unavailable|network-request-failed|timed out|fetch failed|timeout/i.test(message)) {
     return "Database temporarily unavailable.";
   }
 
@@ -168,96 +198,122 @@ export function AdminFirebaseHealth() {
       });
     }
 
-    try {
-      const settingsRef = doc(db, "settings", "global");
-      const snapshot = await getDoc(settingsRef);
+    const firestoreTask = (async () => {
+      try {
+        await withHealthTimeout(
+          (async () => {
+            const settingsRef = doc(db, "settings", "global");
+            const snapshot = await getDoc(settingsRef);
 
-      if (!snapshot.exists()) {
-        await setDoc(
-          settingsRef,
-          {
-            whatsappEnabled: true,
-            chatbotEnabled: true,
-            instagramEnabled: true,
-            youtubeEnabled: true,
-            updatedAt: serverTimestamp(),
-          },
-          { merge: true },
+            if (!snapshot.exists()) {
+              await setDoc(
+                settingsRef,
+                {
+                  whatsappEnabled: true,
+                  chatbotEnabled: true,
+                  instagramEnabled: true,
+                  youtubeEnabled: true,
+                  updatedAt: serverTimestamp(),
+                },
+                { merge: true },
+              );
+            }
+
+            const checkId = `health-${Date.now()}`;
+            const checkRef = doc(db, "courses", checkId);
+            await setDoc(checkRef, {
+              title: "Health Check",
+              description: "Temporary Firebase health check document.",
+              duration: "",
+              image: "",
+              imageUrl: "",
+              reachUsLink: "/enquiry",
+              status: "inactive",
+              order: 999999,
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+            });
+            await deleteDoc(checkRef);
+          })(),
+          "Firestore check",
         );
+
+        setFirestoreCheck({
+          status: "ok",
+          message: "Firestore Connected",
+        });
+      } catch (error) {
+        setFirestoreCheck({
+          status: "error",
+          message: mapFirebaseError(error),
+        });
       }
+    })();
 
-      const checkId = `health-${Date.now()}`;
-      const checkRef = doc(db, "courses", checkId);
-      await setDoc(checkRef, {
-        title: "Health Check",
-        description: "Temporary Firebase health check document.",
-        duration: "",
-        image: "",
-        imageUrl: "",
-        reachUsLink: "/enquiry",
-        status: "inactive",
-        order: 999999,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
-      await deleteDoc(checkRef);
+    const storageTask = (async () => {
+      try {
+        await withHealthTimeout(
+          (async () => {
+            const path = `_healthcheck/${Date.now()}.txt`;
+            const fileRef = ref(storage, path);
+            await uploadString(fileRef, "firebase health check", "raw", {
+              contentType: "text/plain",
+            });
+            await getDownloadURL(fileRef);
+            await deleteObject(fileRef);
+          })(),
+          "Storage check",
+        );
 
-      setFirestoreCheck({
-        status: "ok",
-        message: "Firestore Connected",
-      });
-    } catch (error) {
-      setFirestoreCheck({
-        status: "error",
-        message: mapFirebaseError(error),
-      });
-    }
+        setStorageCheck({
+          status: "ok",
+          message: "Storage Connected",
+        });
+      } catch (error) {
+        setStorageCheck({
+          status: "error",
+          message: mapFirebaseError(error),
+        });
+      }
+    })();
 
-    try {
-      const path = `_healthcheck/${Date.now()}.txt`;
-      const fileRef = ref(storage, path);
-      await uploadString(fileRef, "firebase health check", "raw", {
-        contentType: "text/plain",
-      });
-      await getDownloadURL(fileRef);
-      await deleteObject(fileRef);
+    const authTask = (async () => {
+      try {
+        await withHealthTimeout(
+          fetchSignInMethodsForEmail(auth, "healthcheck@arunandsaviation.com"),
+          "Authentication check",
+        );
+        setAuthCheck({
+          status: "ok",
+          message: "Auth Connected",
+        });
+      } catch (error) {
+        setAuthCheck({
+          status: "error",
+          message: mapFirebaseError(error),
+        });
+      }
+    })();
 
-      setStorageCheck({
-        status: "ok",
-        message: "Storage Connected",
-      });
-    } catch (error) {
-      setStorageCheck({
-        status: "error",
-        message: mapFirebaseError(error),
-      });
-    }
+    const collectionsTask = (async () => {
+      const checks = await Promise.all(
+        collectionNames.map(async (name) => {
+          try {
+            await withHealthTimeout(
+              getDocs(query(collection(db, name), limit(1))),
+              `${name} collection check`,
+            );
+            return [name, { status: "ok" as const, message: "Accessible" }] as const;
+          } catch (error) {
+            return [name, { status: "error" as const, message: mapFirebaseError(error) }] as const;
+          }
+        }),
+      );
 
-    try {
-      await fetchSignInMethodsForEmail(auth, "healthcheck@arunandsaviation.com");
-      setAuthCheck({
-        status: "ok",
-        message: "Auth Connected",
-      });
-    } catch (error) {
-      setAuthCheck({
-        status: "error",
-        message: mapFirebaseError(error),
-      });
-    }
+      setCollectionChecks(Object.fromEntries(checks));
+    })();
 
-    const checks = await Promise.all(
-      collectionNames.map(async (name) => {
-        try {
-          await getDocs(query(collection(db, name), limit(1)));
-          return [name, { status: "ok" as const, message: "Accessible" }] as const;
-        } catch (error) {
-          return [name, { status: "error" as const, message: mapFirebaseError(error) }] as const;
-        }
-      }),
-    );
-
-    setCollectionChecks(Object.fromEntries(checks));
+    await Promise.all([firestoreTask, storageTask, authTask, collectionsTask]);
     setLastRun(new Date().toLocaleString("en-IN"));
   }, []);
 

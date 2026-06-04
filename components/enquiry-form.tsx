@@ -2,8 +2,6 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { scheduleBrowserIdleTask } from "@/src/lib/browser-idle";
-import { createFirebaseEnquiry, getLatestEnquirySequenceForDate } from "@/src/lib/firebase-services";
-import { loadClientEnquiryOptions } from "@/src/lib/firebase-client-loaders";
 
 function Field({
   id,
@@ -125,6 +123,7 @@ export function EnquiryForm({ initialCourse, courses, enquirySources }: EnquiryF
 
     async function loadFirebaseOptions() {
       try {
+        const { loadClientEnquiryOptions } = await import("@/src/lib/firebase-client-loaders");
         const timeout = new Promise<never>((_, reject) => {
           timeoutId = setTimeout(() => reject(new Error("Firebase options timed out.")), 4500);
         });
@@ -156,7 +155,7 @@ export function EnquiryForm({ initialCourse, courses, enquirySources }: EnquiryF
 
     const cancelIdleTask = scheduleBrowserIdleTask(() => {
       void loadFirebaseOptions();
-    });
+    }, 1800, 5000);
 
     return () => {
       cancelled = true;
@@ -206,6 +205,9 @@ export function EnquiryForm({ initialCourse, courses, enquirySources }: EnquiryF
     setSubmitStatus(null);
 
     try {
+      const { createFirebaseEnquiry, getLatestEnquirySequenceForDate } = await import(
+        "@/src/lib/firebase-services"
+      );
       const datePart = today.replaceAll("-", "");
       const latestSequence = await getLatestEnquirySequenceForDate(datePart);
       const enquiryNumber = `AAI-ENQ-${datePart}-${String(latestSequence + 1).padStart(3, "0")}`;

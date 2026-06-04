@@ -7,7 +7,6 @@ import Link from "next/link";
 import { getSafeImageSrc, isValidImageSrc, shouldBypassImageOptimizer } from "@/lib/media";
 import type { PublicEvent } from "@/lib/public-content-data";
 import { scheduleBrowserIdleTask } from "@/src/lib/browser-idle";
-import { loadClientEvents } from "@/src/lib/firebase-client-loaders";
 
 export function EventsGridClient({ initialEvents }: { initialEvents: PublicEvent[] }) {
   const [events, setEvents] = useState(initialEvents);
@@ -18,6 +17,7 @@ export function EventsGridClient({ initialEvents }: { initialEvents: PublicEvent
 
     async function loadEvents() {
       try {
+        const { loadClientEvents } = await import("@/src/lib/firebase-client-loaders");
         const result = await loadClientEvents();
 
         if (!cancelled) {
@@ -38,7 +38,7 @@ export function EventsGridClient({ initialEvents }: { initialEvents: PublicEvent
 
     const cancelIdleTask = scheduleBrowserIdleTask(() => {
       void loadEvents();
-    });
+    }, 2200, 5500);
 
     return () => {
       cancelled = true;

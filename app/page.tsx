@@ -147,12 +147,17 @@ export default function HomePage() {
             fill
             priority
             quality={82}
+            unoptimized
             className="object-cover object-center opacity-95"
             sizes="100vw"
           />
           <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(240,253,255,0.84),rgba(238,252,255,0.72),rgba(114,221,247,0.38))]" />
           <Container className="relative flex min-h-[calc(100vh-5rem)] flex-col justify-center gap-8 py-20">
             <div className="home-glass max-w-4xl p-6 sm:p-8 lg:p-10">
+              <div className="hero-badge-row">
+                <span className="admissions-pill">Admissions Open for 2026 Batch</span>
+                <span className="hero-trust-tag">AASSC Affiliated Training Partner</span>
+              </div>
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">
                 Aviation training academy
               </p>
@@ -178,6 +183,20 @@ export default function HomePage() {
                   {siteContent.home.secondaryCta}
                 </Link>
               </div>
+              <div className="hero-trust-strip">
+                <div className="trust-chip">
+                  <span className="trust-chip-kicker">Trust</span>
+                  <strong>Placement-Oriented Training</strong>
+                </div>
+                <div className="trust-chip">
+                  <span className="trust-chip-kicker">Industry</span>
+                  <strong>Former Airline Professionals</strong>
+                </div>
+                <div className="trust-chip">
+                  <span className="trust-chip-kicker">Support</span>
+                  <strong>Grooming, Mock Interviews, Job Guidance</strong>
+                </div>
+              </div>
             </div>
             <div className="home-stat-grid grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {siteContent.stats.map((stat) => (
@@ -191,13 +210,14 @@ export default function HomePage() {
           <Container className="home-panel grid gap-10 p-6 sm:p-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
             <div className="home-photo-contain home-photo-lift relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-xl p-3">
               <ImageWithFallback
-                src="/images/home-group-photo.jpg"
+                src="/images/optimized/home-group-photo.webp"
                 fallbackSrc="/home-students.webp"
                 alt="Arunand's Aviation Academy students and faculty group photo"
-                width={1324}
-                height={990}
+                width={1400}
+                height={1002}
                 loading="lazy"
                 quality={82}
+                unoptimized
                 className="h-full w-full rounded-lg object-cover object-center"
                 sizes="(min-width: 1024px) 42vw, 100vw"
               />
@@ -228,7 +248,7 @@ export default function HomePage() {
                 prefetch={true}
                 className="premium-button mt-8 inline-flex rounded-2xl bg-brand px-7 py-4 text-sm font-semibold tracking-[0.2em] text-white transition hover:bg-brand-dark"
               >
-                About Us
+                Explore Courses
               </Link>
             </div>
             <div className="grid gap-5 sm:grid-cols-2">
@@ -298,6 +318,7 @@ export default function HomePage() {
                   fill
                   loading="lazy"
                   quality={72}
+                  unoptimized
                   className="object-cover"
                   sizes="(min-width: 1024px) 25vw, 100vw"
                 />
@@ -327,6 +348,7 @@ export default function HomePage() {
                   fill
                   loading="lazy"
                   quality={72}
+                  unoptimized
                   className="object-cover"
                   sizes="(min-width: 1024px) 25vw, 100vw"
                 />

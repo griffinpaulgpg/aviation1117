@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
 import { scheduleBrowserIdleTask } from "@/src/lib/browser-idle";
-import { loadClientSettings } from "@/src/lib/firebase-client-loaders";
 
 const whatsappUrl =
   "https://wa.me/919036960521?text=Hello%20Arunand%27s%20Aviation%20Institute%2C%20I%20want%20to%20enquire%20about%20your%20courses";
@@ -17,6 +16,7 @@ export function FloatingWhatsAppButton() {
     let cancelled = false;
 
     async function loadWhatsAppSetting() {
+      const { loadClientSettings } = await import("@/src/lib/firebase-client-loaders");
       const { settings } = await loadClientSettings();
 
       if (!cancelled) {
@@ -26,7 +26,7 @@ export function FloatingWhatsAppButton() {
 
     const cancelIdleTask = scheduleBrowserIdleTask(() => {
       void loadWhatsAppSetting();
-    }, 500, 1800);
+    }, 4500, 9000);
 
     return () => {
       cancelled = true;

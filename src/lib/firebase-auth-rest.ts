@@ -1,6 +1,6 @@
 import { normalizeUnknownError } from "@/lib/error-utils";
 
-const firebaseWebApiKey = "AIzaSyCeOH4KjIwmKLnsPD0oWA7g2o-5m9xcdZQ";
+const firebaseWebApiKey = "AIzaSyBBA9oSH2qaN5KtYl8Ai0e60Bu2R46E15o";
 const identityBaseUrl = "https://identitytoolkit.googleapis.com/v1";
 
 type FirebaseAuthErrorPayload = {

@@ -37,9 +37,9 @@ export const siteContent = {
   },
   stats: [
     { value: "550+", label: "Students Trained" },
-    { value: "10+", label: "Services" },
-    { value: "6", label: "Career courses" },
-    { value: "15+", label: "Years experience" },
+    { value: "10+", label: "Training Services" },
+    { value: "6", label: "Career Tracks" },
+    { value: "15+", label: "Years of Excellence" },
   ],
   courses: [
     {

@@ -7,7 +7,7 @@ import type {
   PublicWrittenTestimonial,
 } from "@/lib/public-content-data";
 
-const projectId = "arunands-aviation-academy";
+const projectId = "arunands-aviation-company";
 const firestoreBaseUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents`;
 
 type FirestoreValue = {

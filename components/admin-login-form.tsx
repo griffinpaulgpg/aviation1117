@@ -30,7 +30,7 @@ function mapFirebaseLoginError(error: unknown) {
       case "auth/user-not-found":
         return "No account was found for this email address.";
       case "auth/network-request-failed":
-        return "Network error while contacting Firebase Authentication.";
+        return "Firebase Authentication is temporarily unavailable. Please try again in a moment.";
       case "auth/too-many-requests":
         return "Too many attempts. Please wait a moment and try again.";
       default:
@@ -38,7 +38,13 @@ function mapFirebaseLoginError(error: unknown) {
     }
   }
 
-  return getReadableErrorMessage(error, "Unable to sign in right now.");
+  const message = getReadableErrorMessage(error, "Unable to sign in right now.");
+
+  if (/network request failed while contacting firebase authentication/i.test(message)) {
+    return "Firebase Authentication is temporarily unavailable. Please try again in a moment.";
+  }
+
+  return message;
 }
 
 async function createServerAdminSession(user: User) {
@@ -53,6 +59,26 @@ async function createServerAdminSession(user: User) {
 
   if (!response.ok || !result.success) {
     throw new Error(result.message ?? "Unable to start the admin session.");
+  }
+}
+
+async function withAuthTimeout<T>(promise: Promise<T>, timeoutMs = 4500) {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timeoutId = setTimeout(
+          () => reject(new Error("Firebase Authentication is temporarily unavailable.")),
+          timeoutMs,
+        );
+      }),
+    ]);
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
   }
 }
 
@@ -100,7 +126,7 @@ export function AdminLoginForm() {
 
     async function initializeAuthWatcher() {
       try {
-        await setPersistence(auth, browserLocalPersistence);
+        await withAuthTimeout(setPersistence(auth, browserLocalPersistence), 2500);
       } catch (error) {
         if (isMounted) {
           setMessage(mapFirebaseLoginError(error));
@@ -153,8 +179,11 @@ export function AdminLoginForm() {
     setMessage(null);
 
     try {
-      await setPersistence(auth, browserLocalPersistence);
-      const credentials = await signInWithEmailAndPassword(auth, email.trim(), password);
+      await withAuthTimeout(setPersistence(auth, browserLocalPersistence), 2500);
+      const credentials = await withAuthTimeout(
+        signInWithEmailAndPassword(auth, email.trim(), password),
+        4500,
+      );
       await finalizeAdminLogin(credentials.user);
     } catch (error) {
       try {

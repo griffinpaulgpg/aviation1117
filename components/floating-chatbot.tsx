@@ -5,8 +5,6 @@ import { usePathname } from "next/navigation";
 
 import { cn } from "@/lib/cn";
 import { scheduleBrowserIdleTask } from "@/src/lib/browser-idle";
-import { loadClientSettings } from "@/src/lib/firebase-client-loaders";
-import { createFirebaseChatbotChat } from "@/src/lib/firebase-services";
 
 const welcomeMessage =
   "Hi! Welcome to Arunand's Aviation Institute. How can we help you?";
@@ -140,6 +138,7 @@ export function FloatingChatbot() {
     let cancelled = false;
 
     async function loadChatbotSetting() {
+      const { loadClientSettings } = await import("@/src/lib/firebase-client-loaders");
       const { settings } = await loadClientSettings();
 
       if (!cancelled) {
@@ -149,7 +148,7 @@ export function FloatingChatbot() {
 
     const cancelIdleTask = scheduleBrowserIdleTask(() => {
       void loadChatbotSetting();
-    }, 500, 1800);
+    }, 4500, 9000);
 
     return () => {
       cancelled = true;
@@ -223,6 +222,7 @@ export function FloatingChatbot() {
     setNotice(null);
 
     try {
+      const { createFirebaseChatbotChat } = await import("@/src/lib/firebase-services");
       await withTimeout(
         createFirebaseChatbotChat({
           userMessage,
