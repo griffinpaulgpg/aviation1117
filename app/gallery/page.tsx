@@ -44,7 +44,7 @@ export default function GalleryPage() {
           title="Training moments and aviation exposure."
           description="A visual gallery area for academy photos, airport visits, student activities, and classroom memories."
         />
-        <section className="observe-section aviation-section py-20">
+        <section className="motion-section observe-section aviation-section py-20">
           <Container>
             <GalleryGridClient initialGallery={gallery} />
           </Container>

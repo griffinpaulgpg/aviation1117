@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { getReadableErrorMessage } from "@/lib/error-utils";
 
@@ -17,32 +17,22 @@ type CertificateMarqueeProps = {
 
 export function CertificateMarquee({ certificates }: CertificateMarqueeProps) {
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
-  const marqueeCertificates = useMemo(
-    () =>
-      [...certificates, ...certificates].map((certificate, index) => ({
-        certificate,
-        index,
-        isDuplicate: index >= certificates.length,
-      })),
-    [certificates],
-  );
 
   return (
-    <div className="certificate-marquee mt-12" aria-label="Certificates and achievements">
-      <div className="certificate-marquee-track">
-        {marqueeCertificates.map(({ certificate, index, isDuplicate }) => {
+    <div className="certificate-scroll mt-12" aria-label="Certificates and achievements">
+      <div className="certificate-scroll-track">
+        {certificates.map((certificate) => {
           const showImage = !failedImages.has(certificate.image);
           return (
             <article
-              key={`${certificate.image}-${index}`}
-              className="premium-card certificate-marquee-card p-4"
-              aria-hidden={isDuplicate}
+              key={certificate.image}
+              className="premium-card certificate-scroll-card p-4"
             >
               <div className="certificate-frame">
                 {showImage ? (
                   <Image
                     src={certificate.image}
-                    alt={isDuplicate ? "" : certificate.title}
+                    alt={certificate.title}
                     fill
                     loading="lazy"
                     fetchPriority="low"

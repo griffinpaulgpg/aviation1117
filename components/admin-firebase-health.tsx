@@ -16,7 +16,7 @@ import { deleteObject, getDownloadURL, ref, uploadString } from "firebase/storag
 import { fetchSignInMethodsForEmail } from "firebase/auth";
 import Link from "next/link";
 
-import app, { auth, db, storage } from "@/src/lib/firebase";
+import app, { auth, db, getFirebaseStorage } from "@/src/lib/firebase";
 
 type HealthStatus = "checking" | "ok" | "error";
 
@@ -255,7 +255,8 @@ export function AdminFirebaseHealth() {
         await withHealthTimeout(
           (async () => {
             const path = `_healthcheck/${Date.now()}.txt`;
-            const fileRef = ref(storage, path);
+            const healthStorage = await getFirebaseStorage();
+            const fileRef = ref(healthStorage, path);
             await uploadString(fileRef, "firebase health check", "raw", {
               contentType: "text/plain",
             });

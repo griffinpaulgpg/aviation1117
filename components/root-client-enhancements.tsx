@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 
+import { SectionObserver } from "@/components/section-observer";
 import { scheduleBrowserIdleTask } from "@/src/lib/browser-idle";
 
 const FloatingWidgetsClient = dynamic(
@@ -14,11 +15,12 @@ export function RootClientEnhancements() {
   const [shouldLoadWidgets, setShouldLoadWidgets] = useState(false);
 
   useEffect(() => {
-    return scheduleBrowserIdleTask(() => setShouldLoadWidgets(true), 2500, 6000);
+    return scheduleBrowserIdleTask(() => setShouldLoadWidgets(true), 3500, 8000);
   }, []);
 
   return (
     <>
+      <SectionObserver />
       {shouldLoadWidgets ? <FloatingWidgetsClient /> : null}
     </>
   );

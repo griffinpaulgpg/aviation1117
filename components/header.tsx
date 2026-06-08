@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { CSSProperties, MouseEvent, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { Container } from "@/components/container";
@@ -22,7 +22,6 @@ const navItems = [
 
 export function Header() {
   const pathname = usePathname();
-  const router = useRouter();
   const desktopNavRef = useRef<HTMLElement | null>(null);
   const navLinkRefs = useRef(new Map<string, HTMLAnchorElement>());
   const [isScrolled, setIsScrolled] = useState(false);
@@ -140,8 +139,6 @@ export function Header() {
       return;
     }
 
-    event.preventDefault();
-
     if (planeX !== null) {
       setPlaneDirection(nextX >= planeX ? "right" : "left");
     }
@@ -149,15 +146,11 @@ export function Header() {
     setIsPlaneFlying(true);
     setPlaneX(nextX);
 
-    const pushTimeout = window.setTimeout(() => {
-      router.push(href);
-    }, 600);
-
     const settleTimeout = window.setTimeout(() => {
       setIsPlaneFlying(false);
-    }, 680);
+    }, 320);
 
-    navTimeoutsRef.current.push(pushTimeout, settleTimeout);
+    navTimeoutsRef.current.push(settleTimeout);
   }
 
   useEffect(() => {
@@ -194,7 +187,7 @@ export function Header() {
               alt={siteContent.meta.name}
               width={180}
               height={180}
-              priority
+              sizes="(min-width: 768px) 90px, 76px"
               className="site-logo-image"
               onError={() => setIsLogoVisible(false)}
             />

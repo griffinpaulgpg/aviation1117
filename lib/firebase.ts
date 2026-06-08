@@ -1,1 +1,1 @@
-export { auth, db, default, initAnalytics, storage } from "@/src/lib/firebase";
+export { auth, db, default, getFirebaseStorage, initAnalytics } from "@/src/lib/firebase";

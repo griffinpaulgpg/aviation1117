@@ -18,7 +18,7 @@ import type { AdminDashboardData } from "@/lib/content-data";
 import { cn } from "@/lib/cn";
 import { getReadableErrorMessage, normalizeUnknownError } from "@/lib/error-utils";
 import { getSafeImageSrc } from "@/lib/media";
-import { auth, storage } from "@/src/lib/firebase";
+import { auth, getFirebaseStorage } from "@/src/lib/firebase";
 import {
   invalidateClientFirebaseCache,
   loadClientAdminDashboardData,
@@ -794,7 +794,8 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
         typeof crypto !== "undefined" && "randomUUID" in crypto
           ? crypto.randomUUID()
           : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      const fileRef = ref(storage, `admin/${kind}s/${Date.now()}-${uniqueId}-${safeName}`);
+      const uploadStorage = await getFirebaseStorage();
+      const fileRef = ref(uploadStorage, `admin/${kind}s/${Date.now()}-${uniqueId}-${safeName}`);
       const uploadTask = uploadBytesResumable(fileRef, preparedFile, {
         contentType: preparedFile.type || undefined,
       });

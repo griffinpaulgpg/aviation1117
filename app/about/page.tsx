@@ -162,7 +162,7 @@ export default function AboutPage() {
   return (
     <>
       <main className="site-sky">
-        <section className="observe-section page-hero py-20 text-center text-brand-dark">
+        <section className="motion-section observe-section page-hero py-20 text-center text-brand-dark">
           <div className="hero-orbit md:block" aria-hidden="true" />
           <div className="hero-cloud hero-cloud-one lg:block" aria-hidden="true" />
           <Container>
@@ -172,7 +172,7 @@ export default function AboutPage() {
           </Container>
         </section>
 
-        <section className="observe-section aviation-section bg-white/50 py-20">
+        <section className="motion-section observe-section aviation-section bg-white/50 py-20">
           <Container>
             <div className="text-center">
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand">
@@ -209,7 +209,7 @@ export default function AboutPage() {
           </Container>
         </section>
 
-        <section className="observe-section aviation-section border-t border-white/70 bg-white/70 py-20">
+        <section className="motion-section observe-section aviation-section border-t border-white/70 bg-white/70 py-20">
           <Container>
             <h2 className="text-center text-3xl font-semibold tracking-normal text-foreground sm:text-5xl">
               Why Choose Us
@@ -243,7 +243,7 @@ export default function AboutPage() {
           </Container>
         </section>
 
-        <section className="observe-section aviation-section py-20">
+        <section className="motion-section observe-section aviation-section py-20">
           <Container>
             <div className="text-center">
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand">
@@ -287,7 +287,7 @@ export default function AboutPage() {
           </Container>
         </section>
 
-        <section className="observe-section aviation-section py-20">
+        <section className="motion-section observe-section aviation-section py-20">
           <Container>
             <div className="text-center">
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand">

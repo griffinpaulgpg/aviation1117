@@ -38,12 +38,12 @@ export default function CoursesPage() {
           title="Career-focused aviation courses."
           description="Explore training programs for cabin crew, ground handling, hospitality, airline operations, airport operations, and logistics management."
         />
-        <section className="observe-section aviation-section py-20">
+        <section className="motion-section observe-section aviation-section py-20">
           <Container>
             <CourseGridClient initialCourses={courses} />
           </Container>
         </section>
-        <section className="observe-section aviation-section bg-white/62 border-t border-white/70 py-20">
+        <section className="motion-section observe-section aviation-section bg-white/62 border-t border-white/70 py-20">
           <Container>
             <ThreeDFlow
               items={[

@@ -37,7 +37,7 @@ export default function EventsPage() {
           title="Programs, visits, and industry sessions."
           description="Keep upcoming airport visits, mock interview weeks, guest lectures, and student events organized in one professional page."
         />
-        <section className="observe-section aviation-section py-20">
+        <section className="motion-section observe-section aviation-section py-20">
           <Container>
             <EventsGridClient initialEvents={events} />
           </Container>

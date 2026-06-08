@@ -28,7 +28,7 @@ export default function ContactPage() {
           title="Talk to the admissions team."
           description="Use this page for academy contact details. Student enquiry form details are collected on a dedicated enquiry page."
         />
-        <section className="observe-section aviation-section py-20">
+        <section className="motion-section observe-section aviation-section py-20">
           <Container className="grid gap-6">
             <div className="premium-card p-6 sm:p-8">
               <div className="grid gap-5 md:grid-cols-[1fr_auto] md:items-center">

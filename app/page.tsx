@@ -137,7 +137,7 @@ export default function HomePage() {
   return (
     <>
       <main className="home-canvas">
-        <section className="observe-section home-hero relative overflow-hidden text-brand-dark">
+        <section className="motion-section observe-section home-hero relative overflow-hidden text-brand-dark">
           <div className="hero-orbit md:block" aria-hidden="true" />
           <div className="hero-cloud hero-cloud-one lg:block" aria-hidden="true" />
           <div className="hero-cloud hero-cloud-two lg:block" aria-hidden="true" />
@@ -206,7 +206,7 @@ export default function HomePage() {
           </Container>
         </section>
 
-        <section className="observe-section home-about-section aviation-section py-20 sm:py-24">
+        <section className="motion-section observe-section home-about-section aviation-section py-20 sm:py-24">
           <Container className="home-panel grid gap-10 p-6 sm:p-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
             <div className="home-photo-contain home-photo-lift relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-xl p-3">
               <ImageWithFallback
@@ -235,7 +235,7 @@ export default function HomePage() {
           </Container>
         </section>
 
-        <section className="observe-section home-courses-section aviation-section py-20 sm:py-24">
+        <section className="motion-section observe-section home-courses-section aviation-section py-20 sm:py-24">
           <Container className="home-panel grid gap-12 bg-white/70 p-6 sm:p-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
             <div>
               <div className="home-color-strip mb-7 h-2 w-28 rounded-full" />
@@ -267,7 +267,7 @@ export default function HomePage() {
           </Container>
         </section>
 
-        <section className="observe-section home-affiliation-section aviation-section py-20 sm:py-24">
+        <section className="motion-section observe-section home-affiliation-section aviation-section py-20 sm:py-24">
           <Container className="grid gap-12">
             <div className="home-logo-band rounded-2xl p-5 sm:p-8">
               <div className="grid gap-4 rounded-xl bg-white p-5 text-center sm:grid-cols-3 sm:items-stretch sm:p-8">
@@ -357,7 +357,7 @@ export default function HomePage() {
           </Container>
         </section>
 
-        <section className="observe-section home-services-section aviation-section py-20 sm:py-24">
+        <section className="motion-section observe-section home-services-section aviation-section py-20 sm:py-24">
           <Container>
             <SectionHeading
               eyebrow="Services"

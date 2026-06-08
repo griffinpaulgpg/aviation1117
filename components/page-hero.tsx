@@ -8,7 +8,7 @@ type PageHeroProps = {
 
 export function PageHero({ eyebrow, title, description }: PageHeroProps) {
   return (
-    <section className="observe-section page-hero py-20 text-brand-dark sm:py-24">
+    <section className="motion-section observe-section page-hero py-20 text-brand-dark sm:py-24">
       <div className="hero-orbit md:block" aria-hidden="true" />
       <div className="hero-cloud hero-cloud-one lg:block" aria-hidden="true" />
       <div className="hero-cloud hero-cloud-two lg:block" aria-hidden="true" />

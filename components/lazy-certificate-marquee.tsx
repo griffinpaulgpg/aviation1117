@@ -41,7 +41,7 @@ export function LazyCertificateMarquee({ certificates }: LazyCertificateMarqueeP
         }
       },
       {
-        rootMargin: "180px 0px",
+        rootMargin: "96px 0px",
         threshold: 0.01,
       },
     );

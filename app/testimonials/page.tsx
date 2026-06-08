@@ -25,7 +25,7 @@ export default function TestimonialsPage() {
           title="Student Testimonials"
           description="Hear from our students about their journey with Arunand's Aviation Academy."
         />
-        <section className="observe-section aviation-section py-20">
+        <section className="motion-section observe-section aviation-section py-20">
           <Container>
             <TestimonialsClient initialWritten={[]} initialVideo={[]} />
           </Container>

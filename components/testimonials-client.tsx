@@ -84,7 +84,7 @@ export function TestimonialsClient({
       ) : null}
 
       {written.length > 0 ? (
-        <section className="observe-section aviation-section py-20">
+        <section className="motion-section observe-section aviation-section py-20">
           <SectionHeading
             eyebrow="Real Feedback"
             title="Student outcomes and placement confidence."
@@ -127,7 +127,7 @@ export function TestimonialsClient({
       ) : null}
 
       {video.length > 0 ? (
-        <section className="observe-section aviation-section py-20">
+        <section className="motion-section observe-section aviation-section py-20">
           <SectionHeading
             eyebrow="Student Videos"
             title="Video Testimonials"
@@ -169,7 +169,7 @@ export function TestimonialsClient({
       ) : null}
 
       {!hasTestimonials ? (
-        <section className="observe-section aviation-section py-20">
+        <section className="motion-section observe-section aviation-section py-20">
           <div className="premium-card px-6 py-10 text-center">
             <p className="text-lg font-semibold text-brand-dark">Testimonials will be available soon.</p>
           </div>
@@ -178,7 +178,7 @@ export function TestimonialsClient({
 
       <TestimonialReviewsSection />
 
-      <section className="observe-section aviation-section py-20">
+      <section className="motion-section observe-section aviation-section py-20">
         <div className="relative overflow-hidden rounded-3xl border border-[rgba(114,221,247,0.25)] bg-[linear-gradient(135deg,#F0FDFF,#EEFCFF,#72DDF7)] px-6 py-12 text-center text-brand-dark shadow-[0_10px_30px_rgba(114,221,247,0.12)] sm:px-10">
           <div
             className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(114,221,247,0.22),transparent_16rem),linear-gradient(135deg,rgba(255,255,255,0.32),transparent_42%)]"

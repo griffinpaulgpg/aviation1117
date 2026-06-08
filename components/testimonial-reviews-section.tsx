@@ -161,7 +161,7 @@ export function TestimonialReviewsSection({
   }
 
   return (
-    <section className="observe-section aviation-section py-20">
+    <section className="motion-section observe-section aviation-section py-20">
       <SectionHeading
         eyebrow="Student Voices"
         title="Student Testimonials & Reviews"
