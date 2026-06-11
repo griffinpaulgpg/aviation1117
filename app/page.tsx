@@ -167,7 +167,7 @@ export default function HomePage() {
               <p className="mt-6 max-w-3xl text-lg leading-8 text-[#16324F]/78">
                 {siteContent.home.intro}
               </p>
-              <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+              <div className="home-hero-cta mt-9 flex flex-col gap-3 sm:flex-row">
                 <Link
                   href="/enquiry"
                   prefetch={true}
@@ -236,7 +236,7 @@ export default function HomePage() {
         </section>
 
         <section className="motion-section observe-section home-courses-section aviation-section py-20 sm:py-24">
-          <Container className="home-panel grid gap-12 bg-white/70 p-6 sm:p-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
+          <Container className="home-panel home-course-preview-panel grid gap-12 bg-white/70 p-6 sm:p-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
             <div>
               <div className="home-color-strip mb-7 h-2 w-28 rounded-full" />
               <p className="text-lg font-semibold text-brand">Courses we offer</p>
@@ -251,7 +251,7 @@ export default function HomePage() {
                 Explore Courses
               </Link>
             </div>
-            <div className="grid gap-5 sm:grid-cols-2">
+            <div className="home-course-preview-grid grid gap-5 sm:grid-cols-2">
               {offeredCourses.map((course) => (
                 <div
                   key={course}
@@ -270,7 +270,7 @@ export default function HomePage() {
         <section className="motion-section observe-section home-affiliation-section aviation-section py-20 sm:py-24">
           <Container className="grid gap-12">
             <div className="home-logo-band rounded-2xl p-5 sm:p-8">
-              <div className="grid gap-4 rounded-xl bg-white p-5 text-center sm:grid-cols-3 sm:items-stretch sm:p-8">
+              <div className="home-accreditation-scroll grid gap-4 rounded-xl bg-white p-5 text-center sm:grid-cols-3 sm:items-stretch sm:p-8">
                 {accreditationLogos.map((item) => (
                   <article
                     key={item.title}
@@ -310,8 +310,8 @@ export default function HomePage() {
               <PlacementLogoMarquee logos={placementCompanyLogos} />
             </div>
 
-            <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr_0.85fr] lg:items-center">
-              <div className="home-photo-lift relative min-h-72 overflow-hidden rounded-xl">
+            <div className="home-curriculum-grid grid gap-8 lg:grid-cols-[0.85fr_1.15fr_0.85fr] lg:items-center">
+              <div className="home-curriculum-image home-photo-lift relative min-h-72 overflow-hidden rounded-xl">
                 <Image
                   src="/home-students.webp"
                   alt="Aviation students in professional training"
@@ -323,14 +323,14 @@ export default function HomePage() {
                   sizes="(min-width: 1024px) 25vw, 100vw"
                 />
               </div>
-              <div className="home-panel p-6 text-center">
+              <div className="home-curriculum-panel home-panel p-6 text-center">
                 <p className="text-2xl font-semibold uppercase leading-10 text-foreground">
                   Top University BBA Aviation Curriculum Writer Built Our Curriculum
                 </p>
                 <p className="mt-8 text-3xl leading-tight text-foreground">
                   An Aviation Academy With Focus On
                 </p>
-                <div className="mt-8 grid gap-3">
+                <div className="home-curriculum-focus mt-8 grid gap-3">
                   {focusAreas.map((area) => (
                     <p
                       key={area}
@@ -341,7 +341,7 @@ export default function HomePage() {
                   ))}
                 </div>
               </div>
-              <div className="home-photo-lift relative min-h-72 overflow-hidden rounded-xl">
+              <div className="home-curriculum-image home-photo-lift relative min-h-72 overflow-hidden rounded-xl">
                 <Image
                   src="/home-cabin-training.webp"
                   alt="Cabin crew training group"
@@ -364,7 +364,7 @@ export default function HomePage() {
               title="Training support beyond the classroom."
               description="This service overview stays on the home page because it does not have a separate public page yet."
             />
-            <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="home-services-grid mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {siteContent.services.slice(0, 6).map((service, index) => (
                 <div key={service} className="home-course-card p-5">
                   <p className="text-sm font-semibold text-brand">
