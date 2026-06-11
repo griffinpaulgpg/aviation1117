@@ -5,20 +5,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
-import {
-  getDownloadURL,
-  ref,
-  uploadBytesResumable,
-  type StorageError,
-  type UploadTask,
-} from "firebase/storage";
 
 import type { AdminSession } from "@/lib/admin-auth";
 import type { AdminDashboardData } from "@/lib/content-data";
 import { cn } from "@/lib/cn";
 import { getReadableErrorMessage, normalizeUnknownError } from "@/lib/error-utils";
 import { getSafeImageSrc } from "@/lib/media";
-import { auth, getFirebaseStorage } from "@/src/lib/firebase";
+import { auth } from "@/src/lib/firebase";
 import {
   invalidateClientFirebaseCache,
   loadClientAdminDashboardData,
@@ -217,15 +210,6 @@ service cloud.firestore {
     }
   }
 }`;
-const storageRulesText = `rules_version = '2';
-
-service firebase.storage {
-  match /b/{bucket}/o {
-    match /{allPaths=**} {
-      allow read, write: if true;
-    }
-  }
-}`;
 
 function getFileExtension(file: File) {
   const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
@@ -247,51 +231,15 @@ function isAllowedVideoFile(file: File) {
   );
 }
 
-function formatUploadError(error: unknown) {
-  const storageError = error as Partial<StorageError> | undefined;
-  const code = storageError?.code ?? "";
-
-  if (
-    code === "storage/unknown" &&
-    error instanceof Error &&
-    /bucket does not exist|storage bucket|No default bucket found/i.test(error.message)
-  ) {
-    return "Firebase Storage not created.";
-  }
-
-  if (code === "storage/retry-limit-exceeded") {
-    return "Upload timed out while talking to Firebase Storage. Please try again.";
-  }
-
-  if (code === "storage/unauthorized" || code === "storage/permission-denied") {
-    return "Firebase rules are blocking access.";
-  }
-
-  if (code === "storage/canceled") {
-    return "Upload canceled.";
-  }
-
-  if (code === "storage/quota-exceeded") {
-    return "Firebase Storage quota exceeded. Please check your Firebase plan or try again later.";
-  }
-
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return getReadableErrorMessage(error, "Storage upload failed.");
-}
-
 function normalizeFirebaseWarning(message: string | null | undefined) {
   if (!message) {
     return null;
   }
 
   if (
-    message.includes("Firestore Database not created.") ||
-    message.includes("Firebase Storage not created.")
+    message.includes("Firestore Database not created.")
   ) {
-    return "Firebase Firestore/Storage is not set up. Create Firestore Database and Storage in Firebase Console.";
+    return "Firebase Firestore is not set up. Create Firestore Database in Firebase Console.";
   }
 
   if (message.includes("Firebase rules are blocking access.")) {
@@ -309,8 +257,7 @@ function shouldShowFirebaseSetupHelper(message: string | null | undefined) {
   return Boolean(
     message &&
       (message.includes("Firestore Database not created.") ||
-        message.includes("Firebase Storage not created.") ||
-        message.includes("Firebase Firestore/Storage is not set up")),
+        message.includes("Firebase Firestore is not set up")),
   );
 }
 
@@ -361,22 +308,6 @@ async function compressImageFile(file: File) {
   } finally {
     URL.revokeObjectURL(imageUrl);
   }
-}
-
-function trackUploadProgress(task: UploadTask, onProgress: (progress: number) => void) {
-  return new Promise<void>((resolve, reject) => {
-    task.on(
-      "state_changed",
-      (snapshot) => {
-        const progress = snapshot.totalBytes
-          ? Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100)
-          : 0;
-        onProgress(progress);
-      },
-      (error) => reject(normalizeUnknownError(error, "Storage upload failed.")),
-      () => resolve(),
-    );
-  });
 }
 
 function toEmailPart(value: string) {
@@ -545,10 +476,10 @@ function MediaField({
           {isUploading
             ? `Uploading ${uploadProgress ?? 0}%`
             : selectedFile
-              ? "Preview ready. The file will upload when you save."
+              ? "Preview ready. The file will upload to Hostinger/local storage when you save."
             : mediaKind === "video"
-              ? "Upload a video file. The saved video URL will be generated automatically."
-              : "Upload an image file. The saved image URL will be generated automatically."}
+              ? "Upload a video file. The saved local video path will be generated automatically."
+              : "Upload an image file. The saved local image path will be generated automatically."}
         </p>
         {isUploading ? (
           <div className="h-2 overflow-hidden rounded-full bg-sky-100">
@@ -786,36 +717,45 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
     try {
       const preparedFile =
         kind === "image" ? await compressImageFile(selected.file) : selected.file;
-      const safeName = preparedFile.name
-        .toLowerCase()
-        .replace(/[^a-z0-9.]+/g, "-")
-        .replace(/(^-|-$)/g, "");
-      const uniqueId =
-        typeof crypto !== "undefined" && "randomUUID" in crypto
-          ? crypto.randomUUID()
-          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      const uploadStorage = await getFirebaseStorage();
-      const fileRef = ref(uploadStorage, `admin/${kind}s/${Date.now()}-${uniqueId}-${safeName}`);
-      const uploadTask = uploadBytesResumable(fileRef, preparedFile, {
-        contentType: preparedFile.type || undefined,
+      const formData = new FormData();
+      formData.set("file", preparedFile);
+      formData.set("kind", kind);
+
+      setUploadProgress((current) => ({ ...current, [fieldKey]: 25 }));
+
+      const response = await fetch("/api/admin/upload", {
+        method: "POST",
+        body: formData,
+        credentials: "same-origin",
       });
 
-      await trackUploadProgress(uploadTask, (progress) => {
-        setUploadProgress((current) => ({ ...current, [fieldKey]: progress }));
-      });
+      setUploadProgress((current) => ({ ...current, [fieldKey]: 85 }));
 
-      const url = await getDownloadURL(fileRef);
+      const result = (await response.json().catch(() => null)) as
+        | { url?: string; message?: string }
+        | null;
+
+      if (!response.ok || !result?.url) {
+        throw new Error(
+          result?.message ?? "Unable to upload media to Hostinger file storage.",
+        );
+      }
+
       clearPendingMedia(fieldKey);
       setUploadProgress((current) => ({ ...current, [fieldKey]: 100 }));
 
-      return url;
+      return result.url;
     } catch (error) {
-      logAdminFirebaseError(`resolveMediaValue:${fieldKey}`, error);
+      logAdminFirebaseError(`localMediaUpload:${fieldKey}`, error);
+      const message = getReadableErrorMessage(
+        error,
+        "Unable to upload media to Hostinger file storage.",
+      );
       setMessage({
         type: "error",
-        text: formatUploadError(error),
+        text: message,
       });
-      throw normalizeUnknownError(error, formatUploadError(error));
+      throw normalizeUnknownError(error, message);
     } finally {
       setUploadingField(null);
     }
@@ -1577,13 +1517,12 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
                 Firebase Setup Required
               </p>
               <h2 className="mt-2 text-2xl font-semibold text-foreground">
-                Firebase Firestore/Storage is not set up. Create Firestore Database and Storage in
-                Firebase Console.
+                Firebase Firestore is not set up. Create Firestore Database in Firebase Console.
               </h2>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-muted">
                 Codex can make the app detect missing Firebase setup and fail gracefully, but it
-                cannot create Firestore Database or Firebase Storage for you. Once you finish the
-                setup below, admin uploads and live content sync will start working.
+                cannot create Firestore Database for you. Media files now use Hostinger/local
+                public storage, while Firebase remains responsible for Auth and Firestore data.
               </p>
             </div>
 
@@ -1592,10 +1531,9 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
                 <p className="text-sm font-semibold text-brand-dark">Checklist</p>
                 <ul className="mt-4 space-y-3 text-sm text-muted">
                   <li>- Create Firestore Database</li>
-                  <li>- Create Firebase Storage</li>
                   <li>- Enable Email/Password Authentication</li>
                   <li>- Publish Firestore test rules</li>
-                  <li>- Publish Storage test rules</li>
+                  <li>- Use Hostinger/local public storage for media files</li>
                 </ul>
               </div>
 
@@ -1611,20 +1549,11 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
               </div>
             </div>
 
-            <div className="grid gap-6 xl:grid-cols-2">
-              <div className="rounded-2xl border border-white/70 bg-slate-950 p-5 text-white shadow-sm">
-                <p className="text-sm font-semibold text-sky-200">Firestore Test Rules</p>
-                <pre className="mt-4 overflow-x-auto whitespace-pre-wrap text-xs leading-6 text-slate-100">
-                  {firestoreRulesText}
-                </pre>
-              </div>
-
-              <div className="rounded-2xl border border-white/70 bg-slate-950 p-5 text-white shadow-sm">
-                <p className="text-sm font-semibold text-sky-200">Storage Test Rules</p>
-                <pre className="mt-4 overflow-x-auto whitespace-pre-wrap text-xs leading-6 text-slate-100">
-                  {storageRulesText}
-                </pre>
-              </div>
+            <div className="rounded-2xl border border-white/70 bg-slate-950 p-5 text-white shadow-sm">
+              <p className="text-sm font-semibold text-sky-200">Firestore Test Rules</p>
+              <pre className="mt-4 overflow-x-auto whitespace-pre-wrap text-xs leading-6 text-slate-100">
+                {firestoreRulesText}
+              </pre>
             </div>
           </div>
         ) : null}

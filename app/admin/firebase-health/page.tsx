@@ -27,7 +27,7 @@ export default async function AdminFirebaseHealthPage() {
       <PageHero
         eyebrow="Admin Firebase Health"
         title="Firebase diagnostics and setup status."
-        description="Check app initialization, Firestore, Storage, Authentication, and the collections the website uses before debugging individual admin features."
+        description="Check app initialization, Firestore, Authentication, and the collections the website uses. Storage is disabled because media files use Hostinger/local public storage."
       />
       <section className="aviation-section py-14 sm:py-20">
         <Container>

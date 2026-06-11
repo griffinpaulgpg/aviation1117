@@ -175,15 +175,6 @@ function toClientErrorMessage(error: unknown, fallback: string) {
       return "Firestore Database not created.";
     }
 
-    if (
-      error.message.includes("storage bucket") ||
-      error.message.includes("bucket does not exist") ||
-      error.message.includes("Firebase Storage") ||
-      error.message.includes("No default bucket found")
-    ) {
-      return "Firebase Storage not created.";
-    }
-
     if (/permission|Permission|insufficient permissions/i.test(error.message)) {
       return "Firebase rules are blocking access.";
     }

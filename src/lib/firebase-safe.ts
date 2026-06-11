@@ -21,15 +21,6 @@ function errorMessage(error: unknown, fallback: string) {
     }
 
     if (
-      error.message.includes("storage bucket") ||
-      error.message.includes("bucket does not exist") ||
-      error.message.includes("Firebase Storage") ||
-      error.message.includes("No default bucket found")
-    ) {
-      return "Firebase Storage not created.";
-    }
-
-    if (
       error.message.includes("offline") ||
       error.message.includes("unavailable") ||
       error.message.includes("Failed to get document because the client is offline") ||

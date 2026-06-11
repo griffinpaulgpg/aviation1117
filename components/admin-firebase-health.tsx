@@ -12,11 +12,10 @@ import {
   serverTimestamp,
   setDoc,
 } from "firebase/firestore";
-import { deleteObject, getDownloadURL, ref, uploadString } from "firebase/storage";
 import { fetchSignInMethodsForEmail } from "firebase/auth";
 import Link from "next/link";
 
-import app, { auth, db, getFirebaseStorage } from "@/src/lib/firebase";
+import app, { auth, db } from "@/src/lib/firebase";
 
 type HealthStatus = "checking" | "ok" | "error";
 
@@ -43,10 +42,9 @@ const collectionNames = [
 
 const setupChecklist = [
   "Create Firestore Database",
-  "Create Firebase Storage",
   "Enable Email/Password Authentication",
   "Publish Firestore test rules",
-  "Publish Storage test rules",
+  "Use Hostinger/local public storage for media files",
 ];
 
 const firestoreRulesText = `rules_version = '2';
@@ -54,16 +52,6 @@ const firestoreRulesText = `rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /{document=**} {
-      allow read, write: if true;
-    }
-  }
-}`;
-
-const storageRulesText = `rules_version = '2';
-
-service firebase.storage {
-  match /b/{bucket}/o {
-    match /{allPaths=**} {
       allow read, write: if true;
     }
   }
@@ -100,14 +88,6 @@ function mapFirebaseError(error: unknown) {
 
   if (/database.*does not exist|not created/i.test(message)) {
     return "Firestore Database not created.";
-  }
-
-  if (/storage bucket|bucket does not exist|No default bucket found/i.test(message)) {
-    return "Firebase Storage not created.";
-  }
-
-  if (/storage check.*timed out/i.test(message)) {
-    return "Firebase Storage is not responding.";
   }
 
   if (/authentication check.*timed out/i.test(message)) {
@@ -152,8 +132,8 @@ export function AdminFirebaseHealth() {
     message: "Checking Firestore...",
   });
   const [storageCheck, setStorageCheck] = useState<HealthCheck>({
-    status: "checking",
-    message: "Checking Storage...",
+    status: "ok",
+    message: "Disabled / Using Hostinger file storage",
   });
   const [authCheck, setAuthCheck] = useState<HealthCheck>({
     status: "checking",
@@ -171,7 +151,10 @@ export function AdminFirebaseHealth() {
   const runChecks = useCallback(async () => {
     setFirebaseAppCheck({ status: "checking", message: "Checking Firebase app..." });
     setFirestoreCheck({ status: "checking", message: "Checking Firestore..." });
-    setStorageCheck({ status: "checking", message: "Checking Storage..." });
+    setStorageCheck({
+      status: "ok",
+      message: "Disabled / Using Hostinger file storage",
+    });
     setAuthCheck({ status: "checking", message: "Checking Authentication..." });
     setCollectionChecks(
       Object.fromEntries(
@@ -250,34 +233,6 @@ export function AdminFirebaseHealth() {
       }
     })();
 
-    const storageTask = (async () => {
-      try {
-        await withHealthTimeout(
-          (async () => {
-            const path = `_healthcheck/${Date.now()}.txt`;
-            const healthStorage = await getFirebaseStorage();
-            const fileRef = ref(healthStorage, path);
-            await uploadString(fileRef, "firebase health check", "raw", {
-              contentType: "text/plain",
-            });
-            await getDownloadURL(fileRef);
-            await deleteObject(fileRef);
-          })(),
-          "Storage check",
-        );
-
-        setStorageCheck({
-          status: "ok",
-          message: "Storage Connected",
-        });
-      } catch (error) {
-        setStorageCheck({
-          status: "error",
-          message: mapFirebaseError(error),
-        });
-      }
-    })();
-
     const authTask = (async () => {
       try {
         await withHealthTimeout(
@@ -314,7 +269,7 @@ export function AdminFirebaseHealth() {
       setCollectionChecks(Object.fromEntries(checks));
     })();
 
-    await Promise.all([firestoreTask, storageTask, authTask, collectionsTask]);
+    await Promise.all([firestoreTask, authTask, collectionsTask]);
     setLastRun(new Date().toLocaleString("en-IN"));
   }, []);
 
@@ -338,8 +293,9 @@ export function AdminFirebaseHealth() {
             </p>
             <h2 className="mt-2 text-3xl font-semibold text-foreground">Connection diagnostics</h2>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-muted">
-              This page checks Firebase app initialization, Firestore reads and writes, Storage
-              uploads, Authentication access, and the collections used by the admin dashboard.
+              This page checks Firebase app initialization, Firestore reads and writes,
+              Authentication access, and the collections used by the admin dashboard.
+              Storage is disabled because media files use Hostinger/local public storage.
             </p>
           </div>
           <button
@@ -447,12 +403,6 @@ export function AdminFirebaseHealth() {
             </pre>
           </div>
 
-          <div className="rounded-3xl border border-slate-200 bg-slate-950 p-5 text-white shadow-[0_18px_48px_rgb(11_19_32_/_0.28)]">
-            <p className="text-sm font-semibold text-sky-200">Storage test rules</p>
-            <pre className="mt-4 overflow-x-auto whitespace-pre-wrap text-xs leading-6 text-slate-100">
-              {storageRulesText}
-            </pre>
-          </div>
         </div>
       </div>
     </div>
