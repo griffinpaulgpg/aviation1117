@@ -55,11 +55,11 @@ export function EventsGridClient({ initialEvents }: { initialEvents: PublicEvent
       ) : null}
 
       {events.length > 0 ? (
-        <div className="grid gap-5 md:grid-cols-3">
+        <div className="public-events-grid grid gap-5 md:grid-cols-3">
           {events.map((event) => (
-            <article key={event.id ?? event.title} className="premium-card p-6">
+            <article key={event.id ?? event.title} className="public-event-card premium-card p-6">
               {isValidImageSrc(event.image) ? (
-                <div className="relative mb-5 aspect-[16/10] overflow-hidden rounded-2xl bg-sky-50">
+                <div className="public-event-image relative mb-5 aspect-[16/10] overflow-hidden rounded-2xl bg-sky-50">
                   {(() => {
                     const safeImage = getSafeImageSrc(event.image);
 
@@ -72,7 +72,7 @@ export function EventsGridClient({ initialEvents }: { initialEvents: PublicEvent
                     quality={72}
                     unoptimized={shouldBypassImageOptimizer(safeImage)}
                     className="object-cover"
-                    sizes="(min-width: 768px) 33vw, 100vw"
+                    sizes="(min-width: 768px) 33vw, 50vw"
                   />
                     );
                   })()}

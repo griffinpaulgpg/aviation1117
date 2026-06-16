@@ -61,10 +61,10 @@ export function GalleryGridClient({ initialGallery }: { initialGallery: PublicGa
         </div>
       ) : null}
 
-      <div className="grid gap-5 md:grid-cols-3">
+      <div className="public-gallery-grid grid gap-5 md:grid-cols-3">
         {gallery.photos.map((item) => (
-          <figure key={item.id ?? item.image} className="premium-card">
-            <div className="relative aspect-[4/3]">
+          <figure key={item.id ?? item.image} className="public-gallery-card premium-card">
+            <div className="public-gallery-image relative aspect-[4/3]">
               {item.mediaType === "video" ? (
                 <video
                   src={item.mediaUrl ?? item.image}
@@ -86,7 +86,7 @@ export function GalleryGridClient({ initialGallery }: { initialGallery: PublicGa
                       : undefined,
                   )}
                   className="object-cover"
-                  sizes="(min-width: 768px) 33vw, 100vw"
+                  sizes="(min-width: 768px) 33vw, 50vw"
                 />
               )}
             </div>

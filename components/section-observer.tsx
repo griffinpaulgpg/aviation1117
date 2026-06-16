@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 
 const SECTION_SELECTOR = ".motion-section";
-const ACTIVE_CLASS = "section-active";
+const VISIBLE_CLASS = "section-visible";
 
 export function SectionObserver() {
   const pathname = usePathname();
@@ -14,21 +14,24 @@ export function SectionObserver() {
       return;
     }
 
-    const clearActiveSections = () => {
-      document.querySelectorAll<HTMLElement>(`${SECTION_SELECTOR}.${ACTIVE_CLASS}`).forEach((section) => {
-        section.classList.remove(ACTIVE_CLASS);
+    const clearObservedSections = () => {
+      document.querySelectorAll<HTMLElement>(`${SECTION_SELECTOR}.${VISIBLE_CLASS}`).forEach((section) => {
+        section.classList.remove(VISIBLE_CLASS);
       });
     };
 
     if (pathname?.startsWith("/admin") || pathname === "/login") {
-      clearActiveSections();
+      clearObservedSections();
       return;
     }
 
     const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const mobileMotionQuery = window.matchMedia("(max-width: 767px)");
 
-    if (reducedMotionQuery.matches) {
-      clearActiveSections();
+    if (reducedMotionQuery.matches || mobileMotionQuery.matches) {
+      document.querySelectorAll<HTMLElement>(SECTION_SELECTOR).forEach((section) => {
+        section.classList.add(VISIBLE_CLASS);
+      });
       return;
     }
 
@@ -39,96 +42,32 @@ export function SectionObserver() {
     }
 
     if (typeof IntersectionObserver === "undefined") {
-      clearActiveSections();
+      sections.forEach((section) => {
+        section.classList.add(VISIBLE_CLASS);
+      });
       return;
     }
-
-    const centerCandidates = new Set<HTMLElement>();
-    let activeSection: HTMLElement | null = null;
-    let frameId = 0;
-
-    const setActiveSection = (nextSection: HTMLElement | null) => {
-      if (activeSection === nextSection) {
-        return;
-      }
-
-      activeSection?.classList.remove(ACTIVE_CLASS);
-      nextSection?.classList.add(ACTIVE_CLASS);
-      activeSection = nextSection;
-    };
-
-    const updateActiveSection = () => {
-      frameId = 0;
-
-      const candidates =
-        centerCandidates.size > 0
-          ? Array.from(centerCandidates)
-          : sections.filter((section) => {
-              const rect = section.getBoundingClientRect();
-              return rect.bottom > 0 && rect.top < window.innerHeight;
-            });
-
-      if (candidates.length === 0) {
-        setActiveSection(null);
-        return;
-      }
-
-      const viewportCenter = window.innerHeight / 2;
-      let closestSection: HTMLElement | null = null;
-      let closestDistance = Number.POSITIVE_INFINITY;
-
-      candidates.forEach((section) => {
-        const rect = section.getBoundingClientRect();
-        const sectionCenter = rect.top + rect.height / 2;
-        const distance = Math.abs(sectionCenter - viewportCenter);
-
-        if (distance < closestDistance) {
-          closestDistance = distance;
-          closestSection = section;
-        }
-      });
-
-      setActiveSection(closestSection);
-    };
-
-    const scheduleUpdate = () => {
-      if (!frameId) {
-        frameId = window.requestAnimationFrame(updateActiveSection);
-      }
-    };
 
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          const section = entry.target as HTMLElement;
-
           if (entry.isIntersecting) {
-            centerCandidates.add(section);
-          } else {
-            centerCandidates.delete(section);
+            const section = entry.target as HTMLElement;
+            section.classList.add(VISIBLE_CLASS);
+            observer.unobserve(section);
           }
         });
-
-        scheduleUpdate();
       },
       {
-        rootMargin: "-35% 0px -35% 0px",
-        threshold: 0,
+        rootMargin: "0px 0px -12% 0px",
+        threshold: 0.12,
       },
     );
 
     sections.forEach((section) => observer.observe(section));
-    scheduleUpdate();
 
     return () => {
       observer.disconnect();
-
-      if (frameId) {
-        window.cancelAnimationFrame(frameId);
-      }
-
-      centerCandidates.clear();
-      clearActiveSections();
     };
   }, [pathname]);
 

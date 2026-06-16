@@ -50,7 +50,7 @@ export function CourseGridClient({ initialCourses }: { initialCourses: PublicCou
           {databaseWarning}
         </p>
       ) : null}
-      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+      <div className="public-course-grid grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         {courses.map((course) => (
           <CourseCard key={course.id ?? course.title} course={course} />
         ))}

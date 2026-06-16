@@ -41,7 +41,8 @@ export function Header() {
       }
 
       frameId = window.requestAnimationFrame(() => {
-        setIsScrolled(window.scrollY > 12);
+        const nextIsScrolled = window.scrollY > 12;
+        setIsScrolled((current) => (current === nextIsScrolled ? current : nextIsScrolled));
         frameId = 0;
       });
     };

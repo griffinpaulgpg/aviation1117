@@ -172,7 +172,7 @@ export default function AboutPage() {
           </Container>
         </section>
 
-        <section className="motion-section observe-section aviation-section bg-white/50 py-20">
+        <section className="motion-section observe-section about-intro-section aviation-section bg-white/50 py-20">
           <Container>
             <div className="text-center">
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand">
@@ -182,8 +182,8 @@ export default function AboutPage() {
                 Arunand&apos;s Aviation Academy
               </h2>
             </div>
-            <div className="mt-10 grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
-              <div className="premium-card p-6 sm:p-8">
+            <div className="about-intro-grid mt-10 grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
+              <div className="about-intro-text premium-card p-6 sm:p-8">
                 <div className="mt-6 space-y-4 text-base leading-7 text-muted">
                   {aboutParagraphs.map((paragraph) => (
                     <p key={paragraph}>{paragraph}</p>
@@ -191,8 +191,8 @@ export default function AboutPage() {
                 </div>
               </div>
 
-              <div className="premium-card p-4">
-                <div className="relative mx-auto aspect-[3/5] max-w-[26rem] overflow-hidden rounded-lg bg-background">
+              <div className="about-intro-image-card premium-card p-4">
+                <div className="about-intro-image-frame relative mx-auto aspect-[3/5] max-w-[26rem] overflow-hidden rounded-lg bg-background">
                   <Image
                     src="/images/optimized/about-award.webp"
                     alt="Arunand's Aviation Academy Karnataka Business Udyog Ratna Awards recognition"
@@ -209,15 +209,15 @@ export default function AboutPage() {
           </Container>
         </section>
 
-        <section className="motion-section observe-section aviation-section border-t border-white/70 bg-white/70 py-20">
+        <section className="motion-section observe-section about-choose-section aviation-section border-t border-white/70 bg-white/70 py-20">
           <Container>
             <h2 className="text-center text-3xl font-semibold tracking-normal text-foreground sm:text-5xl">
               Why Choose Us
             </h2>
-            <div className="mt-12 grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
-              <div className="grid gap-x-10 gap-y-14 sm:grid-cols-2">
+            <div className="about-choose-grid mt-12 grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
+              <div className="about-choose-cards grid gap-x-10 gap-y-14 sm:grid-cols-2">
                 {chooseItems.map((item) => (
-                  <article key={item.title}>
+                  <article key={item.title} className="about-choose-card">
                     <h3 className="text-3xl font-semibold tracking-normal text-foreground sm:text-4xl">
                       {item.title}
                     </h3>
@@ -225,8 +225,8 @@ export default function AboutPage() {
                   </article>
                 ))}
               </div>
-              <div className="premium-card p-4">
-                <div className="relative aspect-[16/10] overflow-hidden rounded-lg bg-white">
+              <div className="about-choose-certificate premium-card p-4">
+                <div className="about-choose-certificate-frame relative aspect-[16/10] overflow-hidden rounded-lg bg-white">
                   <Image
                     src="/aassc-certificate.webp"
                     alt="AASSC affiliation certificate"

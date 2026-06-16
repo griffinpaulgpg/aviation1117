@@ -11,8 +11,8 @@ export function CourseCard({ course }: { course: PublicCourse }) {
   const safeImage = getSafeImageSrc(course.image);
 
   return (
-    <article className="premium-card flex h-full flex-col">
-      <div className="relative aspect-[16/10] overflow-hidden bg-slate-100">
+    <article className="public-course-card premium-card flex h-full flex-col">
+      <div className="public-course-image relative aspect-[16/10] overflow-hidden bg-slate-100">
         <Image
           src={safeImage}
           alt={`${course.title} course training`}
@@ -21,11 +21,11 @@ export function CourseCard({ course }: { course: PublicCourse }) {
           quality={72}
           unoptimized={shouldBypassImageOptimizer(safeImage)}
           className="object-cover"
-          sizes="(min-width: 1280px) 33vw, (min-width: 768px) 50vw, 100vw"
+          sizes="(min-width: 1280px) 33vw, (min-width: 768px) 50vw, 50vw"
         />
         <div className="from-brand-dark/28 absolute inset-0 bg-gradient-to-t via-transparent to-white/10" />
       </div>
-      <div className="flex flex-1 flex-col p-6">
+      <div className="public-course-body flex flex-1 flex-col p-6">
         <div className="flex items-start justify-between gap-4">
           <h3 className="text-xl font-semibold text-foreground">{course.title}</h3>
           {course.duration ? (

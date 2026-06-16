@@ -32,7 +32,6 @@ export function PlacementLogoMarquee({ logos }: PlacementLogoMarqueeProps) {
         {marqueeLogos.map(({ company, index, isDuplicate }) => {
           const imageSrc = company.image;
           const showLogo = Boolean(imageSrc) && !failedLogos.has(company.name);
-          const shouldPreload = !isDuplicate && index < 3;
 
           return (
             <article
@@ -47,8 +46,8 @@ export function PlacementLogoMarquee({ logos }: PlacementLogoMarqueeProps) {
                     alt={isDuplicate ? "" : `${company.name} logo`}
                     width={company.width}
                     height={company.height}
-                    loading={shouldPreload ? "eager" : "lazy"}
-                    fetchPriority={shouldPreload ? "high" : "low"}
+                    loading="lazy"
+                    fetchPriority="low"
                     unoptimized
                     className="placement-logo-image"
                     sizes="(min-width: 768px) 15rem, 11rem"
