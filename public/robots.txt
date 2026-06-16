@@ -1,0 +1,6 @@
+User-Agent: *
+Allow: /
+Disallow: /admin/dashboard
+Disallow: /api/
+
+Sitemap: https://www.arunandsaviation.com/sitemap.xml

@@ -28,15 +28,16 @@ body {
   min-height: 100%;
   overflow-x: hidden;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 html {
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
   background: #dcf7fd;
 }
 
 body {
-  min-height: 100vh;
+  min-height: 100%;
   margin: 0;
   overscroll-behavior-y: auto;
   background:
@@ -52,6 +53,11 @@ body {
 body.site-mobile-menu-open {
   overflow-x: hidden;
   overflow-y: auto;
+}
+
+main {
+  height: auto;
+  overflow-y: visible;
 }
 
 h1,
