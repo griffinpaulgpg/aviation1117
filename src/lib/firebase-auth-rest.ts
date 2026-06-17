@@ -46,7 +46,14 @@ function mapFirebaseAuthError(message?: string) {
   }
 }
 
-async function identityRequest<T>(endpoint: string, body: Record<string, unknown>): Promise<T> {
+async function identityRequest<T>(
+  endpoint: string,
+  body: Record<string, unknown>,
+  timeoutMs = 10000,
+): Promise<T> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
   try {
     const response = await fetch(`${identityBaseUrl}/${endpoint}?key=${firebaseWebApiKey}`, {
       method: "POST",
@@ -54,6 +61,7 @@ async function identityRequest<T>(endpoint: string, body: Record<string, unknown
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
+      signal: controller.signal,
     });
     const payload = (await response.json()) as T & FirebaseAuthErrorPayload;
 
@@ -63,6 +71,12 @@ async function identityRequest<T>(endpoint: string, body: Record<string, unknown
 
     return payload;
   } catch (error) {
+    console.error(`[firebase-auth-rest] ${endpoint} failed`, error);
+
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new Error("Firebase Authentication request timed out.");
+    }
+
     if (error instanceof Error && error.message) {
       if (/fetch failed|network|ECONN|ENOTFOUND/i.test(error.message)) {
         throw new Error("Network request failed while contacting Firebase Authentication.");
@@ -72,6 +86,8 @@ async function identityRequest<T>(endpoint: string, body: Record<string, unknown
     }
 
     throw normalizeUnknownError(error, "Firebase Authentication failed.");
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 

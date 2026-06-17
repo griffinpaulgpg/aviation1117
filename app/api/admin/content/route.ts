@@ -3,7 +3,8 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 
 import { getAdminSession, isPrimaryAdminId } from "@/lib/admin-auth";
-import { getAdminDashboardData, PUBLIC_CONTENT_CACHE_TAG } from "@/lib/content-data";
+import { getEmptyAdminDashboardData } from "@/lib/admin-dashboard-empty";
+import { PUBLIC_CONTENT_CACHE_TAG } from "@/lib/content-data";
 import { hashPassword } from "@/lib/passwords";
 import {
   createFirebaseAdminUser,
@@ -286,7 +287,7 @@ export async function GET() {
 
   return NextResponse.json({
     success: true,
-    data: await getAdminDashboardData(),
+    data: getEmptyAdminDashboardData(),
   });
 }
 
@@ -541,7 +542,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       message: "Dashboard updated successfully.",
-      data: await getAdminDashboardData(),
+      data: getEmptyAdminDashboardData(),
       item: mutationItem,
     });
   } catch (error) {

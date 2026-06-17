@@ -78,6 +78,26 @@ function isFirebaseAuthNetworkError(error: unknown) {
   );
 }
 
+async function withLoginTimeout<T>(operation: Promise<T>, timeoutMs = 10000) {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<T>((_resolve, reject) => {
+        timeoutId = setTimeout(
+          () => reject(new Error("Firebase login request timed out.")),
+          timeoutMs,
+        );
+      }),
+    ]);
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
+}
+
 async function createPrimaryAdminSession(uid: string) {
   await setAdminCookie(
     createAdminToken({
@@ -132,7 +152,7 @@ export async function POST(request: Request) {
 
     if (!("idToken" in parsed.data)) {
       try {
-        const admin = await getFirebaseAdminByEmail(parsed.data.email);
+        const admin = await withLoginTimeout(getFirebaseAdminByEmail(parsed.data.email));
 
         if (admin?.passwordHash) {
           if (!verifyPassword(parsed.data.password, admin.passwordHash)) {
@@ -170,8 +190,8 @@ export async function POST(request: Request) {
     }
 
     const authUser = "idToken" in parsed.data
-      ? await verifyFirebaseIdToken(parsed.data.idToken)
-      : await signInFirebaseAuthUser(parsed.data.email, parsed.data.password);
+      ? await withLoginTimeout(verifyFirebaseIdToken(parsed.data.idToken))
+      : await withLoginTimeout(signInFirebaseAuthUser(parsed.data.email, parsed.data.password));
 
     if (
       !("idToken" in parsed.data) &&
@@ -264,9 +284,12 @@ export async function POST(request: Request) {
       }
 
       try {
-        const authUser = await bootstrapPrimaryAdminFirebaseAccess(
-          parsed.data.email.trim().toLowerCase(),
-          parsed.data.password,
+        const authUser = await withLoginTimeout(
+          bootstrapPrimaryAdminFirebaseAccess(
+            parsed.data.email.trim().toLowerCase(),
+            parsed.data.password,
+          ),
+          12000,
         );
 
         await createPrimaryAdminSession(authUser.uid);
