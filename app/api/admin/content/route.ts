@@ -37,6 +37,11 @@ import {
   updateFirebaseVideoTestimonial,
   updateFirebaseWrittenTestimonial,
 } from "@/src/lib/firebase-services";
+import {
+  createFirestoreRestDocument,
+  deleteFirestoreRestDocument,
+  updateFirestoreRestDocument,
+} from "@/src/lib/firestore-rest-writes";
 
 const facultyEmailDomain = "arunandsaviation.com";
 
@@ -221,15 +226,39 @@ function getReadableContentError(error: unknown) {
         ? error.message
         : "Unable to update dashboard.";
 
-  if (
-    /offline|unavailable|failed to get document|could not reach cloud firestore|network|timeout|timed out/i.test(
-      message,
-    )
-  ) {
+  if (/permission-denied|permission denied|firebase rules are blocking access/i.test(message)) {
+    return "Firebase rules are blocking access. Check Firestore rules for authenticated admin writes.";
+  }
+
+  if (/unauthenticated|authentication session|admin firebase auth session/i.test(message)) {
+    return "Admin Firebase Auth session is not active. Please log out and sign in again.";
+  }
+
+  if (/offline|unavailable|failed to get document|could not reach cloud firestore|network|timeout|timed out/i.test(message)) {
     return "Unable to save right now. Please check Firebase connection.";
   }
 
   return message;
+}
+
+function getFirebaseIdToken(request: Request) {
+  const header = request.headers.get("authorization") ?? "";
+  const match = header.match(/^Bearer\s+(.+)$/i);
+
+  return match?.[1]?.trim() || null;
+}
+
+function logContentFirebaseError(context: string, error: unknown) {
+  const detail =
+    error instanceof Error
+      ? {
+          name: error.name,
+          message: error.message,
+          stack: error.stack,
+        }
+      : error;
+
+  console.error(`[admin-content] ${context}`, detail);
 }
 
 async function ensureAdmin() {
@@ -267,6 +296,8 @@ export async function POST(request: Request) {
   if (session instanceof NextResponse) {
     return session;
   }
+
+  const firebaseIdToken = getFirebaseIdToken(request);
 
   try {
     const payload = contentActionSchema.parse(await request.json());
@@ -364,10 +395,20 @@ export async function POST(request: Request) {
 
     if (payload.resource === "facultyUsers") {
       if (payload.action === "delete") {
-        await deleteFirebaseFacultyUser(requireId(payload.id));
+        if (firebaseIdToken) {
+          await deleteFirestoreRestDocument("facultyUsers", requireId(payload.id), firebaseIdToken);
+        } else {
+          await deleteFirebaseFacultyUser(requireId(payload.id));
+        }
       } else {
         const faculty = facultySchema.parse(payload.data);
+        const facultyId =
+          `FAC-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${Math.random()
+            .toString(36)
+            .slice(2, 6)
+            .toUpperCase()}`;
         const data = {
+          facultyId,
           name: faculty.name,
           email: faculty.email,
           phone: faculty.phone,
@@ -378,9 +419,22 @@ export async function POST(request: Request) {
         };
 
         if (payload.action === "create") {
-          await createFirebaseFacultyUser(data);
+          if (firebaseIdToken) {
+            await createFirestoreRestDocument("facultyUsers", data, firebaseIdToken);
+          } else {
+            await createFirebaseFacultyUser(data);
+          }
         } else {
-          await updateFirebaseFacultyUser(requireId(payload.id), data);
+          if (firebaseIdToken) {
+            await updateFirestoreRestDocument(
+              "facultyUsers",
+              requireId(payload.id),
+              data,
+              firebaseIdToken,
+            );
+          } else {
+            await updateFirebaseFacultyUser(requireId(payload.id), data);
+          }
         }
       }
     }
@@ -401,7 +455,11 @@ export async function POST(request: Request) {
           throw new Error("You cannot delete the admin account you are currently using.");
         }
 
-        await deleteFirebaseAdminUser(requireId(payload.id));
+        if (firebaseIdToken) {
+          await deleteFirestoreRestDocument("adminUsers", requireId(payload.id), firebaseIdToken);
+        } else {
+          await deleteFirebaseAdminUser(requireId(payload.id));
+        }
       } else {
         const admin = adminUserSchema.parse(payload.data);
         const normalizedAdminId = admin.email.trim().toLowerCase();
@@ -418,9 +476,17 @@ export async function POST(request: Request) {
         };
 
         if (payload.action === "create") {
-          await createFirebaseAdminUser(data);
+          if (firebaseIdToken) {
+            await createFirestoreRestDocument("adminUsers", data, firebaseIdToken);
+          } else {
+            await createFirebaseAdminUser(data);
+          }
         } else {
-          await updateFirebaseAdminUser(requireId(payload.id), data);
+          if (firebaseIdToken) {
+            await updateFirestoreRestDocument("adminUsers", requireId(payload.id), data, firebaseIdToken);
+          } else {
+            await updateFirebaseAdminUser(requireId(payload.id), data);
+          }
         }
       }
     }
@@ -449,6 +515,8 @@ export async function POST(request: Request) {
       data: await getAdminDashboardData(),
     });
   } catch (error) {
+    logContentFirebaseError("POST save failed", error);
+
     return NextResponse.json(
       {
         success: false,

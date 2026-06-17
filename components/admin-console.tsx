@@ -532,9 +532,16 @@ function isYouTubeUrl(value: string) {
 }
 
 function logAdminFirebaseError(context: string, error: unknown) {
-  if (process.env.NODE_ENV === "development") {
-    console.error(`[admin-console] ${context}`, error);
-  }
+  const detail =
+    error instanceof Error
+      ? {
+          name: error.name,
+          message: error.message,
+          stack: error.stack,
+        }
+      : error;
+
+  console.error(`[admin-console] ${context}`, detail);
 }
 
 function getAdminSaveErrorMessage(error: unknown) {
@@ -544,9 +551,19 @@ function getAdminSaveErrorMessage(error: unknown) {
   );
 
   if (
-    /offline|unavailable|failed to get document|could not reach cloud firestore|network|timeout|timed out/i.test(
-      message,
-    )
+    /permission-denied|permission denied|firebase rules are blocking access/i.test(message)
+  ) {
+    return "Firebase rules are blocking access. Check Firestore rules for authenticated admin writes.";
+  }
+
+  if (
+    /unauthenticated|authentication session|admin firebase auth session|not active/i.test(message)
+  ) {
+    return "Admin Firebase Auth session is not active. Please log out and sign in again.";
+  }
+
+  if (
+    /offline|unavailable|failed to get document|could not reach cloud firestore|network|timeout|timed out/i.test(message)
   ) {
     return "Unable to save right now. Please check Firebase connection.";
   }
@@ -1001,6 +1018,14 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
 
     try {
       const firebase = await import("@/src/lib/firebase-services");
+      const firebaseUser = auth.currentUser;
+
+      if (!firebaseUser) {
+        throw new Error(
+          "Admin Firebase Auth session is not active. Please log out and sign in again. Also confirm the hosted domain is allowed in Firebase Authentication.",
+        );
+      }
+
       const targetId = id ?? null;
 
       if (resource === "courses") {
@@ -1051,9 +1076,13 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
           await firebase.updateFirebaseEnquirySource(targetId, payload as typeof sourceForm);
         if (action === "delete" && targetId) await firebase.deleteFirebaseEnquirySource(targetId);
       } else {
+        const idToken = await firebaseUser.getIdToken();
         const response = await fetch("/api/admin/content", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
           credentials: "same-origin",
           body: JSON.stringify({
             resource,
@@ -1110,6 +1139,11 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
 
     try {
       const firebase = await import("@/src/lib/firebase-services");
+      if (!auth.currentUser) {
+        throw new Error(
+          "Admin Firebase Auth session is not active. Please log out and sign in again. Also confirm the hosted domain is allowed in Firebase Authentication.",
+        );
+      }
       const action = (payload as { action?: string }).action;
 
       if (action === "updateSettings") {
@@ -1170,6 +1204,11 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
       const action = (payload as { action?: string }).action;
       const firebase = await import("@/src/lib/firebase-services");
       const authRest = await import("@/src/lib/firebase-auth-rest");
+      if (!auth.currentUser) {
+        throw new Error(
+          "Admin Firebase Auth session is not active. Please log out and sign in again. Also confirm the hosted domain is allowed in Firebase Authentication.",
+        );
+      }
       let successMessage = "Login accounts updated.";
 
       if (action === "create") {
