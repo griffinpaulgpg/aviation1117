@@ -50,6 +50,9 @@ type TabName =
   | "admins"
   | "loginAccounts";
 
+type FacultyUser = AdminDashboardData["facultyUsers"][number];
+type AdminUser = AdminDashboardData["adminUsers"][number];
+
 const inputClass =
   "bg-white/82 rounded-xl border border-sky-100 px-4 py-3 text-sm text-foreground shadow-inner shadow-sky-950/5 outline-none transition focus:border-brand focus:bg-white focus:ring-4 focus:ring-sky-200/60";
 
@@ -525,6 +528,18 @@ function formatDate(value: string) {
   return new Intl.DateTimeFormat("en-IN", {
     dateStyle: "medium",
   }).format(new Date(value));
+}
+
+function mergeFacultyUsers(users: FacultyUser[], item: FacultyUser) {
+  const existing = users.filter((user) => user.id !== item.id);
+
+  return [item, ...existing];
+}
+
+function mergeAdminUsers(users: AdminUser[], item: AdminUser) {
+  const existing = users.filter((user) => user.id !== item.id);
+
+  return [item, ...existing];
 }
 
 function isYouTubeUrl(value: string) {
@@ -1095,13 +1110,46 @@ export function AdminConsole({ initialData, currentSession }: AdminConsoleProps)
           success?: boolean;
           message?: string;
           data?: AdminDashboardData;
+          item?: unknown;
         };
 
         if (!response.ok || !result.success || !result.data) {
           throw new Error(result.message ?? "Unable to update dashboard.");
         }
 
-        setData(result.data);
+        const dashboardData = result.data;
+
+        setData((current) => {
+          if (resource === "facultyUsers" && result.item && action !== "delete") {
+            const savedFaculty = result.item as FacultyUser;
+
+            return {
+              ...dashboardData,
+              firebaseError: null,
+              facultyUsers: mergeFacultyUsers(
+                dashboardData.facultyUsers.length
+                  ? dashboardData.facultyUsers
+                  : current.facultyUsers,
+                savedFaculty,
+              ),
+            };
+          }
+
+          if (resource === "adminUsers" && result.item && action !== "delete") {
+            const savedAdmin = result.item as AdminUser;
+
+            return {
+              ...dashboardData,
+              firebaseError: null,
+              adminUsers: mergeAdminUsers(
+                dashboardData.adminUsers.length ? dashboardData.adminUsers : current.adminUsers,
+                savedAdmin,
+              ),
+            };
+          }
+
+          return dashboardData;
+        });
         setMessage({
           type: "success",
           text:

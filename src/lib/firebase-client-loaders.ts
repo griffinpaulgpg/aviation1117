@@ -194,9 +194,7 @@ function toClientErrorMessage(error: unknown, fallback: string) {
 }
 
 function logFirebaseClientError(context: string, error: unknown) {
-  if (process.env.NODE_ENV === "development") {
-    console.error(`[firebase-client] ${context}`, error);
-  }
+  console.error(`[firebase-client] ${context}`, error);
 }
 
 function collectWarnings(values: Array<string | null | undefined>) {

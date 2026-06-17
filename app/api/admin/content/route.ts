@@ -301,6 +301,7 @@ export async function POST(request: Request) {
 
   try {
     const payload = contentActionSchema.parse(await request.json());
+    let mutationItem: unknown = null;
 
     if (session.role !== "admin" && payload.resource !== "enquiries") {
       return NextResponse.json(
@@ -419,11 +420,19 @@ export async function POST(request: Request) {
         };
 
         if (payload.action === "create") {
+          let savedId = "";
           if (firebaseIdToken) {
-            await createFirestoreRestDocument("facultyUsers", data, firebaseIdToken);
+            savedId = await createFirestoreRestDocument("facultyUsers", data, firebaseIdToken);
           } else {
             await createFirebaseFacultyUser(data);
           }
+
+          mutationItem = {
+            id: savedId || `faculty-${Date.now()}`,
+            ...data,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
         } else {
           if (firebaseIdToken) {
             await updateFirestoreRestDocument(
@@ -435,6 +444,12 @@ export async function POST(request: Request) {
           } else {
             await updateFirebaseFacultyUser(requireId(payload.id), data);
           }
+
+          mutationItem = {
+            id: requireId(payload.id),
+            ...data,
+            updatedAt: new Date().toISOString(),
+          };
         }
       }
     }
@@ -476,17 +491,31 @@ export async function POST(request: Request) {
         };
 
         if (payload.action === "create") {
+          let savedId = "";
           if (firebaseIdToken) {
-            await createFirestoreRestDocument("adminUsers", data, firebaseIdToken);
+            savedId = await createFirestoreRestDocument("adminUsers", data, firebaseIdToken);
           } else {
             await createFirebaseAdminUser(data);
           }
+
+          mutationItem = {
+            id: savedId || normalizedAdminId,
+            ...data,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
         } else {
           if (firebaseIdToken) {
             await updateFirestoreRestDocument("adminUsers", requireId(payload.id), data, firebaseIdToken);
           } else {
             await updateFirebaseAdminUser(requireId(payload.id), data);
           }
+
+          mutationItem = {
+            id: requireId(payload.id),
+            ...data,
+            updatedAt: new Date().toISOString(),
+          };
         }
       }
     }
@@ -513,6 +542,7 @@ export async function POST(request: Request) {
       success: true,
       message: "Dashboard updated successfully.",
       data: await getAdminDashboardData(),
+      item: mutationItem,
     });
   } catch (error) {
     logContentFirebaseError("POST save failed", error);

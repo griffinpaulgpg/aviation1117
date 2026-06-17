@@ -986,9 +986,13 @@ export async function getFirebaseFacultyUsersSafe(): Promise<{
     [] as FirebaseFacultyUser[],
   );
 
+  if (!result.ok) {
+    console.error("[firebase] Loading Firebase faculty users failed", result.error);
+  }
+
   return {
     facultyUsers: result.data,
-    error: result.ok ? null : firebaseUnavailableMessage,
+    error: result.ok ? null : result.error,
   };
 }
 
