@@ -5,6 +5,7 @@ import { Header } from "@/components/header";
 import { PageTransitionShell } from "@/components/page-transition-shell";
 import { Footer } from "@/components/footer";
 import { RootClientEnhancements } from "@/components/root-client-enhancements";
+import { TopMarquee } from "@/components/top-marquee";
 import { siteContent } from "@/lib/site-content";
 
 export const metadata: Metadata = {
@@ -90,6 +91,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
         />
         <Header />
+        <TopMarquee />
         <RootClientEnhancements />
         <PageTransitionShell>{children}</PageTransitionShell>
         <Footer />

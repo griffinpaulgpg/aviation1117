@@ -39,7 +39,7 @@ export default async function EnquiryPage({ searchParams }: EnquiryPageProps) {
 
   return (
     <>
-      <main className="site-sky">
+      <main className="site-sky public-page">
         <PageHero
           eyebrow="Enquiry"
           title="Aviation institute enquiry form."

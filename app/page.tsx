@@ -136,7 +136,7 @@ const focusAreas = [
 export default function HomePage() {
   return (
     <>
-      <main className="home-canvas">
+      <main className="home-canvas public-page">
         <section className="motion-section observe-section home-hero relative overflow-hidden text-brand-dark">
           <div className="hero-orbit md:block" aria-hidden="true" />
           <div className="hero-cloud hero-cloud-one lg:block" aria-hidden="true" />

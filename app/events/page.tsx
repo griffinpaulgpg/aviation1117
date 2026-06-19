@@ -31,7 +31,7 @@ export default function EventsPage() {
 
   return (
     <>
-      <main className="site-sky">
+      <main className="site-sky public-page">
         <PageHero
           eyebrow="Events"
           title="Programs, visits, and industry sessions."

@@ -188,6 +188,7 @@ export function Header() {
               alt={siteContent.meta.name}
               width={180}
               height={180}
+              priority
               sizes="(min-width: 768px) 90px, 76px"
               className="site-logo-image"
               onError={() => setIsLogoVisible(false)}

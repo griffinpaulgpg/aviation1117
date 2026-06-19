@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 export default function ContactPage() {
   return (
     <>
-      <main className="site-sky">
+      <main className="site-sky public-page">
         <PageHero
           eyebrow="Contact"
           title="Talk to the admissions team."

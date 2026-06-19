@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 
 const SECTION_SELECTOR = ".motion-section";
-const VISIBLE_CLASS = "section-visible";
+const ACTIVE_CLASS = "section-active";
 
 export function SectionObserver() {
   const pathname = usePathname();
@@ -15,8 +15,8 @@ export function SectionObserver() {
     }
 
     const clearObservedSections = () => {
-      document.querySelectorAll<HTMLElement>(`${SECTION_SELECTOR}.${VISIBLE_CLASS}`).forEach((section) => {
-        section.classList.remove(VISIBLE_CLASS);
+      document.querySelectorAll<HTMLElement>(`${SECTION_SELECTOR}.${ACTIVE_CLASS}`).forEach((section) => {
+        section.classList.remove(ACTIVE_CLASS);
       });
     };
 
@@ -26,12 +26,9 @@ export function SectionObserver() {
     }
 
     const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const mobileMotionQuery = window.matchMedia("(max-width: 767px)");
 
-    if (reducedMotionQuery.matches || mobileMotionQuery.matches) {
-      document.querySelectorAll<HTMLElement>(SECTION_SELECTOR).forEach((section) => {
-        section.classList.add(VISIBLE_CLASS);
-      });
+    if (reducedMotionQuery.matches) {
+      clearObservedSections();
       return;
     }
 
@@ -42,25 +39,36 @@ export function SectionObserver() {
     }
 
     if (typeof IntersectionObserver === "undefined") {
-      sections.forEach((section) => {
-        section.classList.add(VISIBLE_CLASS);
-      });
+      sections[0]?.classList.add(ACTIVE_CLASS);
       return;
     }
+
+    const activeCandidates = new Map<Element, number>();
+
+    const setActiveSection = () => {
+      const nextActive = Array.from(activeCandidates.entries())
+        .sort((left, right) => right[1] - left[1])[0]?.[0] as HTMLElement | undefined;
+
+      sections.forEach((section) => {
+        section.classList.toggle(ACTIVE_CLASS, section === nextActive);
+      });
+    };
 
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            const section = entry.target as HTMLElement;
-            section.classList.add(VISIBLE_CLASS);
-            observer.unobserve(section);
+            activeCandidates.set(entry.target, entry.intersectionRatio);
+          } else {
+            activeCandidates.delete(entry.target);
           }
         });
+
+        setActiveSection();
       },
       {
-        rootMargin: "0px 0px -12% 0px",
-        threshold: 0.12,
+        rootMargin: "-42% 0px -42% 0px",
+        threshold: [0, 0.15, 0.35, 0.6, 1],
       },
     );
 

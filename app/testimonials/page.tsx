@@ -19,7 +19,7 @@ export default function TestimonialsPage() {
 
   return (
     <>
-      <main className="site-sky">
+      <main className="site-sky public-page">
         <PageHero
           eyebrow="Testimonials"
           title="Student Testimonials"

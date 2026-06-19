@@ -161,7 +161,7 @@ const certificateAchievements: CertificateAchievement[] = [
 export default function AboutPage() {
   return (
     <>
-      <main className="site-sky">
+      <main className="site-sky public-page">
         <section className="motion-section observe-section page-hero py-20 text-center text-brand-dark">
           <div className="hero-orbit md:block" aria-hidden="true" />
           <div className="hero-cloud hero-cloud-one lg:block" aria-hidden="true" />

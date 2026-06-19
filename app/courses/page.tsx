@@ -32,7 +32,7 @@ export default function CoursesPage() {
 
   return (
     <>
-      <main className="site-sky">
+      <main className="site-sky public-page">
         <PageHero
           eyebrow="Courses"
           title="Career-focused aviation courses."

@@ -38,7 +38,7 @@ export default function GalleryPage() {
 
   return (
     <>
-      <main className="site-sky">
+      <main className="site-sky public-page">
         <PageHero
           eyebrow="Gallery"
           title="Training moments and aviation exposure."
